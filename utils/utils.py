@@ -73,22 +73,6 @@ def get_env(env_name):
     print(f"Environment variable {env_name} missing.")
 
 
-def extract_valid_urls(soup):
-    print("\n[*] Extracting URLs...")
-    seen = set()
-    with open("data/urls.txt", "w") as file:
-        for a_tag in soup.find_all("a", href=True):
-            text, url = a_tag.get_text(strip=True), a_tag["href"].strip()
-            if (
-                url
-                and url not in seen
-                and is_valid_url(url)
-                and contains_valid_keywords([text, url])
-            ):
-                file.write(url + "\n")
-                seen.add(url)
-
-
 def get_urls(src):
     with open(f"data/{src}_urls.txt", "r") as f:
         return [line.strip() for line in f if line.strip()]

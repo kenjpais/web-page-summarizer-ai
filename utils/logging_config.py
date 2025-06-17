@@ -1,4 +1,3 @@
-# filters/logging_config.py
 import sys
 import logging
 import time

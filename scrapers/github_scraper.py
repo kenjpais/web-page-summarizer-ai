@@ -40,7 +40,7 @@ class GithubScraper:
 
         try:
             gql_query = self.client.build_graphql_query(parsed_items)
-            result = self.client.run_query(gql_query)
+            result = self.client.post_query(gql_query)
         except Exception as e:
             raise_scraper_exception(f"[!] Error fetching GitHub data: {e}")
 

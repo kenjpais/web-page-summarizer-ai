@@ -23,18 +23,18 @@ class TestGithubGraphQLClientIntegration(unittest.TestCase):
             'object(expression: "e5bd3914e2e596debea16f433f57875b5b90bcd6")', query
         )
 
-    def test_run_query_pr(self):
+    def test_post_query_pr(self):
         parsed_items = [
             {"type": "pr", "owner": "octocat", "repo": "Hello-World", "id": "1"}
         ]
         query = self.client.build_graphql_query(parsed_items)
-        response = self.client.run_query(query)
+        response = self.client.post_query(query)
 
         pr = response.get("data", {}).get("item0", {}).get("pullRequest")
         self.assertIsNotNone(pr, "PR data should not be None")
         self.assertEqual(pr.get("number"), 1)
 
-    def test_run_query_commit(self):
+    def test_post_query_commit(self):
         parsed_items = [
             {
                 "type": "commit",
@@ -44,7 +44,7 @@ class TestGithubGraphQLClientIntegration(unittest.TestCase):
             }
         ]
         query = self.client.build_graphql_query(parsed_items)
-        response = self.client.run_query(query)
+        response = self.client.post_query(query)
         commit = response.get("data", {}).get("item0", {}).get("object")
         self.assertIsNotNone(commit, "Commit data should not be None")
         self.assertIn("oid", commit)

@@ -9,6 +9,7 @@ SUMMARY_FILE_PATH = os.path.join(data_dir, "summaries")
 
 
 def summarize_release_page_from_url(url):
+    """Fetches data from url and summarizes all relevant information."""
     if not is_valid_url(url) or "/release/" not in url:
         raise URLError("Invalid Release Page URL")
 

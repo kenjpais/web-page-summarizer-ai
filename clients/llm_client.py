@@ -9,6 +9,7 @@ class LLMClient:
 
     @log_prompt
     def prompt_llm(self, prompt):
+        """Makes POST request with prompt payload to LLM API."""
         try:
             response = requests.post(
                 self.api_url,
@@ -21,6 +22,7 @@ class LLMClient:
 
 
 def build_prompt(text):
+    """Build prompt payload using the configurable prompt template."""
     try:
         with open("summarize_prompt_template.txt", "r") as file:
             return f"{file.read()}\n\n{text}"

@@ -141,3 +141,267 @@
 2025-06-17 14:51:41,595 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
 2025-06-17 14:51:41,859 [DEBUG] asyncio: Using selector: KqueueSelector
 2025-06-17 14:51:41,875 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434
+2025-06-17 15:55:45,186 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): amd64.origin.releases.ci.openshift.org:443
+2025-06-17 15:55:46,048 [DEBUG] urllib3.connectionpool: https://amd64.origin.releases.ci.openshift.org:443 "GET /releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3 HTTP/1.1" 200 None
+2025-06-17 15:55:46,537 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 15:55:46,538 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): issues.redhat.com:443
+2025-06-17 15:55:47,375 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 15:55:47,693 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 15:55:48,128 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/field HTTP/1.1" 200 12093
+2025-06-17 15:55:49,230 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/search?jql=issuekey+in+%28MGMT-20464%2CMGMT-11622%2CART-13079%2CSTOR-2330%2CCNTRLPLANE-373%2CCORS-3998%2CAGENT-997%2CSPLAT-2045%2CWRKLDS-1716%2COTA-1539%2COTA-1532%2CCNTRLPLANE-939%2CAUTH-544%2CCNTRLPLANE-337%2CMCO-1671%2CSPLAT-2137%2CCORENET-5704%2CCNTRLPLANE-341%2COCPSTRAT-1976%2COSASINFRA-3675%2CCONSOLE-4550%2CTRT-2068%2COCPNODE-3010%2CCNV-61396%2CARO-15626%2CMGMT-20682%2CCNTRLPLANE-936%2CCNTRLPLANE-844%2CCNTRLPLANE-206%2CWRKLDS-1676%2CMETAL-1376%2COU-842%2CMCO-1652%2CTRT-1854%29&startAt=0&validateQuery=True&fields=%2Aall&maxResults=34 HTTP/1.1" 200 29270
+2025-06-17 15:55:49,396 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 15:55:53,549 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 15:55:53,804 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 15:55:53,812 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434
+2025-06-17 15:56:13,823 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): amd64.origin.releases.ci.openshift.org:443
+2025-06-17 15:56:14,475 [DEBUG] urllib3.connectionpool: https://amd64.origin.releases.ci.openshift.org:443 "GET /releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3 HTTP/1.1" 200 None
+2025-06-17 15:56:14,952 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 15:56:14,953 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): issues.redhat.com:443
+2025-06-17 15:56:15,717 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 15:56:15,969 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 15:56:16,270 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/field HTTP/1.1" 200 12093
+2025-06-17 15:56:17,911 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/search?jql=issuekey+in+%28MGMT-20464%2CMGMT-11622%2CART-13079%2CSTOR-2330%2CCNTRLPLANE-373%2CCORS-3998%2CAGENT-997%2CSPLAT-2045%2CWRKLDS-1716%2COTA-1539%2COTA-1532%2CCNTRLPLANE-939%2CAUTH-544%2CCNTRLPLANE-337%2CMCO-1671%2CSPLAT-2137%2CCORENET-5704%2CCNTRLPLANE-341%2COCPSTRAT-1976%2COSASINFRA-3675%2CCONSOLE-4550%2CTRT-2068%2COCPNODE-3010%2CCNV-61396%2CARO-15626%2CMGMT-20682%2CCNTRLPLANE-936%2CCNTRLPLANE-844%2CCNTRLPLANE-206%2CWRKLDS-1676%2CMETAL-1376%2COU-842%2CMCO-1652%2CTRT-1854%29&startAt=0&validateQuery=True&fields=%2Aall&maxResults=34 HTTP/1.1" 200 29270
+2025-06-17 15:56:18,071 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 15:56:22,349 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 15:56:22,624 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 15:56:22,640 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434
+2025-06-17 16:03:10,415 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): amd64.origin.releases.ci.openshift.org:443
+2025-06-17 16:03:11,377 [DEBUG] urllib3.connectionpool: https://amd64.origin.releases.ci.openshift.org:443 "GET /releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3 HTTP/1.1" 200 None
+2025-06-17 16:03:11,892 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 16:03:11,901 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434
+2025-06-17 16:03:35,683 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): amd64.origin.releases.ci.openshift.org:443
+2025-06-17 16:03:36,389 [DEBUG] urllib3.connectionpool: https://amd64.origin.releases.ci.openshift.org:443 "GET /releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3 HTTP/1.1" 200 None
+2025-06-17 16:03:36,902 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 16:03:36,910 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434
+2025-06-17 16:07:58,194 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): amd64.origin.releases.ci.openshift.org:443
+2025-06-17 16:07:59,118 [DEBUG] urllib3.connectionpool: https://amd64.origin.releases.ci.openshift.org:443 "GET /releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3 HTTP/1.1" 200 None
+2025-06-17 16:07:59,597 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 16:07:59,607 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434
+2025-06-17 16:08:27,875 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): amd64.origin.releases.ci.openshift.org:443
+2025-06-17 16:08:28,582 [DEBUG] urllib3.connectionpool: https://amd64.origin.releases.ci.openshift.org:443 "GET /releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3 HTTP/1.1" 200 None
+2025-06-17 16:08:29,153 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 16:08:29,163 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434
+2025-06-17 16:09:05,144 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): amd64.origin.releases.ci.openshift.org:443
+2025-06-17 16:09:05,873 [DEBUG] urllib3.connectionpool: https://amd64.origin.releases.ci.openshift.org:443 "GET /releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3 HTTP/1.1" 200 None
+2025-06-17 16:09:06,358 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 16:09:06,359 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): issues.redhat.com:443
+2025-06-17 16:09:06,981 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 16:09:07,312 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 16:09:07,715 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/field HTTP/1.1" 200 12093
+2025-06-17 16:09:08,911 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/search?jql=issuekey+in+%28MGMT-20464%2CMGMT-11622%2CART-13079%2CSTOR-2330%2CCNTRLPLANE-373%2CCORS-3998%2CAGENT-997%2CSPLAT-2045%2CWRKLDS-1716%2COTA-1539%2COTA-1532%2CCNTRLPLANE-939%2CAUTH-544%2CCNTRLPLANE-337%2CMCO-1671%2CSPLAT-2137%2CCORENET-5704%2CCNTRLPLANE-341%2COCPSTRAT-1976%2COSASINFRA-3675%2CCONSOLE-4550%2CTRT-2068%2COCPNODE-3010%2CCNV-61396%2CARO-15626%2CMGMT-20682%2CCNTRLPLANE-936%2CCNTRLPLANE-844%2CCNTRLPLANE-206%2CWRKLDS-1676%2CMETAL-1376%2COU-842%2CMCO-1652%2CTRT-1854%29&startAt=0&validateQuery=True&fields=%2Aall&maxResults=34 HTTP/1.1" 200 29268
+2025-06-17 16:09:08,978 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 16:09:12,636 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 16:09:12,901 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 16:09:12,915 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434
+2025-06-17 16:13:00,045 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): amd64.origin.releases.ci.openshift.org:443
+2025-06-17 16:13:00,946 [DEBUG] urllib3.connectionpool: https://amd64.origin.releases.ci.openshift.org:443 "GET /releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3 HTTP/1.1" 200 None
+2025-06-17 16:13:01,585 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 16:13:01,586 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): issues.redhat.com:443
+2025-06-17 16:13:02,167 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 16:13:02,492 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 16:13:02,917 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/field HTTP/1.1" 200 12093
+2025-06-17 16:13:04,682 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/search?jql=issuekey+in+%28MGMT-20464%2CMGMT-11622%2CART-13079%2CSTOR-2330%2CCNTRLPLANE-373%2CCORS-3998%2CAGENT-997%2CSPLAT-2045%2CWRKLDS-1716%2COTA-1539%2COTA-1532%2CCNTRLPLANE-939%2CAUTH-544%2CCNTRLPLANE-337%2CMCO-1671%2CSPLAT-2137%2CCORENET-5704%2CCNTRLPLANE-341%2COCPSTRAT-1976%2COSASINFRA-3675%2CCONSOLE-4550%2CTRT-2068%2COCPNODE-3010%2CCNV-61396%2CARO-15626%2CMGMT-20682%2CCNTRLPLANE-936%2CCNTRLPLANE-844%2CCNTRLPLANE-206%2CWRKLDS-1676%2CMETAL-1376%2COU-842%2CMCO-1652%2CTRT-1854%29&startAt=0&validateQuery=True&fields=%2Aall&maxResults=34 HTTP/1.1" 200 29269
+2025-06-17 16:13:04,751 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 16:13:08,653 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 16:13:08,925 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 16:13:08,939 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434
+2025-06-17 16:26:18,956 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): amd64.origin.releases.ci.openshift.org:443
+2025-06-17 16:26:19,847 [DEBUG] urllib3.connectionpool: https://amd64.origin.releases.ci.openshift.org:443 "GET /releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3 HTTP/1.1" 200 None
+2025-06-17 16:26:20,417 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 16:26:20,418 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): issues.redhat.com:443
+2025-06-17 16:26:21,027 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 16:26:21,349 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 16:26:21,712 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/field HTTP/1.1" 200 12093
+2025-06-17 16:26:22,761 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/search?jql=issuekey+in+%28MGMT-20464%2CMGMT-11622%2CART-13079%2CSTOR-2330%2CCNTRLPLANE-373%2CCORS-3998%2CAGENT-997%2CSPLAT-2045%2CWRKLDS-1716%2COTA-1539%2COTA-1532%2CCNTRLPLANE-939%2CAUTH-544%2CCNTRLPLANE-337%2CMCO-1671%2CSPLAT-2137%2CCORENET-5704%2CCNTRLPLANE-341%2COCPSTRAT-1976%2COSASINFRA-3675%2CCONSOLE-4550%2CTRT-2068%2COCPNODE-3010%2CCNV-61396%2CARO-15626%2CMGMT-20682%2CCNTRLPLANE-936%2CCNTRLPLANE-844%2CCNTRLPLANE-206%2CWRKLDS-1676%2CMETAL-1376%2COU-842%2CMCO-1652%2CTRT-1854%29&startAt=0&validateQuery=True&fields=%2Aall&maxResults=34 HTTP/1.1" 200 29265
+2025-06-17 16:26:22,798 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 16:26:26,593 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 16:26:26,850 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 16:26:26,866 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434
+2025-06-17 16:30:20,954 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): amd64.origin.releases.ci.openshift.org:443
+2025-06-17 16:30:21,765 [DEBUG] urllib3.connectionpool: https://amd64.origin.releases.ci.openshift.org:443 "GET /releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3 HTTP/1.1" 200 None
+2025-06-17 16:30:22,246 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 16:30:22,247 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): issues.redhat.com:443
+2025-06-17 16:30:22,833 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 16:30:23,162 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 16:30:23,539 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/field HTTP/1.1" 200 12093
+2025-06-17 16:30:24,536 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/search?jql=issuekey+in+%28MGMT-20464%2CMGMT-11622%2CART-13079%2CSTOR-2330%2CCNTRLPLANE-373%2CCORS-3998%2CAGENT-997%2CSPLAT-2045%2CWRKLDS-1716%2COTA-1539%2COTA-1532%2CCNTRLPLANE-939%2CAUTH-544%2CCNTRLPLANE-337%2CMCO-1671%2CSPLAT-2137%2CCORENET-5704%2CCNTRLPLANE-341%2COCPSTRAT-1976%2COSASINFRA-3675%2CCONSOLE-4550%2CTRT-2068%2COCPNODE-3010%2CCNV-61396%2CARO-15626%2CMGMT-20682%2CCNTRLPLANE-936%2CCNTRLPLANE-844%2CCNTRLPLANE-206%2CWRKLDS-1676%2CMETAL-1376%2COU-842%2CMCO-1652%2CTRT-1854%29&startAt=0&validateQuery=True&fields=%2Aall&maxResults=34 HTTP/1.1" 200 29265
+2025-06-17 16:30:24,604 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 16:30:28,247 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 16:30:28,514 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 16:30:28,528 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434
+2025-06-17 16:31:18,566 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): amd64.origin.releases.ci.openshift.org:443
+2025-06-17 16:31:19,314 [DEBUG] urllib3.connectionpool: https://amd64.origin.releases.ci.openshift.org:443 "GET /releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3 HTTP/1.1" 200 None
+2025-06-17 16:31:19,897 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 16:31:19,898 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): issues.redhat.com:443
+2025-06-17 16:31:20,768 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 16:31:21,092 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 16:31:21,513 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/field HTTP/1.1" 200 12093
+2025-06-17 16:31:23,190 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/search?jql=issuekey+in+%28MGMT-20464%2CMGMT-11622%2CART-13079%2CSTOR-2330%2CCNTRLPLANE-373%2CCORS-3998%2CAGENT-997%2CSPLAT-2045%2CWRKLDS-1716%2COTA-1539%2COTA-1532%2CCNTRLPLANE-939%2CAUTH-544%2CCNTRLPLANE-337%2CMCO-1671%2CSPLAT-2137%2CCORENET-5704%2CCNTRLPLANE-341%2COCPSTRAT-1976%2COSASINFRA-3675%2CCONSOLE-4550%2CTRT-2068%2COCPNODE-3010%2CCNV-61396%2CARO-15626%2CMGMT-20682%2CCNTRLPLANE-936%2CCNTRLPLANE-844%2CCNTRLPLANE-206%2CWRKLDS-1676%2CMETAL-1376%2COU-842%2CMCO-1652%2CTRT-1854%29&startAt=0&validateQuery=True&fields=%2Aall&maxResults=34 HTTP/1.1" 200 29269
+2025-06-17 16:31:23,257 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 16:31:28,509 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 16:31:28,770 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 16:31:28,786 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434
+2025-06-17 16:32:13,678 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): amd64.origin.releases.ci.openshift.org:443
+2025-06-17 16:32:14,474 [DEBUG] urllib3.connectionpool: https://amd64.origin.releases.ci.openshift.org:443 "GET /releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3 HTTP/1.1" 200 None
+2025-06-17 16:32:15,031 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 16:32:15,032 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): issues.redhat.com:443
+2025-06-17 16:32:15,567 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 16:32:15,881 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 16:32:16,267 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/field HTTP/1.1" 200 12093
+2025-06-17 16:32:17,229 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/search?jql=issuekey+in+%28MGMT-20464%2CMGMT-11622%2CART-13079%2CSTOR-2330%2CCNTRLPLANE-373%2CCORS-3998%2CAGENT-997%2CSPLAT-2045%2CWRKLDS-1716%2COTA-1539%2COTA-1532%2CCNTRLPLANE-939%2CAUTH-544%2CCNTRLPLANE-337%2CMCO-1671%2CSPLAT-2137%2CCORENET-5704%2CCNTRLPLANE-341%2COCPSTRAT-1976%2COSASINFRA-3675%2CCONSOLE-4550%2CTRT-2068%2COCPNODE-3010%2CCNV-61396%2CARO-15626%2CMGMT-20682%2CCNTRLPLANE-936%2CCNTRLPLANE-844%2CCNTRLPLANE-206%2CWRKLDS-1676%2CMETAL-1376%2COU-842%2CMCO-1652%2CTRT-1854%29&startAt=0&validateQuery=True&fields=%2Aall&maxResults=34 HTTP/1.1" 200 29265
+2025-06-17 16:32:17,281 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 16:32:21,314 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 16:32:21,578 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 16:32:21,591 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434
+2025-06-17 21:06:48,617 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:06:49,528 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:06:49,532 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:06:50,414 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:06:50,415 [ERROR] scrapers.exceptions: [!] No valid GitHub items to process.
+2025-06-17 21:06:50,417 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:06:51,294 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:06:51,297 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:06:52,266 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:06:52,270 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): issues.redhat.com:443
+2025-06-17 21:06:55,488 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:06:56,436 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:06:56,438 [ERROR] scrapers.exceptions: [!] Invalid JIRA URLs
+2025-06-17 21:06:57,401 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/field HTTP/1.1" 200 12093
+2025-06-17 21:06:58,111 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/search?jql=issuekey+in+%28ODC-7710%2CCONSOLE-3905%2CNETOBSERV-2023%2CSTOR-2251%2COCPBUILD-174%2CIR-522%2CETCD-726%29&startAt=0&validateQuery=True&fields=%2Aall&maxResults=7 HTTP/1.1" 200 13025
+2025-06-17 21:06:58,192 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): amd64.origin.releases.ci.openshift.org:443
+2025-06-17 21:06:58,962 [DEBUG] urllib3.connectionpool: https://amd64.origin.releases.ci.openshift.org:443 "GET /releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3 HTTP/1.1" 200 None
+2025-06-17 21:06:59,483 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 21:06:59,484 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): issues.redhat.com:443
+2025-06-17 21:07:00,321 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:07:00,690 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:07:01,480 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/field HTTP/1.1" 200 12093
+2025-06-17 21:07:03,146 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/search?jql=issuekey+in+%28MGMT-20464%2CMGMT-11622%2CART-13079%2CSTOR-2330%2CCNTRLPLANE-373%2CCORS-3998%2CAGENT-997%2CSPLAT-2045%2CWRKLDS-1716%2COTA-1539%2COTA-1532%2CCNTRLPLANE-939%2CAUTH-544%2CCNTRLPLANE-337%2CMCO-1671%2CSPLAT-2137%2CCORENET-5704%2CCNTRLPLANE-341%2COCPSTRAT-1976%2COSASINFRA-3675%2CCONSOLE-4550%2CTRT-2068%2COCPNODE-3010%2CCNV-61396%2CARO-15626%2CMGMT-20682%2CCNTRLPLANE-936%2CCNTRLPLANE-844%2CCNTRLPLANE-206%2CWRKLDS-1676%2CMETAL-1376%2COU-842%2CMCO-1652%2CTRT-1854%29&startAt=0&validateQuery=True&fields=%2Aall&maxResults=34 HTTP/1.1" 200 29224
+2025-06-17 21:07:03,301 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:07:07,186 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:07:07,453 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 21:07:07,469 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434
+2025-06-17 21:07:07,472 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): amd64.origin.releases.ci.openshift.org:443
+2025-06-17 21:07:08,244 [DEBUG] urllib3.connectionpool: https://amd64.origin.releases.ci.openshift.org:443 "GET /releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3 HTTP/1.1" 200 None
+2025-06-17 21:07:08,747 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 21:07:08,748 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): issues.redhat.com:443
+2025-06-17 21:07:09,517 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:07:11,793 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:07:12,113 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/field HTTP/1.1" 200 12093
+2025-06-17 21:07:13,680 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/search?jql=issuekey+in+%28MGMT-20464%2CMGMT-11622%2CART-13079%2CSTOR-2330%2CCNTRLPLANE-373%2CCORS-3998%2CAGENT-997%2CSPLAT-2045%2CWRKLDS-1716%2COTA-1539%2COTA-1532%2CCNTRLPLANE-939%2CAUTH-544%2CCNTRLPLANE-337%2CMCO-1671%2CSPLAT-2137%2CCORENET-5704%2CCNTRLPLANE-341%2COCPSTRAT-1976%2COSASINFRA-3675%2CCONSOLE-4550%2CTRT-2068%2COCPNODE-3010%2CCNV-61396%2CARO-15626%2CMGMT-20682%2CCNTRLPLANE-936%2CCNTRLPLANE-844%2CCNTRLPLANE-206%2CWRKLDS-1676%2CMETAL-1376%2COU-842%2CMCO-1652%2CTRT-1854%29&startAt=0&validateQuery=True&fields=%2Aall&maxResults=34 HTTP/1.1" 200 29226
+2025-06-17 21:07:13,834 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:07:18,152 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:07:18,410 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 21:07:18,424 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434
+2025-06-17 21:09:48,201 [ERROR] scrapers.exceptions: [!] No valid GitHub items to process.
+2025-06-17 21:09:48,204 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:09:49,133 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:09:49,136 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:09:50,157 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:09:50,161 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): issues.redhat.com:443
+2025-06-17 21:09:50,985 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:09:51,263 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:09:51,264 [ERROR] scrapers.exceptions: [!] Invalid JIRA URLs
+2025-06-17 21:09:51,894 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/field HTTP/1.1" 200 12093
+2025-06-17 21:09:52,780 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/search?jql=issuekey+in+%28ODC-7710%2CCONSOLE-3905%2CNETOBSERV-2023%2CSTOR-2251%2COCPBUILD-174%2CIR-522%2CETCD-726%29&startAt=0&validateQuery=True&fields=%2Aall&maxResults=7 HTTP/1.1" 200 13029
+2025-06-17 21:09:52,860 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): amd64.origin.releases.ci.openshift.org:443
+2025-06-17 21:09:53,586 [DEBUG] urllib3.connectionpool: https://amd64.origin.releases.ci.openshift.org:443 "GET /releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3 HTTP/1.1" 200 None
+2025-06-17 21:09:54,082 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 21:09:54,083 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): issues.redhat.com:443
+2025-06-17 21:09:54,984 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:09:55,260 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:09:55,568 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/field HTTP/1.1" 200 12093
+2025-06-17 21:09:56,725 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/search?jql=issuekey+in+%28MGMT-20464%2CMGMT-11622%2CART-13079%2CSTOR-2330%2CCNTRLPLANE-373%2CCORS-3998%2CAGENT-997%2CSPLAT-2045%2CWRKLDS-1716%2COTA-1539%2COTA-1532%2CCNTRLPLANE-939%2CAUTH-544%2CCNTRLPLANE-337%2CMCO-1671%2CSPLAT-2137%2CCORENET-5704%2CCNTRLPLANE-341%2COCPSTRAT-1976%2COSASINFRA-3675%2CCONSOLE-4550%2CTRT-2068%2COCPNODE-3010%2CCNV-61396%2CARO-15626%2CMGMT-20682%2CCNTRLPLANE-936%2CCNTRLPLANE-844%2CCNTRLPLANE-206%2CWRKLDS-1676%2CMETAL-1376%2COU-842%2CMCO-1652%2CTRT-1854%29&startAt=0&validateQuery=True&fields=%2Aall&maxResults=34 HTTP/1.1" 200 29227
+2025-06-17 21:09:56,887 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:10:00,314 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:10:00,585 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 21:10:00,602 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434
+2025-06-17 21:10:00,604 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): amd64.origin.releases.ci.openshift.org:443
+2025-06-17 21:10:01,303 [DEBUG] urllib3.connectionpool: https://amd64.origin.releases.ci.openshift.org:443 "GET /releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3 HTTP/1.1" 200 None
+2025-06-17 21:10:01,819 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 21:10:01,820 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): issues.redhat.com:443
+2025-06-17 21:10:02,585 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:10:02,886 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:10:03,200 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/field HTTP/1.1" 200 12093
+2025-06-17 21:10:04,085 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/search?jql=issuekey+in+%28MGMT-20464%2CMGMT-11622%2CART-13079%2CSTOR-2330%2CCNTRLPLANE-373%2CCORS-3998%2CAGENT-997%2CSPLAT-2045%2CWRKLDS-1716%2COTA-1539%2COTA-1532%2CCNTRLPLANE-939%2CAUTH-544%2CCNTRLPLANE-337%2CMCO-1671%2CSPLAT-2137%2CCORENET-5704%2CCNTRLPLANE-341%2COCPSTRAT-1976%2COSASINFRA-3675%2CCONSOLE-4550%2CTRT-2068%2COCPNODE-3010%2CCNV-61396%2CARO-15626%2CMGMT-20682%2CCNTRLPLANE-936%2CCNTRLPLANE-844%2CCNTRLPLANE-206%2CWRKLDS-1676%2CMETAL-1376%2COU-842%2CMCO-1652%2CTRT-1854%29&startAt=0&validateQuery=True&fields=%2Aall&maxResults=34 HTTP/1.1" 200 29227
+2025-06-17 21:10:04,245 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:10:07,892 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:10:08,253 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 21:10:08,266 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434
+2025-06-17 21:10:34,524 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:10:35,417 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:10:35,418 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:10:36,285 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:10:36,287 [ERROR] scrapers.exceptions: [!] No valid GitHub items to process.
+2025-06-17 21:10:36,289 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:10:37,182 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:10:37,185 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:10:38,145 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:10:38,148 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): issues.redhat.com:443
+2025-06-17 21:10:38,826 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:10:39,143 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:10:39,145 [ERROR] scrapers.exceptions: [!] Invalid JIRA URLs
+2025-06-17 21:10:39,537 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/field HTTP/1.1" 200 12093
+2025-06-17 21:10:40,398 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/search?jql=issuekey+in+%28ODC-7710%2CCONSOLE-3905%2CNETOBSERV-2023%2CSTOR-2251%2COCPBUILD-174%2CIR-522%2CETCD-726%29&startAt=0&validateQuery=True&fields=%2Aall&maxResults=7 HTTP/1.1" 200 13029
+2025-06-17 21:10:40,431 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): amd64.origin.releases.ci.openshift.org:443
+2025-06-17 21:10:41,182 [DEBUG] urllib3.connectionpool: https://amd64.origin.releases.ci.openshift.org:443 "GET /releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3 HTTP/1.1" 200 None
+2025-06-17 21:10:50,126 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 21:10:50,127 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): issues.redhat.com:443
+2025-06-17 21:10:50,563 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:10:50,863 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:10:51,229 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/field HTTP/1.1" 200 12093
+2025-06-17 21:10:52,876 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/search?jql=issuekey+in+%28MGMT-20464%2CMGMT-11622%2CART-13079%2CSTOR-2330%2CCNTRLPLANE-373%2CCORS-3998%2CAGENT-997%2CSPLAT-2045%2CWRKLDS-1716%2COTA-1539%2COTA-1532%2CCNTRLPLANE-939%2CAUTH-544%2CCNTRLPLANE-337%2CMCO-1671%2CSPLAT-2137%2CCORENET-5704%2CCNTRLPLANE-341%2COCPSTRAT-1976%2COSASINFRA-3675%2CCONSOLE-4550%2CTRT-2068%2COCPNODE-3010%2CCNV-61396%2CARO-15626%2CMGMT-20682%2CCNTRLPLANE-936%2CCNTRLPLANE-844%2CCNTRLPLANE-206%2CWRKLDS-1676%2CMETAL-1376%2COU-842%2CMCO-1652%2CTRT-1854%29&startAt=0&validateQuery=True&fields=%2Aall&maxResults=34 HTTP/1.1" 200 29224
+2025-06-17 21:10:52,929 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:10:56,557 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:10:56,824 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 21:10:56,838 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434
+2025-06-17 21:10:56,841 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): amd64.origin.releases.ci.openshift.org:443
+2025-06-17 21:10:57,541 [DEBUG] urllib3.connectionpool: https://amd64.origin.releases.ci.openshift.org:443 "GET /releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3 HTTP/1.1" 200 None
+2025-06-17 21:10:58,054 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 21:10:58,055 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): issues.redhat.com:443
+2025-06-17 21:10:58,674 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:10:58,997 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:10:59,442 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/field HTTP/1.1" 200 12093
+2025-06-17 21:11:01,226 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/search?jql=issuekey+in+%28MGMT-20464%2CMGMT-11622%2CART-13079%2CSTOR-2330%2CCNTRLPLANE-373%2CCORS-3998%2CAGENT-997%2CSPLAT-2045%2CWRKLDS-1716%2COTA-1539%2COTA-1532%2CCNTRLPLANE-939%2CAUTH-544%2CCNTRLPLANE-337%2CMCO-1671%2CSPLAT-2137%2CCORENET-5704%2CCNTRLPLANE-341%2COCPSTRAT-1976%2COSASINFRA-3675%2CCONSOLE-4550%2CTRT-2068%2COCPNODE-3010%2CCNV-61396%2CARO-15626%2CMGMT-20682%2CCNTRLPLANE-936%2CCNTRLPLANE-844%2CCNTRLPLANE-206%2CWRKLDS-1676%2CMETAL-1376%2COU-842%2CMCO-1652%2CTRT-1854%29&startAt=0&validateQuery=True&fields=%2Aall&maxResults=34 HTTP/1.1" 200 29223
+2025-06-17 21:11:01,287 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:11:05,131 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:11:05,388 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 21:11:05,402 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434
+2025-06-17 21:31:22,400 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:31:23,371 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:31:23,374 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:31:24,234 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:31:24,236 [ERROR] scrapers.exceptions: [!] No valid GitHub items to process.
+2025-06-17 21:31:24,238 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:31:25,120 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:31:25,124 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:31:26,193 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:31:26,198 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): issues.redhat.com:443
+2025-06-17 21:31:27,183 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:31:27,503 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:31:27,506 [ERROR] scrapers.exceptions: [!] Invalid JIRA URLs
+2025-06-17 21:31:27,910 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/field HTTP/1.1" 200 12093
+2025-06-17 21:31:28,699 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/search?jql=issuekey+in+%28ODC-7710%2CCONSOLE-3905%2CNETOBSERV-2023%2CSTOR-2251%2COCPBUILD-174%2CIR-522%2CETCD-726%29&startAt=0&validateQuery=True&fields=%2Aall&maxResults=7 HTTP/1.1" 200 13026
+2025-06-17 21:31:28,785 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): amd64.origin.releases.ci.openshift.org:443
+2025-06-17 21:31:29,578 [DEBUG] urllib3.connectionpool: https://amd64.origin.releases.ci.openshift.org:443 "GET /releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3 HTTP/1.1" 200 None
+2025-06-17 21:31:30,099 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 21:31:30,100 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): issues.redhat.com:443
+2025-06-17 21:31:30,898 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:31:31,204 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:31:31,714 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/field HTTP/1.1" 200 12093
+2025-06-17 21:31:32,657 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/search?jql=issuekey+in+%28MGMT-20464%2CMGMT-11622%2CART-13079%2CSTOR-2330%2CCNTRLPLANE-373%2CCORS-3998%2CAGENT-997%2CSPLAT-2045%2CWRKLDS-1716%2COTA-1539%2COTA-1532%2CCNTRLPLANE-939%2CAUTH-544%2CCNTRLPLANE-337%2CMCO-1671%2CSPLAT-2137%2CCORENET-5704%2CCNTRLPLANE-341%2COCPSTRAT-1976%2COSASINFRA-3675%2CCONSOLE-4550%2CTRT-2068%2COCPNODE-3010%2CCNV-61396%2CARO-15626%2CMGMT-20682%2CCNTRLPLANE-936%2CCNTRLPLANE-844%2CCNTRLPLANE-206%2CWRKLDS-1676%2CMETAL-1376%2COU-842%2CMCO-1652%2CTRT-1854%29&startAt=0&validateQuery=True&fields=%2Aall&maxResults=34 HTTP/1.1" 200 29227
+2025-06-17 21:31:32,817 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:31:36,333 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:31:36,609 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 21:31:36,626 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434
+2025-06-17 21:31:36,628 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): amd64.origin.releases.ci.openshift.org:443
+2025-06-17 21:31:37,398 [DEBUG] urllib3.connectionpool: https://amd64.origin.releases.ci.openshift.org:443 "GET /releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3 HTTP/1.1" 200 None
+2025-06-17 21:31:37,911 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 21:31:37,912 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): issues.redhat.com:443
+2025-06-17 21:31:38,661 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:31:38,936 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/serverInfo HTTP/1.1" 200 239
+2025-06-17 21:31:39,250 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/field HTTP/1.1" 200 12093
+2025-06-17 21:31:40,098 [DEBUG] urllib3.connectionpool: https://issues.redhat.com:443 "GET /rest/api/2/search?jql=issuekey+in+%28MGMT-20464%2CMGMT-11622%2CART-13079%2CSTOR-2330%2CCNTRLPLANE-373%2CCORS-3998%2CAGENT-997%2CSPLAT-2045%2CWRKLDS-1716%2COTA-1539%2COTA-1532%2CCNTRLPLANE-939%2CAUTH-544%2CCNTRLPLANE-337%2CMCO-1671%2CSPLAT-2137%2CCORENET-5704%2CCNTRLPLANE-341%2COCPSTRAT-1976%2COSASINFRA-3675%2CCONSOLE-4550%2CTRT-2068%2COCPNODE-3010%2CCNV-61396%2CARO-15626%2CMGMT-20682%2CCNTRLPLANE-936%2CCNTRLPLANE-844%2CCNTRLPLANE-206%2CWRKLDS-1676%2CMETAL-1376%2COU-842%2CMCO-1652%2CTRT-1854%29&startAt=0&validateQuery=True&fields=%2Aall&maxResults=34 HTTP/1.1" 200 29227
+2025-06-17 21:31:40,252 [DEBUG] urllib3.connectionpool: Starting new HTTPS connection (1): api.github.com:443
+2025-06-17 21:31:43,736 [DEBUG] urllib3.connectionpool: https://api.github.com:443 "POST /graphql HTTP/1.1" 200 None
+2025-06-17 21:31:44,001 [DEBUG] asyncio: Using selector: KqueueSelector
+2025-06-17 21:31:44,016 [DEBUG] urllib3.connectionpool: Starting new HTTP connection (1): localhost:11434

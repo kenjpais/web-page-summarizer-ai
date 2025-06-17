@@ -48,7 +48,8 @@ class GithubGraphQLClient:
                 )
         return f"query {{ {''.join(query_parts)} }}"
 
-    def run_query(self, query):
+    def post_query(self, query):
+        """Makes POST request with GraphQL query."""
         headers = {"Authorization": f"Bearer {self.token}"}
         try:
             response = requests.post(

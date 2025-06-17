@@ -1,5 +1,5 @@
-import unittest
 import os
+import unittest
 import shutil
 from utils.utils import get_env
 from controllers.summarize_url_controller import summarize_release_page_from_url
