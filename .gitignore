@@ -1,1 +1,3 @@
+.env
+.__pycache__
 __pycache__/\n.env\n*.log
