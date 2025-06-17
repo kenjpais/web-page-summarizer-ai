@@ -4,3 +4,4 @@ __pycache__/\n.env\n*.log
 *.py[cod]
 *.egg-info/
 *.log
+.DS_Store
