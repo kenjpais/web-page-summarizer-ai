@@ -8,8 +8,5 @@ pip install -r requirements.txt
 
 mv .env.example .env
 
-# Create data directory if it doesn't exist
-mkdir -p "$DATA_DIR"
-
 # Run tests
 python -m unittest discover -s tests
