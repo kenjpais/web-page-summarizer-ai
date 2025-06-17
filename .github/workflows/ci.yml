@@ -13,10 +13,13 @@ jobs:
     env:
       DATA_DIR: data
       DEBUG: "false"
+      SOURCE_PAGE: https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3
       GITHUB_API_URL: https://api.github.com/graphql
       GITHUB_SERVER: https://github.com
       JIRA_SERVER: https://issues.redhat.com
       LLM_API_URL: http://localhost:11434/api/generate
+      CONFIG_FILE_PATH: config/filter.json
+      SOURCES: '["JIRA","GITHUB"]'
 
     steps:
       - name: Checkout code
@@ -36,10 +39,13 @@ jobs:
         run: |
           echo "DATA_DIR=${{ env.DATA_DIR }}" >> .env
           echo "DEBUG=${{ env.DEBUG }}" >> .env
+          echo "SOURCE_PAGE=${{ env.SOURCE_PAGE }}" >> .env
           echo "GITHUB_API_URL=${{ env.GITHUB_API_URL }}" >> .env
           echo "GITHUB_SERVER=${{ env.GITHUB_SERVER }}" >> .env
           echo "JIRA_SERVER=${{ env.JIRA_SERVER }}" >> .env
           echo "LLM_API_URL=${{ env.LLM_API_URL }}" >> .env
+          echo "CONFIG_FILE_PATH=${{ env.CONFIG_FILE_PATH }}" >> .env
+          echo "SOURCES=${{ env.SOURCES }}" >> .env
           echo "GITHUB_API_TOKEN=${{ secrets.GITHUB_API_TOKEN }}" >> .env
           mkdir -p ${{ env.DATA_DIR }}
 
