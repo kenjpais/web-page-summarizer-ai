@@ -1,6 +1,6 @@
 # Release Page Summarizer
 
-A robust Python-based web scraper designed to extract, analyze, and summarize data from OpenShift release stream pages. The tool integrates with third-party systems like JIRA and GitHub, supports environment-based configuration, and includes automated testing and CI workflows.
+A Python-based web scraper designed to extract, analyze, and summarize data from OpenShift release stream pages. The tool integrates with third-party systems like JIRA and GitHub, supports environment-based configuration, and includes automated testing and CI workflows.
 
 ---
 
