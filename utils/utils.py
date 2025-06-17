@@ -76,11 +76,8 @@ def get_env(env_name):
 def get_urls(src):
     data_dir = get_env("DATA_DIR")
     file_path = f"{data_dir}/{src}_urls.txt"
-    if os.path.isdir(f"{data_dir}"):
-        print(f"KDEBUG: {data_dir} exists")
     if not os.path.isfile(file_path):
         print(f"[!] Warning: URL file not found for source: {src}")
         return []
     with open(file_path, "r") as f:
         return [line.strip() for line in f if line.strip()]
-
