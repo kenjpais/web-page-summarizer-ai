@@ -21,5 +21,4 @@ def summarize_release_page_from_url(url):
 
     src_summary = os.path.join(data_dir, "summary.txt")
     dest_summary = os.path.join(summary_dir, "summary.txt")
-    print(f"KDEBUG: {src_summary} {dest_summary}")
     shutil.copy(src_summary, dest_summary)
