@@ -1,0 +1,28 @@
+{
+    "invalid_keywords": [
+        "bug",
+        "fix",
+        "error",
+        "typo",
+        "crash",
+        "broken",
+        "regression",
+        "refactor",
+        "docs",
+        "documentation",
+        "test",
+        "qa",
+        "chore",
+        "ci"
+    ],
+    "valid_keywords": [
+        "feature",
+        "add",
+        "new",
+        "enhancement",
+        "implement",
+        "introduce",
+        "support",
+        "improve"
+    ]
+}

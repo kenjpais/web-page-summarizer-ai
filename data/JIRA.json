@@ -1,0 +1,4 @@
+{"id": "MCO-1671", "description": "This feature will be introduced as TechPreview, and this will require a new gate to be added in openshift/api", "summary": "Create a feature gate for Azure boot image updates"}
+{"id": "CORS-3998", "description": "See HIVE-2651 for history & summary.", "summary": "Azure: Discover ClusterName & ZoneName from not-metadata.json"}
+{"id": "CORENET-5704", "description": null, "summary": "Lift feature gate 4.20"}
+{"id": "CNV-61396", "description": "This card is about adding expansion-related hypershift sidecars/RBAC to allow bringing in the volume expansion into the openshift fork.\r\nThis includes some gotchas and thus is split off the main implementation task.", "summary": "Add expansion-related hypershift sidecars/RBAC"}

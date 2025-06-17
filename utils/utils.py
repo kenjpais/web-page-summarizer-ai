@@ -1,0 +1,94 @@
+import os
+import json
+from urllib.parse import urlparse
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+ALLOWED_PROTOCOLS = ("http", "https")
+NON_FEATURE_KEYWORDS = [
+    "bug",
+    "fix",
+    "error",
+    "typo",
+    "crash",
+    "broken",
+    "regression",
+    "refactor",
+    "docs",
+    "documentation",
+    "test",
+    "qa",
+    "chore",
+    "ci",
+]
+
+FEATURE_KEYWORDS = [
+    "feature",
+    "add",
+    "new",
+    "enhancement",
+    "implement",
+    "introduce",
+    "support",
+    "improve",
+]
+
+
+def is_valid_url(url):
+    try:
+        result = urlparse(url)
+        return all([result.scheme in ALLOWED_PROTOCOLS, result.netloc])
+    except ValueError:
+        return False
+
+
+def get_invalid_keywords():
+    invalid_keywords = []
+
+    with open(os.getenv("CONFIG_FILE_PATH"), "r") as f:
+        data = json.load(f)
+        invalid_keywords = data.get("invalid_keywords", [])
+        invalid_keywords.extend([k.lower() for k in invalid_keywords])
+
+    return invalid_keywords
+
+
+def contains_valid_keywords(fields):
+    invalid_keywords = [kw.lower() for kw in get_invalid_keywords()]
+    for field in fields:
+        if field is None or not isinstance(field, str):
+            continue
+        field_str = field.lower()
+        if any(keyword in field_str for keyword in invalid_keywords):
+            return False
+    return True
+
+
+def get_env(env_name):
+    env_var = os.getenv(env_name)
+    if env_var:
+        return env_var
+    print(f"Environment variable {env_name} missing.")
+
+
+def extract_valid_urls(soup):
+    print("\n[*] Extracting URLs...")
+    seen = set()
+    with open("data/urls.txt", "w") as file:
+        for a_tag in soup.find_all("a", href=True):
+            text, url = a_tag.get_text(strip=True), a_tag["href"].strip()
+            if (
+                url
+                and url not in seen
+                and is_valid_url(url)
+                and contains_valid_keywords([text, url])
+            ):
+                file.write(url + "\n")
+                seen.add(url)
+
+
+def get_urls(src):
+    with open(f"data/{src}_urls.txt", "r") as f:
+        return [line.strip() for line in f if line.strip()]

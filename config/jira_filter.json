@@ -1,0 +1,22 @@
+{
+    "url": [],
+    "project": {
+        "key": [],
+        "name": [],
+        "id": []
+    },
+    "issuetype": {
+        "name": [
+            "Epic",
+            "Story"
+        ],
+        "id": []
+    },
+    "description": [],
+    "summary": [],
+    "labels": [],
+    "resolution": {
+        "name": [],
+        "id": []
+    }
+}

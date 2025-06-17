@@ -1,0 +1,5 @@
+Prompt:
+<clients.llm_client.LLMClient object at 0x10574a900>
+
+Result:
+LLM request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x109470d70>: Failed to establish a new connection: [Errno 61] Connection refused'))
