@@ -74,5 +74,6 @@ def get_env(env_name):
 
 
 def get_urls(src):
-    with open(f"data/{src}_urls.txt", "r") as f:
+    data_dir = get_env("DATA_DIR")
+    with open(f"{data_dir}/{src}_urls.txt", "r") as f:
         return [line.strip() for line in f if line.strip()]
