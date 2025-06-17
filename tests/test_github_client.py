@@ -5,6 +5,11 @@ from clients.github_client import GithubGraphQLClient
 class TestGithubGraphQLClientIntegration(unittest.TestCase):
     def setUp(self):
         self.client = GithubGraphQLClient()
+    
+    def test_params(self):
+        self.assertIsNotNone(self.client.api_url)
+        self.assertIsNotNone(self.client.token)
+
 
     def test_build_graphql_query_pr_and_commit(self):
         parsed_items = [
