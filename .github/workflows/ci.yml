@@ -47,7 +47,6 @@ jobs:
           echo "CONFIG_FILE_PATH=${{ env.CONFIG_FILE_PATH }}" >> .env
           echo 'SOURCES="[\"JIRA\", \"GITHUB\"]"' >> .env
           echo "GH_API_TOKEN=${{ secrets.GH_API_TOKEN }}" >> .env
-          mkdir -p ${{ env.DATA_DIR }}
 
 
       - name: Run tests
