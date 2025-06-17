@@ -45,6 +45,7 @@ class TestGithubGraphQLClientIntegration(unittest.TestCase):
         ]
         query = self.client.build_graphql_query(parsed_items)
         response = self.client.post_query(query)
+        self.assertIsNotNone(response, "response should not be None")
         commit = response.get("data", {}).get("item0", {}).get("object")
         self.assertIsNotNone(commit, "Commit data should not be None")
         self.assertIn("oid", commit)
