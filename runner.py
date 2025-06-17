@@ -13,7 +13,6 @@ load_dotenv(override=True)
 
 setup_logging()
 logger = logging.getLogger(__name__)
-os.makedirs(get_env("DATA_DIR"), exist_ok=True)
 
 
 def run(source):
@@ -24,6 +23,7 @@ def run(source):
     - Scrapes structured data from sources
     - Correlates and summarizes the results
     """
+    os.makedirs(get_env("DATA_DIR"), exist_ok=True)
     scrape_html(source)
     filter_urls()
     scrape_all()
