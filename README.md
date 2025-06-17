@@ -23,3 +23,10 @@ A robust Python-based web scraper designed to extract, analyze, and summarize da
 - `pip` package manager
 
 ### Installation
+
+chmod +x run_scraper_tests.sh
+
+# Needs a GITHUB API token to run github client
+export GH_API_TOKEN=your_github_api_token_here
+
+./run_scraper_tests.sh
