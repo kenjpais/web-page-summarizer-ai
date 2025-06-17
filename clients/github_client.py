@@ -1,14 +1,11 @@
 import requests
 from utils.utils import get_env
 
-GITHUB_API_URL = get_env("GITHUB_API_URL")
-GITHUB_API_TOKEN = get_env("GITHUB_API_TOKEN")
-
 
 class GithubGraphQLClient:
     def __init__(self):
         self.api_url = get_env("GITHUB_API_URL")
-        self.token = get_env("GITHUB_API_TOKEN")
+        self.token = get_env("GH_API_TOKEN")
 
     def build_graphql_query(self, parsed_items):
         """Constructs a single GraphQL query with aliases for PRs and commits."""
