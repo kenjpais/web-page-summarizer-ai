@@ -1,3 +1,4 @@
+import os
 import sys
 import logging
 import time
@@ -26,6 +27,7 @@ def setup_logging(level="INFO"):
     ch.setFormatter(ch_formatter)
 
     # File handler
+    os.makedirs("logs", exist_ok=True)
     fh = logging.FileHandler(log_file)
     fh.setLevel(logging.DEBUG)
     fh.setFormatter(ch_formatter)
