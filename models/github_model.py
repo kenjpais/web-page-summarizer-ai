@@ -1,6 +1,7 @@
 class GithubModel:
-    def __init__(self, id, url="", title="", body="", message=""):
-        self.id = id
+    def __init__(self, id, type, url="", title="", body="", message=""):
+        self.id = str(id)
+        self.type = type
         self.url = url
         self.title = title
         self.body = body

@@ -49,13 +49,18 @@ class GithubScraper:
             if pr := item_data.get("pullRequest"):
                 results.append(
                     GithubModel(
-                        id=pr.get("number"), title=pr.get("title"), body=pr.get("body")
+                        id=pr.get("number"),
+                        type="pullRequest",
+                        title=pr.get("title"),
+                        body=pr.get("body"),
                     ).to_dict()
                 )
 
             elif obj := item_data.get("object"):
                 results.append(
-                    GithubModel(id=obj.get("oid"), message=obj.get("message")).to_dict()
+                    GithubModel(
+                        id=obj.get("oid"), type="commit", message=obj.get("message")
+                    ).to_dict()
                 )
 
         return results
