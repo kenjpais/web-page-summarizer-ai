@@ -8,6 +8,7 @@ from controllers.summarize_url_controller import summarize_release_page_from_url
 class TestSummarizeUrlController(unittest.TestCase):
     def setUp(self):
         self.data_dir = get_env("DATA_DIR")
+        os.makedirs(self.data_dir, exist_ok=True)
         self.url = "https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3"
         self.release_name = self.url.strip().split("/release/")[1]
         self.summary_dir = os.path.join(self.data_dir, "summaries", self.release_name)
