@@ -2,7 +2,7 @@ import json
 from utils.utils import get_env
 
 
-def remove_irrelavant_fields_from_correlated():
+def remove_irrelevant_fields_from_correlated():
     sources = json.loads(get_env("SOURCES"))
     data_dir = get_env("DATA_DIR")
     config_dir = get_env("CONFIG_DIR")
@@ -28,15 +28,24 @@ def remove_irrelavant_fields_from_correlated():
             if isinstance(src_data, list):
                 new_list = []
                 for item in src_data:
-                    if all(field in item for field in req_fields):
-                        new_list.append({field: item[field] for field in req_fields})
+                    if any(field in item for field in req_fields):
+                        new_list.append(
+                            {
+                                field: item[field]
+                                for field in req_fields
+                                if field in item
+                            }
+                        )
                 entry[src] = new_list
             elif isinstance(src_data, dict):
-                if all(field in src_data for field in req_fields):
-                    entry[src] = {field: src_data[field] for field in req_fields}
+                if any(field in src_data for field in req_fields):
+                    entry[src] = {
+                        field: src_data[field]
+                        for field in req_fields
+                        if field in src_data
+                    }
                 else:
                     entry[src] = {}
 
-    # Write back as list (new contract)
     with open(correlated_file, "w") as f:
         json.dump(correlated_data, f, indent=4)

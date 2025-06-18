@@ -1,8 +1,8 @@
 import json
-import asyncio
 import aiofiles
 from utils.utils import get_env
 from utils.file_utils import read_jsonl_async
+from filters.filter_required_fields import remove_irrelevant_fields_from_correlated
 
 
 async def correlate_by_jira_issue_id():
@@ -83,3 +83,4 @@ def correlate_with_jira_issue_id():
 
 def correlate_all():
     correlate_with_jira_issue_id()
+    remove_irrelevant_fields_from_correlated()
