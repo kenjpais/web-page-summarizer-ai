@@ -64,7 +64,7 @@ class TestGithubFilter(unittest.TestCase):
             "https://github.com/openshift/cloud-provider-kubevirt/commit/3f4542ecd17fb0e47da4c6d9bceb076b98fb314b",
         ]
         result = self.gf.extract(urls)
-
+        print(f"KDEBUG: {result}")
         self.assertEqual(len(result), 2)
         for item in result:
             self.assertIn("id", item)

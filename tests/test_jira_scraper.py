@@ -20,6 +20,7 @@ class TestJiraScraper(unittest.TestCase):
     def test_extract_urls_valid(self):
         urls = [
             "https://issues.redhat.com/browse/ODC-7710",
+            "https://issues.redhat.com/browse/ART-13079",
             "https://issues.redhat.com/browse/CONSOLE-3905",
             "https://issues.redhat.com/browse/NETOBSERV-2023",
             "https://issues.redhat.com/browse/STOR-2251",
@@ -27,13 +28,19 @@ class TestJiraScraper(unittest.TestCase):
             "https://issues.redhat.com/browse/IR-522",
             "https://issues.redhat.com/browse/ETCD-726",
         ]
+        allowed_issuetypes = {"Epic", "Story"}
+        disallowed_ids = {"ART"}
+
         result = self.jf.extract(urls)
+
         self.assertIsInstance(result, list)
         self.assertGreater(len(result), 0)
-        for val in result:
-            self.assertIn("id", val)
-            self.assertIn("description", val)
-            self.assertIn("summary", val)
+        for item in result:
+            self.assertIn("id", item)
+            self.assertIn("description", item)
+            self.assertIn("summary", item)
+            self.assertIn(item["issuetype"], allowed_issuetypes)
+            self.assertNotIn(item["id"], disallowed_ids)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ class JiraModel:
         self.id = getattr(fields, "id", "")
         self.url = getattr(fields, "url", "")
         self.project = fields.project
-        self.issuetype = fields.issuetype
+        self.issuetype = fields.issuetype.name
         self.description = fields.description
         self.summary = fields.summary
         self.labels = fields.labels
@@ -12,8 +12,12 @@ class JiraModel:
     def to_dict(self):
         return {
             "id": self.id,
+            "issuetype": self.issuetype,
+            "project": self.project,
             "description": self.description,
             "summary": self.summary,
+            "labels": self.labels,
+            "resolution": self.resolution,
         }
         """
         return {

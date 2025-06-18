@@ -15,62 +15,47 @@ class GithubScraper:
 
     def parse_github_url(self, url):
         """Parses a single GitHub PR or commit URL into a structured dict."""
-        pr_match = self.PR_REGEX.match(url)
-        if pr_match:
-            owner, repo, pr_id = pr_match.groups()
+        if match := self.PR_REGEX.match(url):
+            owner, repo, pr_id = match.groups()
             return {"type": "pr", "owner": owner, "repo": repo, "id": pr_id}
-
-        commit_match = self.COMMIT_REGEX.match(url)
-        if commit_match:
-            owner, repo, sha = commit_match.groups()
+        if match := self.COMMIT_REGEX.match(url):
+            owner, repo, sha = match.groups()
             return {"type": "commit", "owner": owner, "repo": repo, "id": sha}
-
         return None
 
     def extract(self, urls):
         """Parses multiple GitHub URLs and fetches their details using GraphQL."""
-        parsed_items = []
-        for url in urls:
-            parsed = self.parse_github_url(url)
-            if parsed:
-                parsed_items.append(parsed)
-
+        parsed_items = [
+            parsed for url in urls if (parsed := self.parse_github_url(url))
+        ]
         if not parsed_items:
             raise_scraper_exception("[!] No valid GitHub items to process.")
 
         try:
             gql_query = self.client.build_graphql_query(parsed_items)
-            result = self.client.post_query(gql_query)
+            response = self.client.post_query(gql_query)
         except Exception as e:
             raise_scraper_exception(f"[!] Error fetching GitHub data: {e}")
 
-        data = result.get("data", {})
+        data = response.get("data", {})
         results = []
 
-        for i in range(len(parsed_items)):
-            item = data.get(f"item{i}")
-            if not item:
+        for i, parsed in enumerate(parsed_items):
+            item_data = data.get(f"item{i}")
+            if not item_data:
                 print(f"[!] Missing item{i} in GraphQL response.")
                 continue
 
-            if "pullRequest" in item:
-                pr = item["pullRequest"]
+            if pr := item_data.get("pullRequest"):
                 results.append(
                     GithubModel(
-                        id=pr.get("number"),
-                        title=pr.get("title"),
-                        body=pr.get("body"),
+                        id=pr.get("number"), title=pr.get("title"), body=pr.get("body")
                     ).to_dict()
                 )
-            elif "object" in item:
-                obj = item["object"]
-                if not obj:
-                    continue
+
+            elif obj := item_data.get("object"):
                 results.append(
-                    GithubModel(
-                        id=obj.get("oid"),
-                        message=obj.get("message"),
-                    ).to_dict()
+                    GithubModel(id=obj.get("oid"), message=obj.get("message")).to_dict()
                 )
 
         return results

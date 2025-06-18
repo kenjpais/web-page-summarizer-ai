@@ -27,8 +27,11 @@ class JiraScraper:
 
         with open("config/jira_filter.json", "r") as f:
             self.filter = json.load(f)
+        with open("config/jira_filter_out.json", "r") as f:
+            self.filter_out = json.load(f)
 
     def extract(self, urls):
+        """Extracts JIRA information relevant for summarization."""
         issue_ids = [
             url.strip().split("browse/")[1] for url in urls if "browse/" in url
         ]
@@ -54,4 +57,8 @@ class JiraScraper:
             raise_scraper_exception(f"[ERROR] Failed bulk fetch: {e}")
 
     def is_model_valid(self, model):
-        return model.issuetype.name in self.filter["issuetype"]["name"]
+        """Validates if model fits relevant filter criteria."""
+        return (
+            model.issuetype in self.filter["issuetype"]["name"]
+            and model.id not in self.filter_out["issuetype"]["id"]
+        )

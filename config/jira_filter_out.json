@@ -1,0 +1,21 @@
+{
+    "url": [],
+    "project": {
+        "key": [],
+        "name": [],
+        "id": []
+    },
+    "issuetype": {
+        "name": [],
+        "id": [
+            "ART"
+        ]
+    },
+    "description": [],
+    "summary": [],
+    "labels": [],
+    "resolution": {
+        "name": [],
+        "id": []
+    }
+}

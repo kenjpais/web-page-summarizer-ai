@@ -1,7 +1,7 @@
 .env
 __pycache__/
-__pycache__/\n.env\n*.log
+*.log
 *.py[cod]
 *.egg-info/
-*.log
 .DS_Store
+data/
