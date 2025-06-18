@@ -1,15 +1,14 @@
+from dataclasses import dataclass, asdict
+
+
+@dataclass
 class GithubModel:
-    def __init__(self, id, url="", title="", body="", message=""):
-        self.id = id
-        self.url = url
-        self.title = title
-        self.body = body
-        self.message = message
+    id: str
+    type: str
+    url: str = ""
+    title: str = ""
+    body: str = ""
+    message: str = ""
 
     def to_dict(self):
-        return {
-            "id": self.id,
-            "title": self.title,
-            "body": self.body,
-            "message": self.message,
-        }
+        return {k: v for k, v in asdict(self).items() if v}
