@@ -4,7 +4,6 @@ from filters.filter_required_fields import remove_irrelevant_fields_from_correla
 
 
 def correlate_with_jira_issue_id():
-    """Use JIRA id as matching criteria to correlate different source information together."""
     print("\n[*] Correlating feature-related items by JIRA 'id' ...")
     data_dir = get_env("DATA_DIR")
     sources = json.loads(get_env("SOURCES"))
@@ -19,34 +18,42 @@ def correlate_with_jira_issue_id():
     non_correlated_file = f"{data_dir}/non_correlated.json"
 
     with open(jira_file_path, "r") as jira_file:
-        for line in jira_file:
-            jira_dict = json.loads(line)
-            issue_id = jira_dict.get("id")
+        jira_data = json.load(jira_file)
+
+    for category, issues in jira_data.items():
+        if category not in correlated_data:
+            correlated_data[category] = {}
+
+        for issue in issues:
+            issue_id = issue.get("id")
             if not issue_id:
                 continue
 
-            if issue_id not in correlated_data:
-                correlated_data[issue_id] = {}
-            correlated_data[issue_id]["JIRA"] = jira_dict
+            if issue_id not in correlated_data[category]:
+                correlated_data[category][issue_id] = {}
+
+            correlated_data[category][issue_id]["JIRA"] = issue
 
             for src in sources:
                 src_path = f"{data_dir}/{src}.json"
-                with open(src_path, "r") as srcfile:
-                    for srcline in srcfile:
-                        try:
-                            obj = json.loads(srcline)
-                        except json.JSONDecodeError:
-                            continue
-                        if issue_id in obj.get("title", ""):
-                            if src not in correlated_data[issue_id]:
-                                correlated_data[issue_id][src] = []
-                            correlated_data[issue_id][src].append(obj)
-                        else:
-                            non_correlated_data.append(srcline)
+                try:
+                    with open(src_path, "r") as srcfile:
+                            try:
+                                obj_list = json.load(srcfile)
+                            except json.JSONDecodeError:
+                                continue
+                            for obj in obj_list:
+                                if issue_id in obj.get("title", ""):
+                                    if src not in correlated_data[category][issue_id]:
+                                        correlated_data[category][issue_id][src] = []
+                                    correlated_data[category][issue_id][src].append(obj)
+                                else:
+                                    non_correlated_data.append(obj)
+                except FileNotFoundError:
+                    continue
 
     with open(non_correlated_file, "w") as file:
-        for line in non_correlated_data:
-            file.write(line)
+        json.dump(non_correlated_data, file, indent=4)
 
     with open(correlated_file, "w") as file:
         json.dump(correlated_data, file, indent=4)

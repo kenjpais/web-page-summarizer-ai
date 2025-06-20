@@ -41,15 +41,16 @@ async def scrape_sources():
                 )
             except ScraperException as e:
                 print(f"[!] Error scraping {src}: {e}")
-                result = []
+                result = {}
             except Exception as e:
                 print(f"[!] Unexpected error scraping {src}: {e}")
-                result = []
+                result = {}
 
             output_path = os.path.join(data_dir, f"{src}.json")
             async with aiofiles.open(output_path, "w") as out:
-                for item in result:
-                    await out.write(json.dumps(item) + "\n")
+                await out.write(json.dumps(result, indent=4))
+
+            
 
 
 def scrape_all():

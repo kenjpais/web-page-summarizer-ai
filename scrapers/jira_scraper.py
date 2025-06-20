@@ -1,25 +1,21 @@
-import os
 import json
-from jira import JIRA, JIRAError
+from jira import JIRAError
+from clients.jira_client import JiraClient
 from models.jira_model import JiraModel
 from utils.utils import contains_valid_keywords, get_env
 from scrapers.exceptions import raise_scraper_exception
 
 
 class JiraScraper:
-    def __init__(self):
+    def __init__(self, max_results=200):
         try:
-            server = os.getenv("JIRA_SERVER")
-            self.jira = JIRA(options={"server": server})
-            debug_enabled = get_env("DEBUG")
-            if debug_enabled:
-                print(
-                    f"Connected to JIRA Server: {self.jira.server_info()['serverTitle']}"
-                )
+            self.jira_client = JiraClient()
+            self.jira = self.jira_client.jira
+            self.max_results = max_results
         except JIRAError as e:
             self.jira = None
             raise_scraper_exception(
-                f'Failed to connect to JIRA Server "{server}": {e.status_code} - {e.text}'
+                f'Failed to connect to JIRA Server: {getattr(e, "status_code", "N/A")} - {getattr(e, "text", str(e))}'
             )
         except Exception as e:
             self.jira = None
@@ -30,26 +26,42 @@ class JiraScraper:
         with open("config/jira_filter_out.json", "r") as f:
             self.filter_out = json.load(f)
 
+    def validate_jira_url(self, url):
+        return "browse/" in url
+
     def extract(self, urls):
         """Extracts JIRA information relevant for summarization."""
-        issue_ids = [
-            url.strip().split("browse/")[1] for url in urls if "browse/" in url
-        ]
+        issue_ids = set()
+        for url in urls:
+            if not self.validate_jira_url(url):
+                continue
+            issue_id = url.strip().split("browse/")[1]
+            if not issue_id.split("-")[0]:
+                continue
+            issue_ids.add(issue_id)
+
         if not issue_ids:
             raise_scraper_exception("[!] Invalid JIRA URLs")
-
         try:
             jql = f"issuekey in ({','.join(issue_ids)})"
-            issues = self.jira.search_issues(jql, maxResults=len(issue_ids))
-            results = []
+            issues = self.jira.search_issues(
+                jql,
+                maxResults=len(issue_ids),
+                fields=f"summary,description,issuetype,parent,project,issuelinks,{self.jira_client.epic_link_field_id}",
+            )
+            results = {}
             for issue in issues:
                 issue.fields.id = issue.key
                 issue.fields.url = f"{self.jira._options['server']}/browse/{issue.key}"
                 model = JiraModel(issue.fields)
-                if self.is_model_valid(model) and contains_valid_keywords(
+                if not self.is_model_valid(model) or not contains_valid_keywords(
                     vars(model).values()
                 ):
-                    results.append(model.to_dict())
+                    continue
+                category = model.id.split("-")[0]
+                if category not in results:
+                    results[category] = []
+                results[category].append(model.to_dict())
             return results
         except JIRAError as je:
             raise_scraper_exception(f"[JIRAError] Failed bulk fetch: {je}")
