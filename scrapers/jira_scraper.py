@@ -1,9 +1,10 @@
 import json
 from jira import JIRAError
+from collections import defaultdict
 from clients.jira_client import JiraClient
-from models.jira_model import JiraModel
-from utils.utils import contains_valid_keywords, get_env
+from clients.llm_client import LLMClient
 from scrapers.exceptions import raise_scraper_exception
+from utils.utils import get_env, contains_valid_keywords
 
 
 class JiraScraper:
@@ -30,7 +31,95 @@ class JiraScraper:
         return "browse/" in url
 
     def extract(self, urls):
-        """Extracts JIRA information relevant for summarization."""
+        print(f"KDEBUG: {urls}")
+        def organize_issues(issues, epic_link_field_id):
+            hierarchy = defaultdict(
+                lambda: defaultdict(
+                    lambda: {"summary": "", "description": "", "stories": {}}
+                )
+            )
+
+            for issue in issues:
+                fields = issue.fields
+                if not self.is_jira_issue_valid(fields):
+                    continue
+                issue_type = fields.issuetype.name
+                project_name = fields.project.name
+                issue_key = issue.key
+                summary = getattr(fields, "summary", "")
+                description = getattr(fields, "description", "") or ""
+
+                if issue_type.lower() == "epic":
+                    hierarchy[project_name][issue_key]["summary"] = summary
+                    hierarchy[project_name][issue_key]["description"] = description
+
+            # populate linked issues
+            for issue in issues:
+                fields = issue.fields
+                issue_type = fields.issuetype.name
+                epic_key = getattr(fields, epic_link_field_id, None)
+                issue_key = issue.key
+                summary = getattr(fields, "summary", "")
+                description = getattr(fields, "description", "") or ""
+
+                if issue_type.lower() in ["story", "task"] and epic_key:
+                    project_name = fields.project.name
+                    story_data = {
+                        "summary": summary,
+                        "description": description,
+                        "related": [],
+                    }
+
+                    for link in getattr(fields, "issuelinks", []):
+                        linked = (
+                            link.outwardIssue
+                            if hasattr(link, "outwardIssue")
+                            else getattr(link, "inwardIssue", None)
+                        )
+                        if linked and hasattr(linked, "fields"):
+                            if not self.is_jira_issue_valid(linked.fields):
+                                continue
+                            linked_type = linked.fields.issuetype.name
+                            linked_summary = getattr(linked.fields, "summary", "")
+                            linked_description = getattr(
+                                linked.fields, "description", ""
+                            )
+                            story_data["related"].append(
+                                {
+                                    "key": linked.key,
+                                    "type": linked_type,
+                                    "summary": linked_summary,
+                                    "description": linked_description,
+                                }
+                            )
+
+                    hierarchy[project_name][epic_key]["stories"][issue_key] = story_data
+
+            return hierarchy
+
+        def filter_hierarchy_by_jira_id(jira_ids):
+            filtered_hierarchy = defaultdict(dict)
+            for project, epics in hierarchy.items():
+                for epic_key, epic_data in epics.items():
+                    if epic_key in jira_ids:
+                        # Include the full epic and its stories
+                        filtered_hierarchy[project][epic_key] = epic_data
+                    else:
+                        # Check if any of the stories are in the JIRA ID list
+                        filtered_stories = {
+                            k: v
+                            for k, v in epic_data["stories"].items()
+                            if k in jira_ids
+                        }
+                        if filtered_stories:
+                            filtered_hierarchy[project][epic_key] = {
+                                "summary": epic_data["summary"],
+                                "description": epic_data["description"],
+                                "stories": filtered_stories,
+                            }
+
+            return filtered_hierarchy
+
         issue_ids = set()
         for url in urls:
             if not self.validate_jira_url(url):
@@ -42,6 +131,7 @@ class JiraScraper:
 
         if not issue_ids:
             raise_scraper_exception("[!] Invalid JIRA URLs")
+
         try:
             jql = f"issuekey in ({','.join(issue_ids)})"
             issues = self.jira.search_issues(
@@ -49,28 +139,64 @@ class JiraScraper:
                 maxResults=len(issue_ids),
                 fields=f"summary,description,issuetype,parent,project,issuelinks,{self.jira_client.epic_link_field_id}",
             )
-            results = {}
-            for issue in issues:
-                issue.fields.id = issue.key
-                issue.fields.url = f"{self.jira._options['server']}/browse/{issue.key}"
-                model = JiraModel(issue.fields)
-                if not self.is_model_valid(model) or not contains_valid_keywords(
-                    vars(model).values()
-                ):
-                    continue
-                category = model.id.split("-")[0]
-                if category not in results:
-                    results[category] = []
-                results[category].append(model.to_dict())
-            return results
+            hierarchy = organize_issues(issues, self.jira_client.epic_link_field_id)
+            md = render_to_markdown(hierarchy)
+            jira_feature_ids = ask_llm_to_filter_features(md)
+            hierarchy = filter_hierarchy_by_jira_id(jira_feature_ids)
+            write_json_file(hierarchy)
+            md = render_to_markdown(hierarchy)
+            return md
         except JIRAError as je:
             raise_scraper_exception(f"[JIRAError] Failed bulk fetch: {je}")
         except Exception as e:
             raise_scraper_exception(f"[ERROR] Failed bulk fetch: {e}")
 
-    def is_model_valid(self, model):
-        """Validates if model fits relevant filter criteria."""
+    def is_jira_issue_valid(self, jira_issue):
         return (
-            model.issuetype in self.filter["issuetype"]["name"]
-            and model.id not in self.filter_out["issuetype"]["id"]
+            jira_issue.issuetype.name in self.filter["issuetype"]["name"]
+            and jira_issue.issuetype.id not in self.filter_out["issuetype"]["id"]
+            and contains_valid_keywords(vars(jira_issue).values())
         )
+
+
+def ask_llm_to_filter_features(md):
+    llm = LLMClient()
+    q = ""
+    with open(f"config/is_feature_prompt_template.txt") as f:
+        q = f.read()
+    prompt = f"{q}\n{md}"
+    resp = llm.prompt_llm(prompt)
+    feature_jira_ids = extract_jira_ids(resp)
+    return feature_jira_ids
+
+
+def write_json_file(hierarchy):
+    data_dir = get_env(f"DATA_DIR")
+    test_file = f"{data_dir}/jira.json"
+    with open(test_file, "w") as f:
+        json.dump(hierarchy, f)
+
+
+def extract_jira_ids(md):
+    import re
+
+    return re.findall(r"\b[A-Z][A-Z0-9]+-\d+\b", md)
+
+
+def render_to_markdown(hierarchy):
+    md = ""
+    for project, epics in hierarchy.items():
+        md += f"# Project: {project}\n\n"
+        for epic_key, epic in epics.items():
+            md += f"## Epic: {epic_key} — {epic['summary']}\n"
+            md += f"**Description:**\n{epic['description']}\n\n"
+            for story_key, story in epic["stories"].items():
+                md += f"### Story: {story_key} — {story['summary']}\n"
+                md += f"**Description:**\n{story['description']}\n\n"
+                if story["related"]:
+                    md += f"#### Related Issues:\n"
+                    for rel in story["related"]:
+                        md += f"- **{rel['key']}** ({rel['type']}): {rel['summary']}\n"
+                    md += "\n"
+            md += "---\n\n"
+    return md

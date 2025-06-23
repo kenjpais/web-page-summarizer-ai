@@ -98,15 +98,15 @@ def organize_issues(issues, epic_link_field_id):
 def render_to_markdown(hierarchy):
     md = ""
     for project, epics in hierarchy.items():
-        md += f"# 🧩 Project: {project}\n\n"
+        md += f"# Project: {project}\n\n"
         for epic_key, epic in epics.items():
-            md += f"## ✨ Epic: {epic_key} — {epic['summary']}\n"
+            md += f"## Epic: {epic_key} — {epic['summary']}\n"
             md += f"**Description:**\n{epic['description']}\n\n"
             for story_key, story in epic["stories"].items():
-                md += f"### 📝 Story: {story_key} — {story['summary']}\n"
+                md += f"### Story: {story_key} — {story['summary']}\n"
                 md += f"**Description:**\n{story['description']}\n\n"
                 if story["related"]:
-                    md += f"#### 🔗 Related Issues:\n"
+                    md += f"#### Related Issues:\n"
                     for rel in story["related"]:
                         md += f"- **{rel['key']}** ({rel['type']}): {rel['summary']}\n"
                     md += "\n"

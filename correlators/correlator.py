@@ -13,7 +13,7 @@ def correlate_with_jira_issue_id():
     correlated_data = {}
     non_correlated_data = []
 
-    jira_file_path = f"{data_dir}/JIRA.json"
+    jira_file_path = f"{data_dir}/jira.json"
     correlated_file = f"{data_dir}/correlated.json"
     non_correlated_file = f"{data_dir}/non_correlated.json"
 

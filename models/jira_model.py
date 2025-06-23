@@ -4,7 +4,7 @@ class JiraModel:
         self.url = getattr(fields, "url", "")
         self.project = getattr(fields, "project", "")
         self.parent = getattr(fields, "parent", "")
-        self.issuelinks = getattr(fields, "issuelinks", "")
+        self.issuelinks = [issuelink.id for issuelink in getattr(fields, "issuelinks", "")]
         self.issuetype = fields.issuetype.name
         self.description = fields.description
         self.summary = fields.summary
