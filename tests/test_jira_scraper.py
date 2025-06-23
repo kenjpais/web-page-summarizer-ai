@@ -31,7 +31,14 @@ class TestJiraScraper(unittest.TestCase):
             "https://issues.redhat.com/browse/IR-522",
             "https://issues.redhat.com/browse/ETCD-726",
         ]
-
+        issue_ids = [
+            "STOR-2251",
+            "ODC-7710",
+            "NETOBSERV-2023",
+            "IR-522",
+            "ETCD-726",
+            "CONSOLE-3905",
+        ]
         test_result = {
             "OpenShift Storage": {
                 "STOR-2241": {
@@ -169,8 +176,12 @@ class TestJiraScraper(unittest.TestCase):
         result = self.jf.extract(urls)
         with open(f"{data_dir}/jira.json") as f:
             result = json.load(f)
-
+        with open(f"{data_dir}/jira.md") as f:
+            result_md = f.read()
+        
         self.assertGreater(len(result), 0)
+        for issue_id in issue_ids:
+            self.assertIn(issue_id, result_md)
         self.assertDictEqual(test_result, result)
 
 

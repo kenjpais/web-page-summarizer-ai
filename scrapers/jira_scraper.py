@@ -1,3 +1,4 @@
+import re
 import json
 from jira import JIRAError
 from collections import defaultdict
@@ -31,7 +32,6 @@ class JiraScraper:
         return "browse/" in url
 
     def extract(self, urls):
-        print(f"KDEBUG: {urls}")
         def organize_issues(issues, epic_link_field_id):
             hierarchy = defaultdict(
                 lambda: defaultdict(
@@ -102,10 +102,8 @@ class JiraScraper:
             for project, epics in hierarchy.items():
                 for epic_key, epic_data in epics.items():
                     if epic_key in jira_ids:
-                        # Include the full epic and its stories
                         filtered_hierarchy[project][epic_key] = epic_data
                     else:
-                        # Check if any of the stories are in the JIRA ID list
                         filtered_stories = {
                             k: v
                             for k, v in epic_data["stories"].items()
@@ -145,6 +143,7 @@ class JiraScraper:
             hierarchy = filter_hierarchy_by_jira_id(jira_feature_ids)
             write_json_file(hierarchy)
             md = render_to_markdown(hierarchy)
+            write_md_file(md)
             return md
         except JIRAError as je:
             raise_scraper_exception(f"[JIRAError] Failed bulk fetch: {je}")
@@ -172,14 +171,19 @@ def ask_llm_to_filter_features(md):
 
 def write_json_file(hierarchy):
     data_dir = get_env(f"DATA_DIR")
-    test_file = f"{data_dir}/jira.json"
-    with open(test_file, "w") as f:
+    json_file = f"{data_dir}/jira.json"
+    with open(json_file, "w") as f:
         json.dump(hierarchy, f)
 
 
-def extract_jira_ids(md):
-    import re
+def write_md_file(md):
+    data_dir = get_env(f"DATA_DIR")
+    md_file = f"{data_dir}/jira.md"
+    with open(md_file, "w") as f:
+        f.write(md)
 
+
+def extract_jira_ids(md):
     return re.findall(r"\b[A-Z][A-Z0-9]+-\d+\b", md)
 
 
