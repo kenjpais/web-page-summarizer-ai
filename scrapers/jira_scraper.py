@@ -1,4 +1,5 @@
 import re
+import os
 import json
 from jira import JIRAError
 from collections import defaultdict
@@ -10,6 +11,8 @@ from utils.utils import get_env, contains_valid_keywords
 
 class JiraScraper:
     def __init__(self, max_results=200):
+        data_dir = get_env(f"DATA_DIR")
+        os.makedirs(data_dir, exist_ok=True)
         try:
             self.jira_client = JiraClient()
             self.jira = self.jira_client.jira
