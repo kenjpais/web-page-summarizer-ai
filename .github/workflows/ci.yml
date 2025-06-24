@@ -40,40 +40,34 @@ jobs:
       - name: Install and start Ollama
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
-          
-          # Add Ollama to PATH (required if install.sh modifies ~/.bashrc or ~/.profile)
-          export PATH="$HOME/.ollama/bin:$PATH"
-
           if [ "$(ollama list | wc -l)" -gt 1 ]; then
               echo "Models are available."
           else
-              ollama pull "${LLM_MODEL}"
+              ollama pull ${{ env.LLM_MODEL }}
           fi
-
+          fuser -k 11434/tcp || true
           nohup ollama serve &
 
           # Wait for Ollama to be ready
           for i in {1..10}; do
-            if curl -s http://localhost:11434/api/tags > /dev/null; then
-              echo "Ollama is ready."
-              break
-            fi
+            curl -s http://localhost:11434/api/tags && break
             echo "Waiting for Ollama to start..."
             sleep 3
           done
 
       - name: Create .env file
         run: |
-          echo "DATA_DIR=${DATA_DIR}" >> .env
-          echo "DEBUG=${DEBUG}" >> .env
-          echo "SOURCE_PAGE=${SOURCE_PAGE}" >> .env
-          echo "GITHUB_API_URL=${GITHUB_API_URL}" >> .env
-          echo "GITHUB_SERVER=${GITHUB_SERVER}" >> .env
-          echo "JIRA_SERVER=${JIRA_SERVER}" >> .env
-          echo "LLM_API_URL=${LLM_API_URL}" >> .env
-          echo "CONFIG_FILE_PATH=${CONFIG_FILE_PATH}" >> .env
-          echo 'SOURCES=["JIRA", "GITHUB"]' >> .env
+          echo "DATA_DIR=${{ env.DATA_DIR }}" >> .env
+          echo "DEBUG=${{ env.DEBUG }}" >> .env
+          echo "SOURCE_PAGE=${{ env.SOURCE_PAGE }}" >> .env
+          echo "GITHUB_API_URL=${{ env.GITHUB_API_URL }}" >> .env
+          echo "GITHUB_SERVER=${{ env.GITHUB_SERVER }}" >> .env
+          echo "JIRA_SERVER=${{ env.JIRA_SERVER }}" >> .env
+          echo "LLM_API_URL=${{ env.LLM_API_URL }}" >> .env
+          echo "CONFIG_FILE_PATH=${{ env.CONFIG_FILE_PATH }}" >> .env
+          echo 'SOURCES="[\"JIRA\", \"GITHUB\"]"' >> .env
           echo "GH_API_TOKEN=${{ secrets.GH_API_TOKEN }}" >> .env
+
 
       - name: Run tests
         run: |
