@@ -39,7 +39,7 @@ jobs:
       - name: Install and start Ollama
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
-          sudo systemctl start ollama || nohup ollama serve &
+          nohup ollama serve
 
           # Wait for Ollama to be ready
           for i in {1..10}; do
