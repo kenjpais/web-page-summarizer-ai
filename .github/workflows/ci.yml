@@ -39,6 +39,7 @@ jobs:
       - name: Install and start Ollama
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
+          ollama pull mistral
           nohup ollama serve
 
           # Wait for Ollama to be ready
