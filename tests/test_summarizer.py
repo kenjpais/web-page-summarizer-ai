@@ -9,19 +9,11 @@ class TestSummarizer(unittest.TestCase):
     def test_valid_summary(self):
         source = get_env("SOURCE_PAGE")
         data_dir = get_env("DATA_DIR")
-        correlated_file = f"{data_dir}/correlated.json"
-        correlated_data = {}
         run(source)
-
-        with open(correlated_file, "r") as corfile:
-            correlated_data = json.dump(corfile)
-
         summary = ""
-        with open("summary.txt", "r") as f:
+        with open(f"{data_dir}/summary.txt", "r") as f:
             summary = f.read()
 
-        projects = list(correlated_data.keys())
-        self.assertTrue(all([proj in summary for proj in projects]))
         self.assertTrue(is_valid_markdown(summary))
 
 

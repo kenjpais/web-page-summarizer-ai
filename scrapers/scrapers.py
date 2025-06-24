@@ -1,8 +1,4 @@
 import json
-import os
-import asyncio
-import aiofiles
-from concurrent.futures import ThreadPoolExecutor
 from utils.utils import get_env, get_urls
 from scrapers.exceptions import ScraperException
 from scrapers.jira_scraper import JiraScraper
@@ -31,16 +27,11 @@ def scrape_sources():
             print(f"[!] No scraper defined for source: {src}")
             continue
         try:
-            result = filter_instance().extract(urls)
+            filter_instance().extract(urls)
         except ScraperException as e:
             print(f"[!] Error scraping {src}: {e}")
-            result = {}
         except Exception as e:
             print(f"[!] Unexpected error scraping {src}: {e}")
-            result = {}
-        output_path = os.path.join(data_dir, f"{src.lower()}.json")
-        with open(output_path, "w") as out:
-            out.write(result)
 
 
 def scrape_all():

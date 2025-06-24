@@ -12,6 +12,9 @@ from utils.utils import get_env, contains_valid_keywords
 class JiraScraper:
     def __init__(self, max_results=200):
         data_dir = get_env(f"DATA_DIR")
+        if get_env(f"LLM_API_URL") and not LLMClient().test_llm_connection():
+            raise_scraper_exception(f"Unable to connect to LLM API")
+
         os.makedirs(data_dir, exist_ok=True)
         try:
             self.jira_client = JiraClient()
@@ -100,7 +103,7 @@ class JiraScraper:
 
             return hierarchy
 
-        def filter_hierarchy_by_jira_id(jira_ids):
+        def filter_hierarchy_by_jira_id(jira_ids) -> defaultdict:
             filtered_hierarchy = defaultdict(dict)
             for project, epics in hierarchy.items():
                 for epic_key, epic_data in epics.items():
@@ -147,7 +150,6 @@ class JiraScraper:
             write_json_file(hierarchy)
             md = render_to_markdown(hierarchy)
             write_md_file(md)
-            return md
         except JIRAError as je:
             raise_scraper_exception(f"[JIRAError] Failed bulk fetch: {je}")
         except Exception as e:

@@ -26,12 +26,20 @@ def remove_irrelevant_fields_from_correlated():
                     new_list = []
                     for item in src_data:
                         if any(field in item for field in req_fields):
-                            filtered_item = {field: item[field] for field in req_fields if field in item}
+                            filtered_item = {
+                                field: item[field]
+                                for field in req_fields
+                                if field in item
+                            }
                             new_list.append(filtered_item)
                     entry[src] = new_list
                 elif isinstance(src_data, dict):
                     if any(field in src_data for field in req_fields):
-                        filtered_dict = {field: src_data[field] for field in req_fields if field in src_data}
+                        filtered_dict = {
+                            field: src_data[field]
+                            for field in req_fields
+                            if field in src_data
+                        }
                         entry[src] = filtered_dict
                     else:
                         entry[src] = {}

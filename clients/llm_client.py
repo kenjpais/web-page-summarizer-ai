@@ -20,6 +20,13 @@ class LLMClient:
         except Exception as e:
             return f"LLM request failed: {e}"
 
+    @log_prompt
+    def test_llm_connection(self, prompt="Test"):
+        """Tests LLM API."""
+        if "LLM request failed:" in self.prompt_llm(prompt):
+            return False
+        return True
+
 
 def build_prompt(text):
     """Build prompt payload using the configurable prompt template."""

@@ -1,4 +1,4 @@
-from utils.utils import get_env
+from utils.utils import get_env, json_to_markdown
 from clients.llm_client import LLMClient, build_prompt
 
 
@@ -15,7 +15,7 @@ def summarize():
         with open(correlated_file, "r") as cor, open(
             summarize_prompt_template, "r"
         ) as prompt_template, open(prompt_payload, "w") as out:
-            out.write(f"{prompt_template.read()}\n{cor.read()}")
+            out.write(f"{prompt_template.read()}\n{json_to_markdown(cor.read())}")
 
     def prompt_llm():
         with open(prompt_payload, "r") as f:

@@ -24,4 +24,3 @@ class JiraClient:
             if field.get("name", "").lower() == "epic link":
                 return field["id"]
         raise JIRAError("Epic Link field not found")
-

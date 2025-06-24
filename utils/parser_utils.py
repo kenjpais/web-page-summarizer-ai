@@ -45,6 +45,7 @@ def parse_markdown(md):
 
     return result
 
+
 def is_valid_markdown(md_text):
     try:
         html = markdown.markdown(md_text)

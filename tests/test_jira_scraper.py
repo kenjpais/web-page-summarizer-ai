@@ -178,7 +178,7 @@ class TestJiraScraper(unittest.TestCase):
             result = json.load(f)
         with open(f"{data_dir}/jira.md") as f:
             result_md = f.read()
-        
+
         self.assertGreater(len(result), 0)
         for issue_id in issue_ids:
             self.assertIn(issue_id, result_md)
