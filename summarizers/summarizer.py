@@ -64,8 +64,6 @@ def summarize():
     summary_file = f"{data_dir}/summary.txt"
     summarized_projects = summarize_projects()
 
-    print(f"KDEBUG: summarized_projects: {summarized_projects}")
-
     def build_prompt_payload(release_notes):
         summarize_prompt_template = f"{config_dir}/summarize_prompt_template.txt"
         example_summary_file_path = f"{config_dir}/example_summary.txt"
