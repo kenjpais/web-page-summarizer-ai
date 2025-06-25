@@ -1,8 +1,10 @@
 import os
 import requests
+import markdown
 import pandas as pd
 from io import StringIO
 from bs4 import BeautifulSoup
+from markdown_it import MarkdownIt
 
 
 def load_html(source):
@@ -32,3 +34,21 @@ def parse_tables(soup):
         except Exception as e:
             print(f"Skipping table {i} due to error: {e}")
             continue
+
+
+def parse_markdown(md):
+    md = MarkdownIt()
+    tokens = md.parse(md)
+    result = []
+    for token in tokens:
+        result.append((token.type, token.tag, token.content))
+
+    return result
+
+
+def is_valid_markdown(md_text):
+    try:
+        html = markdown.markdown(md_text)
+        return True, html
+    except Exception as e:
+        return False, str(e)

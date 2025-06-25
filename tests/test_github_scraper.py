@@ -1,6 +1,8 @@
+import json
 import unittest
 from scrapers.github_scraper import GithubScraper
 from scrapers.exceptions import ScraperException
+from utils.utils import get_env
 from utils.logging_config import setup_logging
 
 setup_logging()
@@ -43,9 +45,8 @@ class TestGithubFilter(unittest.TestCase):
 
     def test_extract_relevant_info_from_urls_valid(self):
         urls = ["https://github.com/octocat/Hello-World/pull/1"]
-        result = self.gf.extract(urls)
-
-        self.assertIsInstance(result, list)
+        self.gf.extract(urls)
+        result = load_github_file()
         self.assertGreater(len(result), 0)
         self.assertIn("id", result[0])
 
@@ -63,10 +64,19 @@ class TestGithubFilter(unittest.TestCase):
             "https://github.com/openshift/vmware-vsphere-csi-driver-operator/pull/276",
             "https://github.com/openshift/cloud-provider-kubevirt/commit/3f4542ecd17fb0e47da4c6d9bceb076b98fb314b",
         ]
-        result = self.gf.extract(urls)
+        self.gf.extract(urls)
+
+        result = load_github_file()
+
         self.assertEqual(len(result), 2)
         for item in result:
             self.assertIn("id", item)
+
+
+def load_github_file():
+    if data_dir := get_env("DATA_DIR"):
+        with open(f"{data_dir}/github.json", "r") as f:
+            return json.load(f)
 
 
 if __name__ == "__main__":

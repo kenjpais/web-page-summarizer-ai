@@ -1,4 +1,6 @@
 import re
+import json
+from utils.utils import get_env
 from clients.github_client import GithubGraphQLClient
 from models.github_model import GithubModel
 from scrapers.exceptions import raise_scraper_exception
@@ -63,4 +65,10 @@ class GithubScraper:
                     ).to_dict()
                 )
 
-        return results
+        write_json_file(results)
+
+
+def write_json_file(data):
+    if data_dir := get_env("DATA_DIR"):
+        with open(f"{data_dir}/github.json", "w") as f:
+            json.dump(data, f)

@@ -2,10 +2,14 @@ class JiraModel:
     def __init__(self, fields):
         self.id = getattr(fields, "id", "")
         self.url = getattr(fields, "url", "")
+        self.project = getattr(fields, "project", "")
+        self.parent = getattr(fields, "parent", "")
+        self.issuelinks = [
+            issuelink.id for issuelink in getattr(fields, "issuelinks", "")
+        ]
         self.issuetype = fields.issuetype.name
         self.description = fields.description
         self.summary = fields.summary
-        self.labels = fields.labels
 
     def to_dict(self):
         return {
@@ -13,7 +17,8 @@ class JiraModel:
             "issuetype": self.issuetype,
             "description": self.description,
             "summary": self.summary,
-            "labels": self.labels,
+            "parent": self.parent,
+            "issuelinks": self.issuelinks,
         }
         """
         return {

@@ -16,12 +16,9 @@ NON_FEATURE_KEYWORDS = [
     "broken",
     "regression",
     "refactor",
-    "docs",
-    "documentation",
     "test",
     "qa",
     "chore",
-    "ci",
 ]
 
 FEATURE_KEYWORDS = [
@@ -81,3 +78,21 @@ def get_urls(src):
         return []
     with open(file_path, "r") as f:
         return [line.strip() for line in f if line.strip()]
+
+
+def json_to_markdown(data, heading_level=1):
+    markdown = ""
+    if isinstance(data, dict):
+        for key, value in data.items():
+            if isinstance(value, (dict, list)):
+                markdown += f"{'#' * heading_level} {key.capitalize()}\n\n"
+                markdown += json_to_markdown(value, heading_level + 1)
+            else:
+                markdown += f"**{key.capitalize()}:** {value}\n\n"
+    elif isinstance(data, list):
+        for idx, item in enumerate(data, 1):
+            if isinstance(item, (dict, list)):
+                markdown += json_to_markdown(item, heading_level)
+            else:
+                markdown += f"{idx}. {item}\n"
+    return markdown

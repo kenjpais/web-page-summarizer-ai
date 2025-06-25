@@ -8,7 +8,9 @@
     "issuetype": {
         "name": [
             "Epic",
-            "Story"
+            "Story",
+            "Feature", 
+            "Enhancement"
         ],
         "id": []
     },

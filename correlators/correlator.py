@@ -4,7 +4,6 @@ from filters.filter_required_fields import remove_irrelevant_fields_from_correla
 
 
 def correlate_with_jira_issue_id():
-    """Use JIRA id as matching criteria to correlate different source information together."""
     print("\n[*] Correlating feature-related items by JIRA 'id' ...")
     data_dir = get_env("DATA_DIR")
     sources = json.loads(get_env("SOURCES"))
@@ -14,39 +13,56 @@ def correlate_with_jira_issue_id():
     correlated_data = {}
     non_correlated_data = []
 
-    jira_file_path = f"{data_dir}/JIRA.json"
+    jira_file_path = f"{data_dir}/jira.json"
     correlated_file = f"{data_dir}/correlated.json"
     non_correlated_file = f"{data_dir}/non_correlated.json"
 
     with open(jira_file_path, "r") as jira_file:
-        for line in jira_file:
-            jira_dict = json.loads(line)
-            issue_id = jira_dict.get("id")
-            if not issue_id:
-                continue
+        jira_data = json.load(jira_file)
 
-            if issue_id not in correlated_data:
-                correlated_data[issue_id] = {}
-            correlated_data[issue_id]["JIRA"] = jira_dict
+    for category, epics in jira_data.items():
+        if category not in correlated_data:
+            correlated_data[category] = {}
 
-            for src in sources:
-                src_path = f"{data_dir}/{src}.json"
-                with open(src_path, "r") as srcfile:
-                    for srcline in srcfile:
-                        try:
-                            obj = json.loads(srcline)
-                        except json.JSONDecodeError:
-                            continue
-                        if issue_id in obj.get("title", ""):
-                            if src not in correlated_data[issue_id]:
-                                correlated_data[issue_id][src] = []
-                            correlated_data[issue_id][src].append(obj)
-                        else:
-                            non_correlated_data.append(srcline)
+        for epic_key, epic_data in epics.items():
+            # Correlate epic
+            correlated_data[category][epic_key] = {
+                "JIRA": {"key": epic_key, **epic_data}
+            }
+
+            # Correlate stories under the epic
+            for story_key, story_data in epic_data.get("stories", {}).items():
+                correlated_data[category][story_key] = {
+                    "JIRA": {"key": story_key, **story_data}
+                }
+
+    # Match with other sources
+    for src in sources:
+        src_path = f"{data_dir}/{src}.json"
+        try:
+            with open(src_path, "r") as srcfile:
+                try:
+                    obj_list = json.load(srcfile)
+                except json.JSONDecodeError:
+                    continue
+
+                for obj in obj_list:
+                    matched = False
+                    for category in correlated_data:
+                        for jira_id in correlated_data[category]:
+                            if jira_id in obj.get("title", ""):
+                                matched = True
+                                if src not in correlated_data[category][jira_id]:
+                                    correlated_data[category][jira_id][src] = []
+                                correlated_data[category][jira_id][src].append(obj)
+                    if not matched:
+                        non_correlated_data.append(obj)
+
+        except FileNotFoundError:
+            continue
 
     with open(non_correlated_file, "w") as file:
-        for line in non_correlated_data:
-            file.write(line)
+        json.dump(non_correlated_data, file, indent=4)
 
     with open(correlated_file, "w") as file:
         json.dump(correlated_data, file, indent=4)
