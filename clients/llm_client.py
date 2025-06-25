@@ -10,6 +10,7 @@ class LLMClient:
     @log_prompt
     def prompt_llm(self, prompt):
         """Makes POST request with prompt payload to LLM API."""
+        self.prompt = prompt
         try:
             response = requests.post(
                 self.api_url,
@@ -26,12 +27,3 @@ class LLMClient:
         if "LLM request failed:" in self.prompt_llm(prompt):
             return False
         return True
-
-
-def build_prompt(text):
-    """Build prompt payload using the configurable prompt template."""
-    try:
-        with open("summarize_prompt_template.txt", "r") as file:
-            return f"{file.read()}\n\n{text}"
-    except FileNotFoundError:
-        return f"Summarize:\n\n{text}"

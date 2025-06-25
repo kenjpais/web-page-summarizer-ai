@@ -1,11 +1,14 @@
 import json
 from utils.utils import get_env
 from filters.filter_required_fields import remove_irrelevant_fields_from_correlated
+from filters.filter_jira_issue_ids import filter_jira_issue_ids
+
+data_dir = get_env("DATA_DIR")
+correlated_file = f"{data_dir}/correlated.json"
 
 
 def correlate_with_jira_issue_id():
     print("\n[*] Correlating feature-related items by JIRA 'id' ...")
-    data_dir = get_env("DATA_DIR")
     sources = json.loads(get_env("SOURCES"))
     if "JIRA" in sources:
         sources.remove("JIRA")
@@ -14,7 +17,6 @@ def correlate_with_jira_issue_id():
     non_correlated_data = []
 
     jira_file_path = f"{data_dir}/jira.json"
-    correlated_file = f"{data_dir}/correlated.json"
     non_correlated_file = f"{data_dir}/non_correlated.json"
 
     with open(jira_file_path, "r") as jira_file:
@@ -71,3 +73,4 @@ def correlate_with_jira_issue_id():
 def correlate_all():
     correlate_with_jira_issue_id()
     remove_irrelevant_fields_from_correlated()
+    filter_jira_issue_ids(correlated_file)

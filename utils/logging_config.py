@@ -44,7 +44,7 @@ def log_prompt(func):
         result = func(*args, **kwargs)
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         with open(f"logs/{timestamp}_prompt.log", "w") as log:
-            log.write(f"Prompt:\n{args[0]}\n\nResult:\n{result}")
+            log.write(f"Prompt:\n{args[0].prompt}\n\nResult:\n{result}")
         return result
 
     return wrapper
