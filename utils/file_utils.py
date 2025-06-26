@@ -42,3 +42,8 @@ async def read_jsonl_async(filepath):
                 yield line, json.loads(line)
             except json.JSONDecodeError:
                 continue
+
+
+def read_file_str(file_path):
+    with open(file_path, "r") as f:
+        return f.read()

@@ -4,16 +4,22 @@ import json
 from jira import JIRAError
 from collections import defaultdict
 from clients.jira_client import JiraClient
-from clients.llm_client import LLMClient
+from clients.local_llm_chain import local_llm
 from scrapers.exceptions import raise_scraper_exception
+from chains.chains import classify_chain
 from utils.utils import get_env, contains_valid_keywords
+
+llm = local_llm
 
 
 class JiraScraper:
     def __init__(self, max_results=200):
-        data_dir = get_env(f"DATA_DIR")
-        if get_env(f"LLM_API_URL") and not LLMClient().test_llm_connection():
-            raise_scraper_exception(f"Unable to connect to LLM API")
+        data_dir = get_env("DATA_DIR")
+        config_dir = get_env("CONFIG_DIR")
+        try:
+            llm.test_llm_connection()
+        except Exception as e:
+            raise_scraper_exception(f"Unable to connect to LLM: {e}")
 
         os.makedirs(data_dir, exist_ok=True)
         try:
@@ -29,9 +35,9 @@ class JiraScraper:
             self.jira = None
             raise_scraper_exception(f"Unexpected error: {e}")
 
-        with open("config/jira_filter.json", "r") as f:
+        with open(f"{config_dir}/jira_filter.json", "r") as f:
             self.filter = json.load(f)
-        with open("config/jira_filter_out.json", "r") as f:
+        with open(f"{config_dir}/jira_filter_out.json", "r") as f:
             self.filter_out = json.load(f)
 
     def validate_jira_url(self, url):
@@ -145,8 +151,7 @@ class JiraScraper:
             )
             hierarchy = organize_issues(issues, self.jira_client.epic_link_field_id)
             md = render_to_markdown(hierarchy)
-            jira_feature_ids = ask_llm_to_filter_features(md)
-            hierarchy = filter_hierarchy_by_jira_id(jira_feature_ids)
+            hierarchy = filter_hierarchy_by_jira_id(ask_llm_to_filter_features(md))
             write_json_file(hierarchy)
             md = render_to_markdown(hierarchy)
             write_md_file(md)
@@ -164,8 +169,10 @@ class JiraScraper:
 
 
 def ask_llm_to_filter_features(md):
-    llm = LLMClient()
-    q = ""
+    features = classify_chain.invoke({"correlated_info": md})
+    jira_ids = extract_jira_ids(features)
+    return jira_ids
+
     with open(f"config/is_feature_prompt_template.txt") as f:
         q = f.read()
     prompt = f"{q}\n{md}"

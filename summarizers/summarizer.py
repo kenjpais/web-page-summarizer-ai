@@ -1,6 +1,10 @@
 import json
 from utils.utils import get_env, json_to_markdown
 from clients.llm_client import LLMClient
+from chains.chains import project_summary_chain
+
+# from chains.chains import project_summary_prompt
+from chains.chains import summary_chain
 
 data_dir = get_env("DATA_DIR")
 config_dir = get_env("CONFIG_DIR")
@@ -44,8 +48,12 @@ def summarize_():
 def summarize_projects():
     print("\n[*] Summarizing each project...")
     with open(correlated_file, "r") as corfile:
-        correlated_data = json.load(corfile)
+        projects = json.load(corfile)
+    if not projects:
+        raise Exception(f"{correlated_file} is empty")
 
+    # formatted_prompt = project_summary_prompt.format(projects=projects)
+    return project_summary_chain.invoke({"projects": projects})
     llm = LLMClient()
     summarized_projects = ""
     for k, v in correlated_data.items():
@@ -63,6 +71,10 @@ def summarize():
     prompt_payload = f"{data_dir}/prompt_payload.txt"
     summary_file = f"{data_dir}/summary.txt"
     summarized_projects = summarize_projects()
+    result = summary_chain.invoke({"release-notes": summarized_projects})
+    with open(summary_file, "w") as summary:
+        summary.write(result)
+    return
 
     def build_prompt_payload(release_notes):
         summarize_prompt_template = f"{config_dir}/summarize_prompt_template.txt"

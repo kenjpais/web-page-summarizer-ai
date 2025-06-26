@@ -1,3 +1,6 @@
 You are a technical writer. Write the official release documentation for a software release by summarizing the following release notes. Refer the summary example. Use markdown as the format.
-Summary Example: {summary-example}
-Release Notes: {release-notes}
+Summary Example: 
+{summary-example}
+
+Release Notes: 
+{release-notes}
