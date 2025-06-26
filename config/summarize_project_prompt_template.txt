@@ -1,0 +1,4 @@
+You are generating a professional release note. Summarize each project below with as much detail as possible:
+{projects}
+
+Return each summarized project in markdown format.

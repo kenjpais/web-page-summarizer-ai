@@ -32,6 +32,7 @@ class TestSummarizeUrlController(unittest.TestCase):
         with open(self.summary_file_path, "r") as f:
             summary_content = f.read()
 
+        self.assertTrue("Release Notes 4.20.0-okd-scos.ec.3" in summary_content)
         self.assertGreater(len(summary_content.strip()), 0, "summary.txt is empty")
 
     """

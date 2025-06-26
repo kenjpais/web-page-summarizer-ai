@@ -81,6 +81,9 @@ def get_urls(src):
 
 
 def json_to_markdown(data, heading_level=1):
+    if isinstance(data, str):
+        data = json.loads(data)
+
     markdown = ""
     if isinstance(data, dict):
         for key, value in data.items():
@@ -96,3 +99,5 @@ def json_to_markdown(data, heading_level=1):
             else:
                 markdown += f"{idx}. {item}\n"
     return markdown
+
+

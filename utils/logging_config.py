@@ -42,9 +42,11 @@ def log_prompt(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
+        prompt = kwargs.get("prompt") or getattr(args[0], "prompt", None) or args[1] if len(args) > 1 else "N/A"
         timestamp = time.strftime("%Y%m%d-%H%M%S")
+        os.makedirs("logs", exist_ok=True)
         with open(f"logs/{timestamp}_prompt.log", "w") as log:
-            log.write(f"Prompt:\n{args[0]}\n\nResult:\n{result}")
+            log.write(f"Prompt:\n{prompt}\n\nResult:\n{result}")
         return result
-
     return wrapper
+
