@@ -14,7 +14,6 @@ SOURCE_SCRAPERS_MAP = {
 
 def scrape_sources():
     sources = json.loads(get_env("SOURCES"))
-    data_dir = get_env("DATA_DIR")
 
     for src in sources:
         print(f"\n[*] Scraping {src} links...")
@@ -26,12 +25,7 @@ def scrape_sources():
         if not filter_instance:
             print(f"[!] No scraper defined for source: {src}")
             continue
-        try:
-            filter_instance().extract(urls)
-        except ScraperException as e:
-            print(f"[!] Error scraping {src}: {e}")
-        except Exception as e:
-            print(f"[!] Unexpected error scraping {src}: {e}")
+        filter_instance().extract(urls)
 
 
 def scrape_all():

@@ -9,7 +9,7 @@ class TestSummarizeUrlController(unittest.TestCase):
     def setUp(self):
         self.data_dir = get_env("DATA_DIR")
         os.makedirs(self.data_dir, exist_ok=True)
-        self.url = "https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3"
+        self.url = "https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-stable/release/4.19.0-okd-scos.0"
         self.release_name = self.url.strip().split("/release/")[1]
         self.summary_dir = os.path.join(self.data_dir, "summaries", self.release_name)
         self.summary_file_path = os.path.join(self.summary_dir, "summary.txt")
@@ -32,7 +32,7 @@ class TestSummarizeUrlController(unittest.TestCase):
         with open(self.summary_file_path, "r") as f:
             summary_content = f.read()
 
-        self.assertTrue("Release Notes 4.20.0-okd-scos.ec.3" in summary_content)
+        self.assertTrue(f"Release Notes {self.release_name}" in summary_content)
         self.assertGreater(len(summary_content.strip()), 0, "summary.txt is empty")
 
     """

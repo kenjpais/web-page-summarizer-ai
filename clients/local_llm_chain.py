@@ -1,5 +1,5 @@
 from utils.logging_config import log_prompt
-from langchain.llms.ollama import Ollama
+from langchain_community.llms import Ollama
 from langchain_core.runnables import Runnable
 
 

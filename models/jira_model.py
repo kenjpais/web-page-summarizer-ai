@@ -1,56 +1,21 @@
-class JiraModel:
-    def __init__(self, fields):
-        self.id = getattr(fields, "id", "")
-        self.url = getattr(fields, "url", "")
-        self.project = getattr(fields, "project", "")
-        self.parent = getattr(fields, "parent", "")
-        self.issuelinks = [
-            issuelink.id for issuelink in getattr(fields, "issuelinks", "")
-        ]
-        self.issuetype = fields.issuetype.name
-        self.description = fields.description
-        self.summary = fields.summary
+def create_jira_issue_dict(issue):
+    fields = issue.fields
+    issue_dict = {}
+    # if issue_type := getattr(fields.issuetype, "name", ""):
+    #    issue_dict["issue_type"] = issue_type
+    # if project_name := getattr(fields.project, "name", ""):
+    #    issue_dict["project_name"] = project_name
+    if summary := getattr(fields, "summary", ""):
+        issue_dict["summary"] = summary
+    if description := getattr(fields, "description", ""):
+        issue_dict["description"] = description
+    if parent := getattr(fields, "parent", None):
+        issue_dict["parent_key"] = parent.key
 
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "issuetype": self.issuetype,
-            "description": self.description,
-            "summary": self.summary,
-            "parent": self.parent,
-            "issuelinks": self.issuelinks,
-        }
-        """
-        return {
-            "id": self.id if self.id else "",
-            "url": self.url,
-            "project": (
-                {
-                    "key": getattr(self.project, "key", None),
-                    "name": getattr(self.project, "name", None),
-                    "id": getattr(self.project, "id", None),
-                }
-                if self.project
-                else None
-            ),
-            "issuetype": (
-                {
-                    "name": getattr(self.issuetype, "name", None),
-                    "id": getattr(self.issuetype, "id", None),
-                }
-                if self.issuetype
-                else None
-            ),
-            "description": self.description,
-            "summary": self.summary,
-            "labels": self.labels,
-            "resolution": (
-                {
-                    "name": getattr(self.resolution, "name", None),
-                    "id": getattr(self.resolution, "id", None),
-                }
-                if self.resolution
-                else None
-            ),
-        }
-        """
+    raw_comments = issue.raw.get("fields", {}).get("comment", {}).get("comments", [])
+    if raw_comments:
+        issue_dict["comments"] = [
+            body for comment in raw_comments if (body := comment.get("body"))
+        ]
+
+    return issue_dict

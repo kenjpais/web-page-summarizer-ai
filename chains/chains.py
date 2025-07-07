@@ -5,7 +5,9 @@ from langchain_core.runnables import Runnable
 from langchain_core.prompts import PromptTemplate
 
 
-summary_prompt_text = read_file_str(f"{get_env('CONFIG_DIR')}/summarize_prompt_template.txt")
+summary_prompt_text = read_file_str(
+    f"{get_env('CONFIG_DIR')}/summarize_prompt_template.txt"
+)
 summary_example_prompt_text = read_file_str(
     f"{get_env('CONFIG_DIR')}/example_summary.txt"
 )

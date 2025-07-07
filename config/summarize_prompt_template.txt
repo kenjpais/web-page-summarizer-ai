@@ -1,6 +1,16 @@
-You are a technical writer. Write the official release documentation for a software release by summarizing the following release notes. Refer the summary example. Use markdown as the format.
-Summary Example: 
-{summary-example}
+You are a technical writer. Write the official release documentation for a software release by summarizing the following release notes. 
+
+CRITICAL: You MUST include ALL important features, API changes, and breaking changes mentioned in the release notes. Pay special attention to:
+- API changes (like GatewayAPI)
+- Feature gates and feature changes
+- Network components and routing changes
+- Security updates
+- Breaking changes and reverts
+- Any issues marked as impacting specific functionality
+
+Do NOT omit important technical details, especially those involving specific feature names, APIs, or components.
+
+Use markdown as the format and include ALL significant content from the release notes.
 
 Release Notes: 
 {release-notes}

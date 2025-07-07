@@ -23,14 +23,15 @@ def parse_html(source):
     return soup
 
 
-def parse_tables(soup):
+def parse_tables(soup) -> list[pd.DataFrame]:
     tables = soup.find_all("table")
     for i, table in enumerate(tables, start=1):
         try:
             table_html = StringIO(str(table))
             df = pd.read_html(table_html)[0]
-            print(f"\nTable {i}:")
-            print(df.to_string(index=False))
+            # print(f"\nTable {i}:")
+            # print(df.to_string(index=False))
+            return df
         except Exception as e:
             print(f"Skipping table {i} due to error: {e}")
             continue

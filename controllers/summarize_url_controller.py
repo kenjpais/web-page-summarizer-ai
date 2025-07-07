@@ -12,11 +12,11 @@ def summarize_release_page_from_url(url):
     """Fetches data from url and summarizes all relevant information."""
     if not is_valid_url(url) or "/release/" not in url:
         raise URLError("Invalid Release Page URL")
-    
+
     release_name = url.strip().split("/release/")[1]
     if not release_name:
         raise URLError("Invalid Release Page URL")
-    
+
     runner.run(url)
 
     summary_dir = os.path.join(SUMMARY_FILE_PATH, release_name)
@@ -30,7 +30,7 @@ def summarize_release_page_from_url(url):
         updated_content = f"Release Notes {release_version_name}\n{content}"
         with open(summary_file_path, "w") as wf:
             wf.write(updated_content)
-    
+
     update_summary_with_release_version(src_summary, release_name)
 
     dest_summary = os.path.join(summary_dir, "summary.txt")

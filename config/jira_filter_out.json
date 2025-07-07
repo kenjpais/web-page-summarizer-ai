@@ -1,14 +1,18 @@
 {
     "url": [],
     "project": {
-        "key": [],
+        "key": [
+            "ART",
+            "TRT"
+        ],
         "name": [],
         "id": []
     },
     "issuetype": {
         "name": [],
         "id": [
-            "ART"
+            "ART",
+            "TRT"
         ]
     },
     "description": [],
