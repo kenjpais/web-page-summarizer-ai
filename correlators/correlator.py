@@ -76,5 +76,5 @@ def correlate_with_jira_issue_id():
 
 def correlate_all():
     correlate_with_jira_issue_id()
-    #remove_irrelevant_fields_from_correlated()
-    #filter_jira_issue_ids(correlated_file)
+    # remove_irrelevant_fields_from_correlated()
+    # filter_jira_issue_ids(correlated_file)

@@ -70,12 +70,12 @@ def summarize():
     print("\n[*] Summarizing...")
     prompt_payload = f"{data_dir}/prompt_payload.txt"
     summary_file = f"{data_dir}/summary.txt"
-    
+
     # Use raw correlated data directly instead of LLM-processed projects
     # This ensures all information, including GatewayAPI details, is preserved
     with open(correlated_file, "r") as cor_file:
         release_notes = json_to_markdown(cor_file.read())
-    
+
     result = summary_chain.invoke({"release-notes": release_notes})
     with open(summary_file, "w") as summary:
         summary.write(result)

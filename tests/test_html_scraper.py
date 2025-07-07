@@ -20,4 +20,3 @@ class TestHtmlScraper(unittest.TestCase):
 
     def test_extract_jira_info_from_table(self):
         df = scraper.scrape_table_info()
-

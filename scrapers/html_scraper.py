@@ -12,7 +12,7 @@ class HtmlScraper:
     def scrape(self):
         html = parse_html(self.url)
         self.scrape_valid_urls(html)
-        #self.scrape_table_info()
+        # self.scrape_table_info()
 
     def scrape_valid_urls(self, soup):
         print("\n[*] Extracting URLs...")
