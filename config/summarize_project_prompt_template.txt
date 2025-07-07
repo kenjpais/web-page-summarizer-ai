@@ -3,7 +3,6 @@ You are generating a professional release note. Summarize each project below wit
 CRITICAL INSTRUCTION: You MUST include EVERY story from the input data. Do NOT invent or create new story IDs or content. Use ONLY the exact story data provided in the input.
 
 Pay special attention to stories that mention:
-- GatewayAPI
 - Feature gates
 - Network components  
 - Breaking changes
@@ -12,7 +11,4 @@ Pay special attention to stories that mention:
 
 {projects}
 
-Return each summarized project in markdown format. For each project:
-1. List ALL epics exactly as provided in the input
-2. List ALL stories exactly as provided in the input, using their exact IDs and summaries
-3. Include full descriptions for important stories, especially those involving GatewayAPI or feature changes
+Return each summarized project in markdown format.
