@@ -75,6 +75,9 @@ class JiraScraper:
         return True
 
     def search_project(self, project_key):
+        """
+        Fetches JIRA project information using the JIRA python library.
+        """
         if project_key not in self.project_result_cache:
             try:
                 self.project_result_cache[project_key] = self.jira_client.jira.project(
@@ -88,6 +91,9 @@ class JiraScraper:
         return self.project_result_cache[project_key]
 
     def search_issues(self, issue_ids: List) -> List:
+        """
+        Fetches JIRA information using the JIRA python library.
+        """
         if not issue_ids:
             raise_scraper_exception(
                 f"[!][ERROR] Failed JIRA fetch: Empty issue_ids list"
@@ -101,9 +107,7 @@ class JiraScraper:
                 use_post=True,
             )
         except JIRAError as je:
-            # raise_scraper_exception(f"[JIRAError] Failed JIRA fetch: {je}")
-            print(f"[JIRAError] Failed JIRA fetch: {je}")
-            return []
+            raise_scraper_exception(f"[JIRAError] Failed JIRA fetch: {je}")
         except Exception as e:
             raise_scraper_exception(f"[ERROR] Failed JIRA fetch: {e}")
 
@@ -263,10 +267,10 @@ class JiraScraper:
         hierarchy = organize_issues(issues, self.jira_client.epic_link_field_id)
         if not hierarchy:
             raise_scraper_exception("[ERROR] JIRA Hierarchy construction failed")
-        if FILTER_ON:
-            hierarchy = filter_hierarchy_by_jira_id(
-                ask_llm_to_filter_features(render_to_markdown(hierarchy))
-            )
+        # if FILTER_ON:
+        #    hierarchy = filter_hierarchy_by_jira_id(
+        #        ask_llm_to_filter_features(render_to_markdown(hierarchy))
+        #    )
         write_json_file(hierarchy)
         write_md_file(render_to_markdown(hierarchy))
         # df = pd.read_pickle(f"{data_dir}/feature_gate_table.pkl")
