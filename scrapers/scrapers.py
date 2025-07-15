@@ -7,6 +7,9 @@ from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 
+# Registry mapping source names to their corresponding scraper classes
+# This extensible pattern allows adding new sources without modifying core logic
+# Each scraper must implement the extract(urls) method interface
 SOURCE_SCRAPERS_MAP: Dict[str, Type[Any]] = {
     "JIRA": JiraScraper,
     "GITHUB": GithubScraper,
@@ -14,20 +17,44 @@ SOURCE_SCRAPERS_MAP: Dict[str, Type[Any]] = {
 
 
 def scrape_sources() -> None:
+    """
+    Orchestrate scraping across all configured sources.
+    
+    This function iterates through each configured source type (GitHub, JIRA, etc.),
+    loads the URLs specific to that source, and executes the appropriate scraper.
+    
+    Process:
+    1. Load source configuration from environment
+    2. For each source, load its filtered URLs
+    3. Instantiate and execute the appropriate scraper
+    4. Handle missing URLs or scraper implementations gracefully
+    """
+    # Load the list of configured sources from environment settings
     sources: List[str] = json.loads(get_env("SOURCES"))
 
     for src in sources:
         logger.info(f"Scraping {src} links...")
+        
+        # Load URLs that were filtered for this specific source type
+        # These come from the filter_urls step that categorized URLs by domain
         urls = get_urls(src)
         if not urls:
             logger.warning(f"No URLs found for {src}, skipping.")
             continue
-        filter_instance = SOURCE_SCRAPERS_MAP.get(src)
-        if not filter_instance:
+            
+        # Get the scraper class for this source type
+        scraper_class = SOURCE_SCRAPERS_MAP.get(src)
+        if not scraper_class:
             logger.error(f"No scraper defined for source: {src}")
             continue
-        filter_instance().extract(urls)
+            
+        # Instantiate and execute the scraper with source-specific URLs
+        # Each scraper handles its own API authentication, rate limiting, etc.
+        scraper_class().extract(urls)
 
 
 def scrape_all() -> None:
+    """
+    Entry point for the scraping phase of the pipeline.
+    """
     scrape_sources()
