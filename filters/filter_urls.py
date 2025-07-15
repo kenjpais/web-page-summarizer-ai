@@ -1,19 +1,26 @@
-import json
-from utils.utils import get_env
+from pathlib import Path
 from utils.file_utils import MultiFileManager
+from config.settings import get_settings
+from utils.logging_config import get_logger
+
+logger = get_logger(__name__)
+
+settings = get_settings()
+data_dir = Path(settings.directories.data_dir)
 
 
 def filter_urls():
-    print("\n[*] Filtering relevant URLs...")
+    logger.info("[*] Filtering relevant URLs...")
 
     fm = MultiFileManager()
-    sources = json.loads(get_env("SOURCES"))
-    servers = {src: get_env(f"{src.upper()}_SERVER") for src in sources}
-    data_dir = get_env("DATA_DIR")
+    servers = settings.processing.get_sources_dict()
     with fm:
-        with open(f"{data_dir}/urls.txt") as f:
+        with open(data_dir / "urls.txt") as f:
             for url in f:
                 url = url.strip()
                 for src, server in servers.items():
                     if server in url:
-                        fm.write(f"{data_dir}/{src.lower()}_urls.txt", url + "\n")
+                        fm.write(
+                            data_dir / f"{src.lower()}_urls.txt",
+                            url + "\n",
+                        )

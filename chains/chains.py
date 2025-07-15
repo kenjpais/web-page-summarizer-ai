@@ -1,22 +1,22 @@
-from utils.file_utils import read_file_str
-from utils.utils import get_env
+from pathlib import Path
 from clients.local_llm_chain import local_llm
 from langchain_core.runnables import Runnable
 from langchain_core.prompts import PromptTemplate
+from config.settings import get_settings
 
+settings = get_settings()
+config_dir = Path(settings.directories.data_dir)
+if not config_dir:
+    raise ValueError(f"Invalid CONFIG_DIR {config_dir}")
 
-summary_prompt_text = read_file_str(
-    f"{get_env('CONFIG_DIR')}/summarize_prompt_template.txt"
-)
-summary_example_prompt_text = read_file_str(
-    f"{get_env('CONFIG_DIR')}/example_summary.txt"
-)
-classify_prompt_text = read_file_str(
-    f"{get_env('CONFIG_DIR')}/classify_prompt_template.txt"
-)
-project_summary_prompt_text = read_file_str(
-    f"{get_env('CONFIG_DIR')}/summarize_project_prompt_template.txt"
-)
+summary_prompt_text = settings.config_files.summarize_prompt_template
+
+summary_example_prompt_text = settings.config_files.example_summary_file
+
+classify_prompt_text = settings.config_files.classify_prompt_template
+
+project_summary_prompt_text = settings.config_files.project_summary_template
+
 summary_prompt_text = summary_prompt_text.replace(
     "{summary-example}", summary_example_prompt_text
 )

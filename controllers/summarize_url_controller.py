@@ -1,11 +1,11 @@
-import os
 import shutil
 import runner
+from pathlib import Path
 from utils.utils import get_env, is_valid_url
 from urllib.error import URLError
 
-data_dir = get_env("DATA_DIR")
-SUMMARY_FILE_PATH = os.path.join(data_dir, "summaries")
+data_dir = Path(get_env("DATA_DIR"))
+SUMMARY_FILE_PATH = data_dir / "summaries"
 
 
 def summarize_release_page_from_url(url):
@@ -19,10 +19,10 @@ def summarize_release_page_from_url(url):
 
     runner.run(url)
 
-    summary_dir = os.path.join(SUMMARY_FILE_PATH, release_name)
-    os.makedirs(summary_dir, exist_ok=True)
+    summary_dir = SUMMARY_FILE_PATH / release_name
+    summary_dir.mkdir(parents=True, exist_ok=True)
 
-    src_summary = os.path.join(data_dir, "summary.txt")
+    src_summary = data_dir / "summary.txt"
 
     def update_summary_with_release_version(summary_file_path, release_version_name):
         with open(summary_file_path, "r") as rf:
@@ -33,5 +33,5 @@ def summarize_release_page_from_url(url):
 
     update_summary_with_release_version(src_summary, release_name)
 
-    dest_summary = os.path.join(summary_dir, "summary.txt")
+    dest_summary = summary_dir / "summary.txt"
     shutil.copy(src_summary, dest_summary)

@@ -12,6 +12,7 @@ def create_jira_issue_dict(issue):
     if parent := getattr(fields, "parent", None):
         issue_dict["parent_key"] = parent.key
 
+    return issue_dict
     raw_comments = issue.raw.get("fields", {}).get("comment", {}).get("comments", [])
     if raw_comments:
         issue_dict["comments"] = [

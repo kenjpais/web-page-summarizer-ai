@@ -1,5 +1,10 @@
+import shutil
 import json
-import aiofiles
+from pathlib import Path
+from config.settings import get_settings
+
+settings = get_settings()
+data_dir = Path(settings.directories.data_dir)
 
 
 class MultiFileManager:
@@ -47,3 +52,19 @@ async def read_jsonl_async(filepath):
 def read_file_str(file_path):
     with open(file_path, "r") as f:
         return f.read()
+
+
+def delete_src_files(src: str):
+    for filename in [f"{src}.json", f"{src}.md"]:
+        filepath = data_dir / filename
+        if filepath.exists():
+            filepath.unlink()
+
+
+def delete_all_in_directory(dir_path):
+    dir_path = Path(dir_path)
+    for item in dir_path.iterdir():
+        if item.is_file() or item.is_symlink():
+            item.unlink()
+        elif item.is_dir():
+            shutil.rmtree(item)

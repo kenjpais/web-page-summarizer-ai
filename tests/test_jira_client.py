@@ -1,15 +1,10 @@
 import unittest
-import os
-from clients.jira_client import JiraClient  # Replace with actual module path
+from clients.jira_client import JiraClient
 
 
 class TestJiraClientIntegration(unittest.TestCase):
 
     def setUp(self):
-        self.jira_server = os.getenv("JIRA_SERVER")
-        if not self.jira_server:
-            self.skipTest("JIRA_SERVER environment variable not set.")
-
         self.client = JiraClient()
 
     def test_epic_link_field_id(self):

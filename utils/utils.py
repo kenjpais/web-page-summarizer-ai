@@ -1,10 +1,14 @@
 import os
 import json
+from pathlib import Path
 from urllib.parse import urlparse
 from dotenv import load_dotenv
+from config.settings import get_settings
+from utils.logging_config import get_logger
 
+logger = get_logger(__name__)
 load_dotenv()
-
+settings = get_settings()
 
 ALLOWED_PROTOCOLS = ("http", "https")
 NON_FEATURE_KEYWORDS = [
@@ -43,8 +47,7 @@ def is_valid_url(url):
 
 def get_invalid_keywords():
     invalid_keywords = []
-
-    with open(os.getenv("CONFIG_FILE_PATH"), "r") as f:
+    with open(settings.config_files.config_file_path, "r") as f:
         data = json.load(f)
         invalid_keywords = data.get("invalid_keywords", [])
         invalid_keywords.extend([k.lower() for k in invalid_keywords])
@@ -67,17 +70,24 @@ def get_env(env_name):
     env_var = os.getenv(env_name)
     if env_var:
         return env_var
-    print(f"Environment variable {env_name} missing.")
+    raise ValueError(f"Environment variable {env_name} missing.")
 
 
 def get_urls(src):
-    data_dir = get_env("DATA_DIR")
-    file_path = f"{data_dir}/{src}_urls.txt"
-    if not os.path.isfile(file_path):
-        print(f"[!] Warning: URL file not found for source: {src}")
+    data_dir = Path(settings.directories.data_dir)
+    if not data_dir:
+        logger.error(f"[!][ERROR] DATA_DIR not configured")
         return []
-    with open(file_path, "r") as f:
-        return [line.strip() for line in f if line.strip()]
+    file_path = data_dir / f"{src}_urls.txt"
+    if not file_path.is_file():
+        logger.error(f"[!][ERROR] URL file not found for source: {src}")
+        return []
+    try:
+        with open(file_path, "r") as f:
+            return [line.strip() for line in f if line.strip()]
+    except IOError as e:
+        logger.error(f"[!][ERROR] Failed to read URL file: {e}")
+        return []
 
 
 def json_to_markdown(data, heading_level=1):
