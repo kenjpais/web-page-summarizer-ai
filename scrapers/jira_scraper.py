@@ -419,7 +419,7 @@ class JiraScraper:
 
             return hierarchy
 
-        logger.debug(f"FILTER IS {"ON" if self.filter_on else "OFF"}")
+        logger.debug(f"FILTER IS {'ON' if self.filter_on else 'OFF'}")
 
         # Parse JIRA issue IDs from URLs
         issue_ids = set()
