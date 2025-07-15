@@ -5,7 +5,9 @@ from langchain_core.runnables import Runnable
 
 
 class LLMClient(Runnable):
-    def __init__(self, llm: Ollama, domain: str = "localhost", port: int = 11434) -> None:
+    def __init__(
+        self, llm: Ollama, domain: str = "localhost", port: int = 11434
+    ) -> None:
         super().__init__()
         self.llm: Ollama = llm
         self.domain: str = domain
@@ -22,7 +24,12 @@ class LLMClient(Runnable):
         return True
 
     @log_prompt
-    def invoke(self, input: Union[str, Dict[str, Any]], config: Optional[Dict[str, Any]] = None, **kwargs: Any) -> str:
+    def invoke(
+        self,
+        input: Union[str, Dict[str, Any]],
+        config: Optional[Dict[str, Any]] = None,
+        **kwargs: Any
+    ) -> str:
         self.prompt = input
         result = self.llm.invoke(input, config=config, **kwargs)
         return result
