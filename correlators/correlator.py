@@ -4,6 +4,7 @@ import pandas as pd
 from pathlib import Path
 from scrapers.jira_scraper import extract_jira_ids
 from filters.filter_enabled_feature_gates import filter_enabled_feature_gates
+from summarizers.summarizer import summarize_feature_gates
 from config.settings import get_settings
 from utils.logging_config import get_logger
 
@@ -24,10 +25,10 @@ correlated_table_md_file = data_dir / "correlated_feature_gate_table.md"
 def build_github_item_index(data_directory=None):
     """
     Build an index mapping JIRA issue IDs to related GitHub items.
-    
+
     Args:
         data_directory: Optional override for data directory path
-        
+
     Returns:
         Dictionary mapping JIRA issue IDs to lists of related GitHub items.
     """
@@ -45,7 +46,7 @@ def build_github_item_index(data_directory=None):
         jira_ids = extract_jira_ids(title)
         if jira_ids:
             # Use the first JIRA ID found as the primary correlation key
-            # This handles cases like "Fix OCPBUGS-123 and STOR-456" 
+            # This handles cases like "Fix OCPBUGS-123 and STOR-456"
             first_key = jira_ids[0]
             index.setdefault(first_key, []).append(item)
     return index
@@ -54,13 +55,13 @@ def build_github_item_index(data_directory=None):
 def get_src_index_builder_map(data_directory=None):
     """
     Registry of index builders for different source types.
-    
+
     This extensible pattern allows adding new source types (e.g., GitLab, Bitbucket)
     without modifying the core correlation logic.
-    
+
     Args:
         data_directory: Optional override for data directory path
-        
+
     Returns:
         Dictionary mapping source names to their index builder functions
     """
@@ -72,19 +73,19 @@ def correlate_with_jira_issue_id(
 ):
     """
     Correlate JIRA issues with related items from other sources using issue IDs.
-    
+
     This is the core correlation process that links JIRA issues with GitHub
     items based on JIRA issue IDs mentioned in GitHub titles. The process:
-    
+
     1. Load JIRA hierarchy structure
     2. Build index mappings for all configured sources
     3. For each JIRA issue, find related items in other sources
     4. Attach related items to the JIRA issue structure
     5. Track items that couldn't be correlated for analysis
-    
+
     The correlation creates an enriched JIRA structure where each issue may
     contain additional data from GitHub (PRs, commits) that reference it.
-    
+
     Args:
         data_directory: Optional override for data directory path
         output_correlated_file: Output path for correlated data
@@ -129,7 +130,7 @@ def correlate_with_jira_issue_id(
         for jira_artifact in jira_artifacts:
             for jira_key, jira_item in jira_artifact.items():
                 matched = False
-                
+
                 # Check each source for items referencing this JIRA issue
                 for src in sources:
                     matched_items = src_index_map[src].get(jira_key, [])
@@ -142,7 +143,7 @@ def correlate_with_jira_issue_id(
                             jira_item[src].extend(matched_items)
                         else:
                             jira_item[src].append(matched_items)
-                            
+
                 # Track issues that couldn't be correlated for analysis
                 if not matched:
                     non_correlated.append(jira_item)
@@ -158,19 +159,19 @@ def correlate_with_jira_issue_id(
 def correlate_table():
     """
     Correlate feature gate information with JIRA/GitHub data.
-    
+
     This secondary correlation links OpenShift feature gates with related
     development work. Feature gates are configuration flags that enable/disable
     features, and this correlation helps understand what development work
     relates to specific features.
-    
+
     Process:
     1. Load feature gate table and extract enabled gates
     2. Search correlated JIRA/GitHub data for feature gate mentions
     3. Create mappings between feature gates and related work items
     4. Handle unknown feature gates by searching raw source data
     5. Generate final correlation results
-    
+
     The correlation finds feature gate references
     in issue summaries, descriptions, and commit messages.
     """
@@ -197,7 +198,7 @@ def correlate_table():
     def match_feature_gate(feature_gate: str, value):
         """
         Check if a feature gate is mentioned in a text value.
-        
+
         Uses case-insensitive substring matching to find feature gate
         references in various text fields.
         """
@@ -257,21 +258,34 @@ def correlate_table():
     unknown_feature_gates = feature_gates.difference(known_feature_gates)
     logger.debug(f"Identified: unknown_feature_gates: {unknown_feature_gates}")
 
-    # Write final correlation results
     with open(correlated_table_file, "w") as f:
         json.dump(result, f, indent=4)
+
+    summarized_features = json.loads(summarize_feature_gates(result))
+
+    print(f"KDEBUG: {summarized_features}")
+
+    for feature_name, summary in summarized_features.items():
+        project_names = result.get(feature_name, {}).get("projects", [])
+        for project_name in project_names:
+            if "feature_summaries" not in correlated[project_name]:
+                correlated[project_name]["feature_summaries"][feature_name] = summary
+
+    with open(correlated_file, "w") as f:
+        json.dump(correlated, f)
 
 
 def convert_json_to_markdown(data: dict) -> str:
     """
     Convert feature gate correlation data to readable Markdown.
-    
+
     Args:
         data: Dictionary mapping feature gates to related work items
-        
+
     Returns:
         Formatted Markdown string with hierarchical organization
     """
+
     def format_description(text):
         # Convert wiki-style formatting to markdown
         text = re.sub(r"\{\{(.*?)\}\}", r"`\1`", text)  # {{feature}} → `feature`
@@ -286,11 +300,11 @@ def convert_json_to_markdown(data: dict) -> str:
         lines.append(f"## {feature_gate}\n")
         for idx, issue in enumerate(issues, 1):
             lines.append(f"### {idx}. {issue.get('summary', 'No summary')}\n")
-            
+
             # Show epic relationships for context
             if "epic_key" in issue:
                 lines.append(f"**Epic**: `{issue['epic_key']}`\n")
-                
+
             # Include formatted descriptions
             if "description" in issue:
                 lines.append(
@@ -317,11 +331,11 @@ def correlate_all(
 ):
     """
     Execute the complete correlation pipeline.
-    
+
     This orchestrates all correlation steps:
     1. JIRA-to-source correlation (GitHub items referencing JIRA issues)
     2. Feature gate correlation (development work related to feature flags)
-    
+
     Args:
         data_directory: Optional Path object for data directory. Defaults to global data_dir.
         output_correlated_file: Optional Path object for correlated output file. Defaults to global correlated_file.
@@ -331,11 +345,11 @@ def correlate_all(
     correlate_with_jira_issue_id(
         data_directory, output_correlated_file, output_non_correlated_file
     )
-    
+
     # Note: These steps are currently disabled but preserved for future use:
     # remove_irrelevant_fields_from_correlated() - Clean up unnecessary data
     # filter_jira_issue_ids(correlated_file) - Apply additional filtering
-    
+
     # Step 2: Correlate with feature gate information
     correlate_table()
 

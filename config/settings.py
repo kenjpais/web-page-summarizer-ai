@@ -222,6 +222,9 @@ class ConfigFileSettings(BaseSettings):
     example_summary_file: str = "example_summary.txt"
     classify_prompt_template: str = "classify_prompt_template.txt"
     project_summary_template: str = "summarize_project_prompt_template.txt"
+    summarize_enabled_feature_gate_prompt_template: str = (
+        "summarize_enabled_feature_gate_prompt_template.txt"
+    )
 
 
 class AppSettings(BaseSettings):
@@ -321,6 +324,18 @@ class ConfigLoader:
         """Get summarization prompt template."""
         return self.load_text_config(
             self.settings.config_files.summarize_prompt_template
+        )
+
+    def get_feature_gate_summarize_prompt_template(self) -> str:
+        """Get feature gate summarization prompt template."""
+        return self.load_text_config(
+            self.settings.config_files.summarize_enabled_feature_gate_prompt_template
+        )
+
+    def get_project_summary_template(self) -> str:
+        """Get project summarization prompt template."""
+        return self.load_text_config(
+            self.settings.config_files.project_summary_template
         )
 
     def get_example_summary(self) -> str:

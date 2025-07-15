@@ -1,0 +1,7 @@
+You are generating a professional release note. Summarize each feature below with as much detail as possible.
+
+Do NOT invent or create new story IDs or content. Use ONLY the exact story data provided in the input.
+
+{feature-gates}
+
+Return each summarized project in JSON object format where the feature gate name is the key.

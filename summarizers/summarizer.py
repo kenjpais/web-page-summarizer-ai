@@ -1,8 +1,10 @@
+import json
 from pathlib import Path
 from utils.utils import get_env, json_to_markdown
 from clients.llm_client import LLMClient
 from chains.chains import project_summary_chain
 from chains.chains import summary_chain
+from chains.chains import feature_gate_summary_chain
 from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -16,31 +18,31 @@ correlated_file = data_dir / "correlated.json"
 def summarize_():
     """
     Generate a comprehensive summary of release data using LLM processing.
-    
+
     This function orchestrates the summarization process by:
     1. Loading correlated JIRA/GitHub data
     2. Converting data to human-readable Markdown format
     3. Building a structured prompt with examples
     4. Processing through the LLM to generate final summary
     5. Writing the summary to output file
-    
+
     Output: Creates summary.txt with the final release summary
     """
     logger.info("\n[*] Summarizing...")
-    
+
     # Output files for the summarization process
     prompt_payload = data_dir / "prompt_payload.txt"  # Intermediate prompt file
-    summary_file = data_dir / "summary.txt"           # Final summary output
+    summary_file = data_dir / "summary.txt"  # Final summary output
 
     def build_prompt_payload():
         """
         Construct the complete prompt for LLM summarization.
-        
+
         This function assembles the prompt by combining:
         - Template structure (defines output format)
         - Example summary (shows desired style and content)
         - Actual release data (converted to Markdown)
-        
+
         Returns:
             Complete prompt string ready for LLM processing
         """
@@ -54,10 +56,10 @@ def summarize_():
 
             # Load the example summary for few-shot learning
             example_summary = example_file.read()
-            
+
             # Convert JSON data to readable Markdown format
             release_notes = json_to_markdown(cor_file.read())
-            
+
             # Load the prompt template with placeholders
             prompt_payload_str = template_file.read()
 
@@ -66,7 +68,7 @@ def summarize_():
             prompt_payload_str = prompt_payload_str.replace(
                 "{summary-example}", f"\n{example_summary}"
             )
-            
+
             # Inject the actual release data to be summarized
             prompt_payload_str = prompt_payload_str.replace(
                 "{release-notes}", f"\n{release_notes}"
@@ -80,7 +82,7 @@ def summarize_():
 
     # Generate the summary using the LLM client
     result = LLMClient().prompt_llm(build_prompt_payload())
-    
+
     # Write the final summary to output file
     with open(summary_file, "w") as summary:
         summary.write(result)
@@ -89,11 +91,11 @@ def summarize_():
 def summarize_projects():
     """
     Generate project-level summaries using LangChain processing.
-    
+
     This function creates higher-level summaries focused on project
     organization and strategic overview rather than detailed technical
     changes. It uses the project_summary_chain for structured processing.
-    
+
     Note: This function appears to be a starting point for project-level
     summarization but may need additional implementation.
     """
@@ -107,6 +109,12 @@ def summarize_projects():
     with open(projects_summary_file, "w") as summary:
         summary.write(result)
     return result
+
+
+def summarize_feature_gates(feature_gates):
+    return feature_gate_summary_chain.invoke(
+        {"feature-gates": f"""Feature Gates:\n{json_to_markdown(feature_gates)}"""}
+    )
 
 
 def summarize():
