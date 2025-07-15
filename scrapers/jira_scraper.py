@@ -35,11 +35,7 @@ class JiraScraper:
     - Hierarchical organization (Project -> Issue Type -> Individual Issues)
     - Recursive linking of related issues (epics, features, etc.)
     - Batched API calls to handle rate limits
-    - Markdown generation for human-readable reports
-    
-    The scraper handles the complex JIRA data model where issues can be linked
-    in various ways (epic-story relationships, feature links, etc.) and organizes
-    them into a clean hierarchy for downstream processing.
+    - Markdown generation for readable reports
     """
     
     def __init__(self, filter_on: bool = FILTER_ON) -> None:
