@@ -17,31 +17,62 @@ logger = get_logger(__name__)
 settings = get_settings()
 config_loader = get_config_loader()
 
-FILTER_ON = settings.processing.filter_on
-FEATURE_FILTER_ON = False
-KEYWORD_MATCHING_ON = False
+# Feature flags for different processing modes
+FILTER_ON = settings.processing.filter_on  # Enable/disable issue filtering
+FEATURE_FILTER_ON = False  # Feature-specific filtering (currently disabled)
+KEYWORD_MATCHING_ON = False  # Content-based keyword filtering (currently disabled)
 
 data_dir = Path(settings.directories.data_dir)
 
 
 class JiraScraper:
+    """
+    JIRA scraper that extracts, filters, and organizes JIRA issues into a hierarchical structure.
+    
+    Key Features:
+    - Multi-level caching for performance (issues and projects)
+    - Configurable filtering based on issue types and projects  
+    - Hierarchical organization (Project -> Issue Type -> Individual Issues)
+    - Recursive linking of related issues (epics, features, etc.)
+    - Batched API calls to handle rate limits
+    - Markdown generation for human-readable reports
+    
+    The scraper handles the complex JIRA data model where issues can be linked
+    in various ways (epic-story relationships, feature links, etc.) and organizes
+    them into a clean hierarchy for downstream processing.
+    """
+    
     def __init__(self, filter_on: bool = FILTER_ON) -> None:
+        """
+        Initialize JIRA scraper with connection and caching.
+        
+        Args:
+            filter_on: Whether to apply issue filtering based on configuration
+        """
         data_dir.mkdir(exist_ok=True)
         self.filter_on = filter_on
+        
         try:
+            # Initialize JIRA client with error handling
             self.jira_client: JiraClient = JiraClient()
             if not self.jira_client:
                 raise_scraper_exception(f"JiraClient() is {self.jira_client}")
 
             self.jira: JIRA = self.jira_client.jira
+            
+            # Find the custom "feature" field by scanning all available fields
+            # This field links issues to features and varies by JIRA instance
             self.feature_field_id: str = ""
-
             for field in self.jira.fields():
                 if "feature" in field["name"].lower():
                     self.feature_field_id = field["id"]
 
+            # Initialize caches for performance
+            # Issue cache: prevents re-fetching the same issue multiple times
+            # Project cache: stores project metadata for hierarchy building
             self.issue_result_cache = {}
             self.project_result_cache = {}
+            
         except JIRAError as e:
             raise_scraper_exception(
                 f'Failed to connect to JIRA Server: {getattr(e, "status_code", "N/A")} - {getattr(e, "text", str(e))}'
@@ -49,33 +80,31 @@ class JiraScraper:
         except Exception as e:
             raise_scraper_exception(f"Unexpected error: {e}")
 
+        # Load filtering configuration from JSON files
+        # These define which issue types and projects to include/exclude
         self.filter = config_loader.get_jira_filter()
         self.filter_out = config_loader.get_jira_filter_out()
 
     def validate_jira_url(self, url: str) -> bool:
+        """Validate that URL is a proper JIRA issue browse URL."""
         return "browse/" in url
 
     def filter_pass(self, jira_issue: Issue) -> bool:
         """
-        if jira_issue.issuetype.name not in self.filter["issuetype"]["name"]:
-            logger.debug(
-                f"\nKDEBUG: {jira_issue.issuetype.name} not in valid issuetypes {self.filter["issuetype"]["name"]}"
-            )
-            return False
-        if jira_issue.issuetype.id in self.filter_out["issuetype"]["id"]:
-            logger.debug(
-                f"\nKDEBUG: {jira_issue.issuetype.id} in invalid issue_ids {self.filter["issuetype"]["id"]}"
-            )
-            return False
-        if (
-            getattr(jira_issue.project, "key", "")
-            in self.filter_out["project"]["key"]
-        ):
-            logger.debug(
-                f"\nKDEBUG: {getattr(jira_issue.project, "key", "")} in invalid project_keys {self.filter_out["project"]["key"]}"
-            )
-            return False
-        return True
+        Determine if a JIRA issue passes the configured filters.
+        
+        Filtering criteria:
+        1. Issue type must be in the allowed list (e.g., Epic, Story, Bug)
+        2. Issue type ID must not be in the blocked list
+        3. Project key must not be in the blocked projects list
+        
+        This helps focus on relevant issues and exclude test/internal projects.
+        
+        Args:
+            jira_issue: JIRA Issue object to evaluate
+            
+        Returns:
+            True if issue passes all filters, False otherwise
         """
         return (
             jira_issue.issuetype.name in self.filter["issuetype"]["name"]
@@ -86,7 +115,16 @@ class JiraScraper:
 
     def search_project(self, project_key: str) -> Any:
         """
-        Fetches JIRA project information using the JIRA python library.
+        Fetch JIRA project information with caching.
+        
+        Projects contain metadata like summary and description that provide
+        context for the issues within them.
+        
+        Args:
+            project_key: JIRA project key (e.g., "OCPBUGS")
+            
+        Returns:
+            JIRA Project object
         """
         if project_key not in self.project_result_cache:
             try:
@@ -102,8 +140,13 @@ class JiraScraper:
 
     def populate_project_result_cache(self, project_keys: List[str]) -> None:
         """
-        Fetches JIRA project information using the JIRA python library.
-        Populates self.project_result_cache to be used later by organize_issues()
+        Pre-populate project cache for efficiency.
+        
+        Fetches all needed projects in one batch operation rather than
+        making individual API calls during hierarchy building.
+        
+        Args:
+            project_keys: List of project keys to cache
         """
         desired_keys = set(project_keys)
         projects = self.jira.projects()
@@ -113,15 +156,28 @@ class JiraScraper:
 
     def search_issues(self, issue_ids: List[str]) -> List[Issue]:
         """
-        Fetches JIRA information using the JIRA python library.
-        Performs pagination.
-        Returns a list of JIRA Issue objects.
+        Fetch JIRA issues using batched queries for performance.
+        
+        JIRA API has limitations on query complexity and result size,
+        so this implementation:
+        1. Handles single vs. multiple issue queries differently
+        2. Uses caching to avoid re-fetching
+        3. Batches large requests to stay within API limits
+        4. Gracefully handles API errors
+        
+        Args:
+            issue_ids: List of JIRA issue keys (e.g., ["OCPBUGS-123", "STOR-456"])
+            
+        Returns:
+            List of JIRA Issue objects that were successfully fetched
         """
 
         def run_query(issue_ids):
             """
-            Runs a JQL query.
-            Returns a list of JIRA Issue objects.
+            Execute a JQL query to fetch issue details.
+            
+            For single issues, uses the simpler issue() API.
+            For multiple issues, uses search_issues() with JQL.
             """
             try:
                 if len(issue_ids) == 1:
@@ -131,11 +187,14 @@ class JiraScraper:
                             self.jira_client.jira.issue(issue_id)
                         ]
                     return self.issue_result_cache[issue_id]
+                    
+                # For multiple issues, use JQL search
+                # Request specific fields to minimize response size and improve performance
                 return list(
                     self.jira.search_issues(
                         f"issuekey in ({','.join(issue_ids)})",
                         fields=f"summary,description,issuetype,parent,project,issuelinks,{self.jira_client.epic_link_field_id}",
-                        use_post=True,
+                        use_post=True,  # Use POST for large query strings
                         maxResults=len(issue_ids),
                     )
                 )
@@ -160,9 +219,10 @@ class JiraScraper:
             )
 
         issues = []
-        batch_size = 500
+        batch_size = 500  # JIRA API limit for batch operations
         issue_id_iter = iter(issue_ids)
 
+        # Process issues in batches to stay within API limits
         for i, chunk in enumerate(chunked(issue_id_iter, batch_size)):
             issue_chunk = run_query(chunk)
             issues.extend(issue_chunk)
@@ -173,19 +233,55 @@ class JiraScraper:
 
     def extract(self, urls):
         """
-        Extracts the JIRA information from each URL.
+        Main extraction method that orchestrates the entire JIRA scraping process.
+        
+        Process:
+        1. Parse URLs to extract JIRA issue IDs
+        2. Validate URLs and filter valid ones
+        3. Fetch issues and related data via API
+        4. Organize issues into hierarchical structure
+        5. Write results to JSON and Markdown files
+        
+        Args:
+            urls: List of JIRA browse URLs to process
         """
 
         def organize_issues(issues, epic_link_field_id):
             """
-            Organizes the JIRA issues in a hierarchical structure.
+            Organize JIRA issues into a hierarchical structure for analysis.
+            
+            Creates a nested structure:
+            Project -> Issue Type (epics/stories/bugs/etc.) -> Individual Issues
+            
+            This organization reflects the natural JIRA hierarchy and makes it easier
+            to understand relationships between different types of work items.
+            
+            The function also handles:
+            - Recursive linking (epics link to stories, features link to issues)
+            - Filtering based on configuration
+            - Keyword matching for relevance
+            - Duplicate detection via visited_keys tracking
+            
+            Args:
+                issues: List of JIRA Issue objects to organize
+                epic_link_field_id: Custom field ID for epic links
+                
+            Returns:
+                Nested dictionary representing the issue hierarchy
             """
             hierarchy = {}
-            visited_keys = set()
+            visited_keys = set()  # Prevent processing the same issue multiple times
 
             def add_issue(issue, hierarchy):
                 """
-                Adds JIRA issues recursively by scraping the attached links eg. feature link, epic link etc.
+                Recursively add a JIRA issue and its linked issues to the hierarchy.
+                
+                This function is the core of the organization logic. It:
+                1. Validates the issue structure
+                2. Handles project setup
+                3. Applies filtering rules
+                4. Places issues in the correct hierarchy level
+                5. Recursively processes linked issues (epics, features)
                 """
                 if not issue or not hasattr(issue, "fields"):
                     raise ValueError("[ERROR] Invalid issue")
@@ -194,7 +290,10 @@ class JiraScraper:
 
                 def add_project(project_key, project_name, hierarchy):
                     """
-                    Helper function to add JIRA project to issue hierarchy structure.
+                    Add project metadata to hierarchy if not already present.
+                    
+                    Projects provide important context (summary, description)
+                    that helps understand the overall scope of work.
                     """
                     if project_name in hierarchy:
                         return
@@ -211,9 +310,18 @@ class JiraScraper:
 
                 def add_feature_issues(fields, hierarchy):
                     """
-                    Helper function to add JIRA feature issues.
+                    Find and recursively add feature-linked issues.
+                    
+                    Features can be linked via:
+                    1. Custom feature fields (varies by JIRA instance)
+                    2. Issue links with specific relationship types
+                    
+                    This ensures we capture the full feature scope, not just
+                    the directly mentioned issues.
                     """
                     feature_issue_keys = set()
+                    
+                    # Get valid feature link types from configuration
                     if self.filter:
                         issuelinks_types = self.filter.get("issuelinks", {}).get(
                             "type", {}
@@ -224,6 +332,7 @@ class JiraScraper:
                             outward_link_types
                         )
 
+                    # Check custom feature field
                     if self.feature_field_id and hasattr(
                         issue.fields, self.feature_field_id
                     ):
@@ -237,6 +346,7 @@ class JiraScraper:
                         ):
                             feature_issue_keys.add(feature_issue.key)
 
+                    # Check issue links for feature relationships
                     for link in getattr(fields, "issuelinks", []):
                         if (
                             hasattr(link, "type")
@@ -247,54 +357,67 @@ class JiraScraper:
                             elif hasattr(link, "outwardIssue"):
                                 feature_issue_keys.add(link.outwardIssue.key)
 
+                    # Recursively process feature issues
                     if feature_issue_keys and (
                         feature_issues := self.search_issues(list(feature_issue_keys))
                     ):
                         for feature_issue in feature_issues:
                             add_issue(feature_issue, hierarchy)
 
-                # Check if key already visited
+                # Prevent infinite recursion and duplicate processing
                 if issue.key in visited_keys:
                     return
                 visited_keys.add(issue.key)
 
+                # Extract project information
                 project_key = getattr(fields.project, "key", "")
                 project_name = getattr(fields.project, "name", "")
                 if not project_name or not project_key:
                     return
 
+                # Apply filtering if enabled
                 if self.filter_on and not self.filter_pass(fields):
                     logger.debug(f"Issue [{issue.key}] failed filter pass")
                     return
 
+                # Apply keyword matching if enabled (currently disabled)
                 if KEYWORD_MATCHING_ON and not contains_valid_keywords(
                     vars(fields).values()
                 ):
                     logger.debug(f"Issue [{issue.key}] failed keyword match")
                     return
 
+                # Set up project in hierarchy
                 add_project(project_key, project_name, hierarchy)
 
+                # Determine issue type and create appropriate hierarchy level
                 if issue_type := getattr(fields.issuetype, "name", "").lower():
+                    # Normalize issue type names for consistent hierarchy
                     issue_type_key = (
                         "stories" if issue_type == "story" else f"{issue_type}s"
                     )
                     if issue_type_key not in hierarchy[project_name]:
                         hierarchy[project_name][issue_type_key] = {}
+                        
+                    # Add the issue to the hierarchy
                     if issue_dict := create_jira_issue_dict(issue):
                         hierarchy[project_name][issue_type_key][issue.key] = issue_dict
 
+                    # Handle epic-story relationships
                     if epic_link_field_id and (
                         epic_key := getattr(fields, epic_link_field_id, None)
                     ):
                         hierarchy[project_name][issue_type_key][issue.key][
                             "epic_key"
                         ] = epic_key
+                        # Recursively fetch and add the linked epic
                         if epic := self.search_issues([epic_key]):
                             add_issue(epic[0], hierarchy)
 
+                    # Recursively add feature-linked issues
                     add_feature_issues(fields, hierarchy)
 
+            # Process all issues through the hierarchy builder
             for issue in issues:
                 add_issue(issue, hierarchy)
 
@@ -302,11 +425,13 @@ class JiraScraper:
 
         logger.debug(f"FILTER IS {"ON" if self.filter_on else "OFF"}")
 
+        # Parse JIRA issue IDs from URLs
         issue_ids = set()
         for url in urls:
             if self.validate_jira_url(url):
                 parts = url.strip().split("browse/")
                 if len(parts) > 1 and parts[1]:
+                    # Extract issue ID and handle potential suffixes
                     issue_id = parts[1].split("_")[0]
                     if issue_id:
                         issue_ids.add(issue_id)
@@ -316,33 +441,42 @@ class JiraScraper:
 
         logger.info(f"[*] Extracted {len(issue_ids)} Issue IDs")
 
+        # Pre-populate project cache for efficiency
         self.populate_project_result_cache([id.split("-")[0] for id in issue_ids])
 
+        # Fetch all issues via API
         issues = self.search_issues(list(issue_ids))
         if not issues:
             raise_scraper_exception("[!][ERROR] No JIRA issues found")
 
         logger.debug(f"\nFetched {len(issues)} JIRA issues")
+        
+        # Report any issues that failed to fetch (permissions, deleted, etc.)
         if len(issues) < len(issue_ids):
             failed_issue_ids = issue_ids - set(issue.key for issue in issues)
             logger.warning(
                 f"{len(failed_issue_ids)} Issue IDs failed fetched: {failed_issue_ids}"
             )
 
+        # Build the hierarchical structure
         hierarchy = organize_issues(issues, self.jira_client.epic_link_field_id)
         if not hierarchy:
             raise_scraper_exception("[ERROR] JIRA Hierarchy construction failed")
+            
+        # Write results in both JSON (for processing) and Markdown (for humans)
         write_json_file(hierarchy)
         write_md_file(render_to_markdown(hierarchy))
 
 
 def write_json_file(hierarchy):
+    """Write JIRA hierarchy to JSON file for downstream processing."""
     json_file = data_dir / "jira.json"
     with open(json_file, "w") as f:
         json.dump(hierarchy, f, indent=2)
 
 
 def write_md_file(md):
+    """Write JIRA data to Markdown file for human readability."""
     if not md:
         return
     md_file = data_dir / "jira.md"
@@ -351,20 +485,37 @@ def write_md_file(md):
 
 
 def extract_jira_ids(md):
+    """Extract JIRA issue IDs from text using regex pattern matching."""
     return re.findall(r"\b[A-Z][A-Z0-9]+-\d+\b", md)
 
 
 def render_to_markdown(hierarchy):
+    """
+    Convert JIRA hierarchy to human-readable Markdown format.
+    
+    Creates a structured document with:
+    - Project-level organization
+    - Issue type groupings (Epics, Stories, Bugs, etc.)
+    - Proper hierarchical headers
+    - Issue metadata (summaries, descriptions, comments)
+    - Cross-references between linked issues
+    
+    Args:
+        hierarchy: Nested dictionary representing JIRA issue organization
+        
+    Returns:
+        String containing formatted Markdown document
+    """
     md = ""
     for project, project_data in hierarchy.items():
         md += f"# Project: {project}\n\n"
         md += f"**Summary**: {project_data.get('summary', '')}\n\n"
         md += f"**Description**: {project_data.get('description', '')}\n\n"
 
-        # Process all issue types dynamically
+        # Process all issue types dynamically to handle various JIRA configurations
         issue_types = [
             "epics",
-            "stories",
+            "stories", 
             "bugs",
             "features",
             "enhancements",
@@ -385,13 +536,14 @@ def render_to_markdown(hierarchy):
                     )
                     continue
 
-                # Format header based on issue type
+                # Format headers based on issue type hierarchy
+                # Epics are primary (##), others are secondary (###)
                 if issue_type == "epics":
                     md += f"## Epic: {issue_key} — {issue.get('summary', '')}\n"
                 elif issue_type == "stories":
                     md += f"### Story: {issue_key} — {issue.get('summary', '')}\n"
                 else:
-                    # For bugs, features, enhancements, etc., use the singular form
+                    # Handle plural to singular conversion for clean headers
                     issue_type_singular = (
                         issue_type.rstrip("s")
                         if issue_type.endswith("s")
@@ -401,7 +553,7 @@ def render_to_markdown(hierarchy):
 
                 md += f"**Description:**\n{issue.get('description', '')}\n\n"
 
-                # Add comments if available
+                # Add comments if available for additional context
                 comments = issue.get("comments", [])
                 if comments:
                     md += "**Comments:**\n"
@@ -409,11 +561,11 @@ def render_to_markdown(hierarchy):
                         md += f"- {comment}\n"
                     md += "\n"
 
-                # Add epic link if available (for non-epic issues)
+                # Show epic relationships for non-epic issues
                 if issue_type != "epics" and "epic_key" in issue:
                     md += f"**Linked Epic:** {issue['epic_key']}\n\n"
 
-        md += "---\n\n"
+        md += "---\n\n"  # Project separator
     return md
 
 
