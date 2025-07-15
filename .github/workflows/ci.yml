@@ -65,7 +65,7 @@ jobs:
           echo "JIRA_SERVER=${{ env.JIRA_SERVER }}" >> .env
           echo "LLM_API_URL=${{ env.LLM_API_URL }}" >> .env
           echo "CONFIG_FILE_PATH=${{ env.CONFIG_FILE_PATH }}" >> .env
-          echo 'SOURCES="[\"JIRA\", \"GITHUB\"]"' >> .env
+          echo 'SOURCES=["JIRA", "GITHUB"]' >> .env
           echo "GH_API_TOKEN=${{ secrets.GH_API_TOKEN }}" >> .env
 
 

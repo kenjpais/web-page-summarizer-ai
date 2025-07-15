@@ -2,6 +2,7 @@
 Centralized settings management file.
 """
 
+import os
 import json
 from functools import lru_cache
 from pathlib import Path
@@ -10,6 +11,10 @@ from urllib.parse import urlparse
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from dotenv import load_dotenv
+
+# This line makes .env values available in os.environ
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../.env"))
 
 
 class APISettings(BaseSettings):
