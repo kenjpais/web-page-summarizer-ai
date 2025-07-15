@@ -14,7 +14,7 @@ jobs:
       DATA_DIR: data
       CONFIG_DIR: config
       DEBUG: "false"
-      SOURCE_PAGE: https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3
+      SOURCE_PAGE: https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-stable/release/4.19.0-okd-scos.0
       GITHUB_API_URL: https://api.github.com/graphql
       GITHUB_SERVER: https://github.com
       JIRA_SERVER: https://issues.redhat.com
