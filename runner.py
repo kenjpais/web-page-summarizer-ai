@@ -1,6 +1,7 @@
-import os
 import logging
+from pathlib import Path
 from utils.utils import get_env
+from utils.file_utils import delete_all_in_directory
 from filters.filter_urls import filter_urls
 from scrapers.html_scraper import scrape_html
 from scrapers.scrapers import scrape_all
@@ -9,23 +10,62 @@ from summarizers.summarizer import summarize
 from dotenv import load_dotenv
 from utils.logging_config import setup_logging
 
+# Load environment variables with override to ensure latest values are used
 load_dotenv(override=True)
 
 setup_logging()
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
+
+# Ensure data directory exists for pipeline output
+Path(get_env("DATA_DIR")).mkdir(exist_ok=True)
 
 
-def run(source):
+def run(source: str) -> None:
     """
-    Entry point to run the full pipeline.
-    - Parses the input HTML source
-    - Extracts and filters relevant URLs
-    - Scrapes structured data from sources
-    - Correlates and summarizes the results
+    Entry point to run the full release page analysis pipeline.
+    
+    This orchestrates a multi-step process to extract, analyze, and summarize
+    release information from OpenShift release pages and related resources.
+    
+    Pipeline Steps:
+    1. Clean workspace - Remove any previous run artifacts
+    2. HTML scraping - Extract URLs from the main release page
+    3. URL filtering - Categorize URLs by source type (GitHub, JIRA)
+    4. Data scraping - Fetch detailed information from each source
+    5. Correlation - Link related items across sources using JIRA IDs
+    6. Summarization - Generate final reports using LLM analysis
+    
+    Args:
+        source: Either a file path to an HTML file or a URL to scrape
+    
+    Note: The order of operations is critical - each step depends on
+    outputs from the previous step. Correlation requires both JIRA and
+    GitHub data to be scraped first.
     """
-    os.makedirs(get_env("DATA_DIR"), exist_ok=True)
+    
+    # Step 1: Clean workspace to ensure fresh start
+    # This prevents contamination from previous runs
+    delete_all_in_directory(get_env("DATA_DIR"))
+    
+    # Step 2: Extract URLs from the main release page
+    # This creates urls.txt with all discovered links
     scrape_html(source)
+    
+    # Step 3: Filter URLs by source type  
+    # Creates separate files like github_urls.txt, jira_urls.txt
+    # based on domain matching and source configuration
     filter_urls()
+    
+    # Step 4: Scrape detailed data from each source
+    # Fetches full content from GitHub PRs/commits and JIRA issues
+    # Creates source-specific JSON files with structured data
     scrape_all()
+    
+    # Step 5: Correlate data across sources
+    # Links JIRA issues with related GitHub items using issue IDs
+    # Also correlates with feature gate information if available
     correlate_all()
+    
+    # Step 6: Generate final summaries
+    # Uses LLM to create human-readable reports from correlated data
     summarize()

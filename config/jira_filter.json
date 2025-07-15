@@ -9,7 +9,7 @@
         "name": [
             "Epic",
             "Story",
-            "Feature", 
+            "Feature",
             "Enhancement"
         ],
         "id": []
@@ -20,5 +20,19 @@
     "resolution": {
         "name": [],
         "id": []
+    },
+    "issuelinks": {
+        "type": {
+            "inward": [
+                "parent feature",
+                "implements",
+                "belongs to"
+            ],
+            "outward": [
+                "parent feature",
+                "implements",
+                "belongs to"
+            ]
+        }
     }
 }

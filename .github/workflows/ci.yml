@@ -14,7 +14,7 @@ jobs:
       DATA_DIR: data
       CONFIG_DIR: config
       DEBUG: "false"
-      SOURCE_PAGE: https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-next/release/4.20.0-okd-scos.ec.3
+      SOURCE_PAGE: https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-stable/release/4.19.0-okd-scos.0
       GITHUB_API_URL: https://api.github.com/graphql
       GITHUB_SERVER: https://github.com
       JIRA_SERVER: https://issues.redhat.com
@@ -65,7 +65,7 @@ jobs:
           echo "JIRA_SERVER=${{ env.JIRA_SERVER }}" >> .env
           echo "LLM_API_URL=${{ env.LLM_API_URL }}" >> .env
           echo "CONFIG_FILE_PATH=${{ env.CONFIG_FILE_PATH }}" >> .env
-          echo 'SOURCES="[\"JIRA\", \"GITHUB\"]"' >> .env
+          echo 'SOURCES=["JIRA", "GITHUB"]' >> .env
           echo "GH_API_TOKEN=${{ secrets.GH_API_TOKEN }}" >> .env
 
 

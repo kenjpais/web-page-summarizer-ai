@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from utils.utils import get_env
 
-os.makedirs(get_env("DATA_DIR"), exist_ok=True)
+Path(get_env("DATA_DIR")).mkdir(exist_ok=True)

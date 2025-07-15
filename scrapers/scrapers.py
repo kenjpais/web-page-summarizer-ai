@@ -1,38 +1,60 @@
 import json
+from typing import List, Dict, Type, Any
 from utils.utils import get_env, get_urls
-from scrapers.exceptions import ScraperException
 from scrapers.jira_scraper import JiraScraper
 from scrapers.github_scraper import GithubScraper
+from utils.logging_config import get_logger
 
-MAX_WORKERS, MAX_SCRAPE_SIZE, BATCH_SIZE = 3, 400, 50
+logger = get_logger(__name__)
 
-SOURCE_SCRAPERS_MAP = {
+# Registry mapping source names to their corresponding scraper classes
+# This extensible pattern allows adding new sources without modifying core logic
+# Each scraper must implement the extract(urls) method interface
+SOURCE_SCRAPERS_MAP: Dict[str, Type[Any]] = {
     "JIRA": JiraScraper,
     "GITHUB": GithubScraper,
 }
 
 
-def scrape_sources():
-    sources = json.loads(get_env("SOURCES"))
-    data_dir = get_env("DATA_DIR")
+def scrape_sources() -> None:
+    """
+    Orchestrate scraping across all configured sources.
+    
+    This function iterates through each configured source type (GitHub, JIRA, etc.),
+    loads the URLs specific to that source, and executes the appropriate scraper.
+    
+    Process:
+    1. Load source configuration from environment
+    2. For each source, load its filtered URLs
+    3. Instantiate and execute the appropriate scraper
+    4. Handle missing URLs or scraper implementations gracefully
+    """
+    # Load the list of configured sources from environment settings
+    sources: List[str] = json.loads(get_env("SOURCES"))
 
     for src in sources:
-        print(f"\n[*] Scraping {src} links...")
+        logger.info(f"Scraping {src} links...")
+        
+        # Load URLs that were filtered for this specific source type
+        # These come from the filter_urls step that categorized URLs by domain
         urls = get_urls(src)
         if not urls:
-            print(f"[!] No URLs found for {src}, skipping.")
+            logger.warning(f"No URLs found for {src}, skipping.")
             continue
-        filter_instance = SOURCE_SCRAPERS_MAP.get(src)
-        if not filter_instance:
-            print(f"[!] No scraper defined for source: {src}")
+            
+        # Get the scraper class for this source type
+        scraper_class = SOURCE_SCRAPERS_MAP.get(src)
+        if not scraper_class:
+            logger.error(f"No scraper defined for source: {src}")
             continue
-        try:
-            filter_instance().extract(urls)
-        except ScraperException as e:
-            print(f"[!] Error scraping {src}: {e}")
-        except Exception as e:
-            print(f"[!] Unexpected error scraping {src}: {e}")
+            
+        # Instantiate and execute the scraper with source-specific URLs
+        # Each scraper handles its own API authentication, rate limiting, etc.
+        scraper_class().extract(urls)
 
 
-def scrape_all():
+def scrape_all() -> None:
+    """
+    Entry point for the scraping phase of the pipeline.
+    """
     scrape_sources()

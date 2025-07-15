@@ -1,14 +1,23 @@
+import re
 import json
 import unittest
+from urllib.parse import urlparse
+from pathlib import Path
+from scrapers.html_scraper import scrape_html
+from filters.filter_urls import filter_urls
 from scrapers.github_scraper import GithubScraper
 from scrapers.exceptions import ScraperException
-from utils.utils import get_env
+from utils.utils import get_urls
+from config.settings import get_settings
 from utils.logging_config import setup_logging
 
 setup_logging()
+settings = get_settings()
+data_dir = Path(settings.directories.data_dir)
+github_file_path = data_dir / "github.json"
 
 
-class TestGithubFilter(unittest.TestCase):
+class TestGithubScraper(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -72,11 +81,56 @@ class TestGithubFilter(unittest.TestCase):
         for item in result:
             self.assertIn("id", item)
 
+    def test_end_2_end(self):
+        url = "https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-stable/release/4.19.0-okd-scos.0"
+
+        # Run the pipeline
+        scrape_html(url)
+        filter_urls()
+
+        src = "GITHUB"
+        urls = get_urls(src)
+        if not urls:
+            self.fail(f"[!] No URLs found for {src}.")
+
+        expected_ids = sorted(id for url in urls if (id := extract_github_id(url)))
+
+        self.gf.extract(urls)
+
+        result = load_github_file()
+
+        for item in result:
+            self.assertIn("id", item)
+
+        result_ids = sorted([item["id"] for item in result])
+        self.assertEqual(len(result_ids), len(expected_ids))
+        self.assertListEqual(expected_ids, result_ids)
+
 
 def load_github_file():
-    if data_dir := get_env("DATA_DIR"):
-        with open(f"{data_dir}/github.json", "r") as f:
-            return json.load(f)
+    with open(github_file_path, "r") as f:
+        return json.load(f)
+
+
+def extract_github_id(url: str) -> str | None:
+    """
+    Extract the pull request number or commit SHA from a GitHub URL.
+
+    Returns:
+        - Pull request number as string (e.g., "123")
+        - Commit SHA as string (e.g., "abcd1234...")
+        - None if no ID found
+    """
+    parsed = urlparse(url)
+    path = parsed.path
+
+    pr_match = re.search(r"/pull/(\d+)", path)
+    if pr_match:
+        return pr_match.group(1)
+
+    commit_match = re.search(r"/commit/([a-fA-F0-9]+)", path)
+    if commit_match:
+        return commit_match.group(1)
 
 
 if __name__ == "__main__":

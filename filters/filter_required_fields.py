@@ -1,12 +1,13 @@
 import json
+from pathlib import Path
 from utils.utils import get_env
 
 
 def remove_irrelevant_fields_from_correlated():
     sources = json.loads(get_env("SOURCES"))
-    data_dir = get_env("DATA_DIR")
-    config_dir = get_env("CONFIG_DIR")
-    correlated_file = f"{data_dir}/correlated.json"
+    data_dir = Path(get_env("DATA_DIR"))
+    config_dir = Path(get_env("CONFIG_DIR"))
+    correlated_file = data_dir / "correlated.json"
 
     # Load nested correlated data (dict of dict of dicts)
     with open(correlated_file, "r") as f:
@@ -14,7 +15,7 @@ def remove_irrelevant_fields_from_correlated():
 
     for src in sources:
         req_fields = []
-        req_field_file = f"{config_dir}/required_{src.lower()}_fields.json"
+        req_field_file = config_dir / f"required_{src.lower()}_fields.json"
         with open(req_field_file, "r") as f:
             req_fields = json.load(f)
 

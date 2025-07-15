@@ -1,17 +1,29 @@
-import os
 import requests
 from jira import JIRA, JIRAError
-from utils.utils import get_env
+from config.settings import get_settings
+from utils.logging_config import get_logger
+
+logger = get_logger(__name__)
+settings = get_settings()
 
 
 class JiraClient:
-    def __init__(self):
-        self.server = os.getenv("JIRA_SERVER")
+    def __init__(self) -> None:
+        self.server: str = settings.api.jira_server
+        if not self.server:
+            raise JIRAError(
+                f"Invalid JIRA_SERVER environment variable is {self.server}"
+            )
         self.base_url = f"{self.server}/rest/api/2"
-        self.jira = JIRA(options={"server": self.server})
-        debug_enabled = get_env("DEBUG")
+        try:
+            self.jira = JIRA(options={"server": self.server})
+        except JIRAError as e:
+            raise JIRAError(f"Failed to connect to JIRA server {self.server}: {e}")
+        debug_enabled = settings.processing.debug
         if debug_enabled:
-            print(f"Connected to JIRA Server: {self.jira.server_info()['serverTitle']}")
+            logger.debug(
+                f"Connected to JIRA Server: {self.jira.server_info()['serverTitle']}"
+            )
         self.epic_link_field_id = self.get_epic_link_field_id()
 
     def get_epic_link_field_id(self):

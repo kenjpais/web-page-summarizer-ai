@@ -1,14 +1,17 @@
-import os
 import requests
 import markdown
 import pandas as pd
 from io import StringIO
+from pathlib import Path
 from bs4 import BeautifulSoup
 from markdown_it import MarkdownIt
+from utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def load_html(source):
-    if os.path.isfile(source):
+    if Path(source).is_file():
         with open(source, "r", encoding="utf-8") as f:
             return f.read()
     response = requests.get(source)
@@ -23,17 +26,19 @@ def parse_html(source):
     return soup
 
 
-def parse_tables(soup):
+def parse_tables(soup) -> list[pd.DataFrame]:
     tables = soup.find_all("table")
+    dataframes = []
+
     for i, table in enumerate(tables, start=1):
         try:
             table_html = StringIO(str(table))
             df = pd.read_html(table_html)[0]
-            print(f"\nTable {i}:")
-            print(df.to_string(index=False))
+            dataframes.append(df)
         except Exception as e:
-            print(f"Skipping table {i} due to error: {e}")
-            continue
+            logger.error(f"Skipping table {i} due to error: {e}")
+
+    return dataframes
 
 
 def parse_markdown(md):
