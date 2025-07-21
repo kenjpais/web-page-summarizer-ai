@@ -1,9 +1,21 @@
-You are generating a professional release note. Summarize each feature below with as much detail as possible.
+You are generating professional release note content.
 
-Do NOT invent or create new story IDs or content.
-Do NOT include test related information. 
-Use ONLY the exact story data provided in the input.
+Summarize each feature below with clear and accurate technical detail, keeping the target audience of OpenShift developers and operators in mind.
 
+STRICTLY follow these rules:
+- DO NOT include any test-related information, including test plans, test names, test cases, test failures, test frameworks (e.g., e2e, CI, Ginkgo, Polarion, etc.).
+- DO NOT include any unique identifiers, issue IDs, epic IDs, or alphanumeric tracking codes.
+- DO NOT include internal-only metadata or links (e.g., Jira tickets, GitHub PR numbers, URLs).
+- DO NOT invent or fabricate any technical detail. Use ONLY the content provided.
+- Filter out internal or test-only changes that do not introduce user-facing functionality.
+- Group related tickets and PRs where applicable.
+
+INCLUDE:
+- Key feature purpose
+- Technical changes or improvements
+- Impact to the platform or user
+
+Return a JSON object where each key is the feature name, and each value is a single-paragraph summary of that feature.
+
+Input:
 {feature-gates}
-
-Return each summarized project in JSON object format where the feature gate name is the key.

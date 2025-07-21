@@ -10,12 +10,9 @@ data_dir = Path(settings.directories.data_dir)
 
 class TestSummarizeUrlController(unittest.TestCase):
     def setUp(self):
-        self.data_dir = data_dir
-        self.data_dir.mkdir(exist_ok=True)
-        # delete_all_in_directory(self.data_dir)
         self.url = "https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-stable/release/4.19.0-okd-scos.0"
         self.release_name = self.url.strip().split("/release/")[1]
-        self.summary_dir = self.data_dir / "summaries" / self.release_name
+        self.summary_dir = data_dir / "summaries" / self.release_name
         self.summary_file_path = self.summary_dir / "summary.txt"
 
     def test_summarize_release_page_from_url(self):

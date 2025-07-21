@@ -1,3 +1,4 @@
+from utils.parser_utils import clean_md_text
 from dataclasses import dataclass, asdict
 
 
@@ -5,18 +6,19 @@ from dataclasses import dataclass, asdict
 class GithubModel:
     """
     Standardized data model for GitHub items (PRs and commits).
-    
+
     Attributes:
         id: Unique identifier (PR number for PRs, SHA for commits)
         type: Item type identifier ("pullRequest" or "commit")
         url: GitHub URL to the item (optional, can be reconstructed)
         title: PR title (for Pull Requests only)
-        body: PR description/body content (for Pull Requests only)  
+        body: PR description/body content (for Pull Requests only)
         message: Commit message (for commits only)
-        
+
     The model uses optional fields to handle the differences between PR and
     commit data structures while maintaining a consistent interface.
     """
+
     id: str
     type: str
     url: str = ""
@@ -24,13 +26,22 @@ class GithubModel:
     body: str = ""
     message: str = ""
 
+    def __post_init__(self):
+        """Clean markdown artifacts from text fields after initialization."""
+        if self.title:
+            self.title = clean_md_text(self.title)
+        if self.body:
+            self.body = clean_md_text(self.body)
+        if self.message:
+            self.message = clean_md_text(self.message)
+
     def to_dict(self):
         """
         Convert the model to a dictionary, excluding empty fields.
-        
+
         Returns:
             Dictionary containing only non-empty field values
-            
+
         Example:
             For a PR: {"id": "123", "type": "pullRequest", "title": "Fix bug", "body": "..."}
             For a commit: {"id": "abc123", "type": "commit", "message": "Fix bug"}

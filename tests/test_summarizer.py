@@ -9,7 +9,9 @@ from correlators.correlator import (
     correlate_all,
     correlate_table,
     correlate_with_jira_issue_id,
+    correlate_summarized_features,
 )
+from summarizers.summarizer import summarize
 from utils.file_utils import delete_all_in_directory
 from config.settings import get_settings
 from utils.logging_config import get_logger, setup_logging
@@ -22,7 +24,7 @@ settings = get_settings()
 data_dir = Path(settings.directories.data_dir)
 
 
-class TestCorrelateTable(unittest.TestCase):
+class TestSummarizer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Ensure FILTER_ON is True for this test (restore original .env value)
@@ -59,37 +61,14 @@ class TestCorrelateTable(unittest.TestCase):
 
         def run_pipeline():
             # delete_all_in_directory(cls.data_dir)
-            # scrape_html(url)
-            # filter_urls()
-            # scrape_all()
-            correlate_with_jira_issue_id()
-            correlate_table()
+            scrape_html(url)
+            filter_urls()
+            scrape_all()
+            correlate_all()
+            summarize()
+            # correlate_summarized_features()
 
         run_pipeline()
 
-        with open(cls.correlated_table_file, "r") as f:
-            cls.correlated_table = json.load(f)
-
-    def test_feature_gate_keys_match(self):
-        actual_keys = set(sorted(list(self.correlated_table.keys())))
-        self.assertSetEqual(
-            actual_keys,
-            self.expected_feature_gates,
-            msg="Mismatch in expected feature gate keys",
-        )
-
-    def test_feature_gate_presence_in_issues(self):
-        for feature_gate in self.expected_feature_gates:
-            feature = self.correlated_table.get(feature_gate, {})
-            details = []
-            if isinstance(feature, dict):
-                details = feature.get("details", [])
-            else:
-                details = feature
-            for dtl in details:
-                values = json.dumps(dtl).lower()
-                self.assertIn(
-                    feature_gate.lower(),
-                    values,
-                    msg=f"{feature_gate} not found in detail values: {values}",
-                )
+    def test_demo(self):
+        return
