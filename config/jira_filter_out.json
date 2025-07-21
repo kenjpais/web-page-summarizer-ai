@@ -9,7 +9,10 @@
         "id": []
     },
     "issuetype": {
-        "name": [],
+        "name": [
+            "Bug",
+            "Task"
+        ],
         "id": []
     },
     "description": [],

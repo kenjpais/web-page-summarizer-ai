@@ -12,9 +12,15 @@ logger = get_logger(__name__)
 # Configuration paths for summarization pipeline
 data_dir = Path(get_env("DATA_DIR"))
 config_dir = Path(get_env("CONFIG_DIR"))
+
 correlated_file = data_dir / "correlated.json"
+correlated_feature_gate_table_file = data_dir / "correlated_feature_gate_table.json"
+summarized_features_file = data_dir / "summarized_features.json"
+prompt_payload = data_dir / "prompt_payload.txt"
+summary_file = data_dir / "summary.txt"
 
 
+# Without langchain
 def summarize_():
     """
     Generate a comprehensive summary of release data using LLM processing.
@@ -111,19 +117,55 @@ def summarize_projects():
     return result
 
 
-def summarize_feature_gates(feature_gates):
-    return feature_gate_summary_chain.invoke(
-        {"feature-gates": f"""Feature Gates:\n{json_to_markdown(feature_gates)}"""}
-    )
+def summarize_feature_gates():
+    with open(correlated_feature_gate_table_file, "r") as f:
+        feature_gate_artifacts = json.load(f)
+
+    with open(summarized_features_file, "w") as f:
+        json.dump(
+            {
+                "RouteExternalCertificate": "The **RouteExternalCertificate** feature gate has been promoted to the default feature set, meaning it is now enabled by default for both Self-Managed and HyperShift OpenShift environments. This change makes it easier for developers and operators to leverage external certificates for routes, as the functionality is now natively available without explicit feature gate activation.",
+                "GatewayAPI": "The **GatewayAPI** feature has been updated with several key improvements. The **GatewayAPIController** feature gate has been introduced to separate the lifecycle management of Gateway API Custom Resource Definitions (CRDs) from the Gateway Controller itself, which aids in staging component releases. Additionally, Gateway API resources and OpenShift Service Mesh (OSSM) resources are now included in must-gather reports, improving debugging and troubleshooting for operators. Furthermore, the existing Gateway API feature gate has been updated to be enabled in clusters utilizing either the DevPreviewNoUpgrade or TechPreviewNoUpgrade feature sets, broadening its accessibility for early adopters.",
+                "GatewayAPIController": "A new feature gate, **GatewayAPIController**, has been implemented to separate the installation of OpenShift Service Mesh (OSSM) from the existing **GatewayAPI** feature gate. This provides distinct control over the Gateway API CRDs and the Gateway Controller, which will facilitate more streamlined and independent component releases. When this feature gate is disabled, the gatewayclass and service-dns controllers will not start.",
+                "OnClusterBuild": "The **OnClusterBuild** feature, specifically its Machine Config Operator (MCO) APIs, has been graduated to v1. This API promotion is a foundational step towards the General Availability (GA) of On-Cluster Builds, providing a stable and mature API for developers and operators to interact with this functionality.",
+                "VSphereStaticIPs": "The **VSphereStaticIPs** feature gate has been removed. This functionality, which allows for static IP support on vSphere, was generally available in OpenShift 4.16, and its feature gate has been cleaned up as part of the ongoing release cycle, making static IP configuration a standard capability without the need for explicit enablement through a feature gate.",
+                "ServiceAccountTokenNodeBinding": "The **ServiceAccountTokenNodeBinding** feature gate has been enabled. This brings OpenShift's behavior in line with upstream Kubernetes, where this feature is available in Beta, allowing for improved security and management of service account tokens tied to specific nodes.",
+                "MetricsCollectionProfiles": "The **MetricsCollectionProfiles** feature gate has been graduated to General Availability (GA). This signifies that the feature meets the standards for production readiness, providing stable and reliable capabilities for managing and collecting metrics based on defined profiles within OpenShift clusters.",
+                "CPMSMachineNamePrefix": "The **CPMSMachineNamePrefix** feature gate has been promoted to the default feature set. This enhancement introduces a new `machineNamePrefix` field within the `ControlPlaneMachineSet` specification, allowing OpenShift administrators and developers to define custom prefixes for Control Plane Machine names. This provides greater flexibility in naming conventions for control plane nodes, making it easier to identify and manage them within complex environments. When a prefix is specified and the feature is enabled, machine names will combine the custom prefix with a randomly generated string and the machine index; otherwise, the default naming convention will be used.",
+                "ConsolePluginContentSecurityPolicy": "The **ConsolePluginContentSecurityPolicy** feature gate has been lifted, signifying its promotion to a generally available capability. This allows for the configuration of Content Security Policy (CSP) for Console Plugins, enhancing the security posture of the OpenShift Console by controlling which content sources are permitted for execution, thus mitigating risks such as cross-site scripting (XSS) attacks.",
+                "VSphereControlPlaneMachineSet": "The **VSphereControlPlaneMachineSet** feature gate has been removed. This indicates that the functionality related to managing Control Plane Machine Sets on vSphere is now a standard and fully integrated capability, no longer requiring a feature gate for enablement. This also includes a fix to ensure the associated Custom Resource Definition (CRD) has its configuration available by default.",
+                "AdditionalRoutingCapabilities": "The **AdditionalRoutingCapabilities** feature gate has been promoted, leading to the deployment of the `frr-k8s` daemonset by the Cluster Network Operator (CNO). This feature is specifically designed for bare-metal OpenShift deployments and is crucial for core functionalities of MetalLB. The `frr-k8s` daemonset was previously deployed by the MetalLB operator but is now handled by the CNO, streamlining the deployment process and providing essential routing capabilities for bare-metal environments.",
+                "CSIDriverSharedResource": "The **CSIDriverSharedResource** feature gate has been removed. This indicates that the functionality related to CSI driver shared resources is now a standard and fully integrated part of OpenShift's storage capabilities, no longer requiring a feature gate for enablement.",
+                "OpenShiftPodSecurityAdmission": "The **OpenShiftPodSecurityAdmission** feature gate will enforce the `EnsurePSANotPrivileged` policy by default starting with OpenShift 4.19 and later releases. This change impacts how Pod Security Admission policies are applied, ensuring a more secure posture for pods by default in newer OpenShift versions compared to 4.18, where this policy was not enforced by default.",
+            },
+            f,
+        )
+    # return feature_gate_summary_chain.invoke(
+    #    {"feature-gates": f"""Feature Gates:\n{feature_gates}"""}
+    # )
 
 
 def summarize():
     logger.info("\n[*] Summarizing...")
-    prompt_payload = data_dir / "prompt_payload.txt"
-    summary_file = data_dir / "summary.txt"
-    correlated_table_file = data_dir / "correlated_feature_gate_table.json"
+    summarize_correlated_info()
 
-    with open(correlated_table_file, "r") as f:
+
+def summarize_correlated_info():
+    with open(correlated_file, "r") as cor_file:
+        correlated_info_md = json_to_markdown(cor_file.read())
+
+    release_notes = f"""Release information:\n{correlated_info_md}"""
+
+    with open(data_dir / "release_notes_payload.txt", "w") as f:
+        f.write(release_notes)
+
+    result = summary_chain.invoke({"release-notes": release_notes})
+    with open(summary_file, "w") as summary:
+        summary.write(result)
+
+
+def raw_summarize():
+    with open(correlated_feature_gate_table_file, "r") as f:
         feature_gate_info_md = json_to_markdown(f.read())
     with open(correlated_file, "r") as cor_file:
         correlated_info_md = json_to_markdown(cor_file.read())

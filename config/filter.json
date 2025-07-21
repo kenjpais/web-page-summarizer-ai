@@ -11,6 +11,7 @@
         "docs",
         "documentation",
         "test",
+        "tests",
         "qa",
         "chore",
         "ci"

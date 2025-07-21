@@ -1,3 +1,4 @@
+import re
 import os
 import json
 from pathlib import Path
@@ -210,3 +211,9 @@ def json_to_markdown(data, heading_level=1):
                 # Format simple list items as numbered list
                 markdown += f"{idx}. {item}\n"
     return markdown
+
+
+def remove_urls(text):
+    # Regex pattern to match URLs (http, https, www)
+    url_pattern = r"(https?://\S+|www\.\S+)"
+    return re.sub(url_pattern, "", text)

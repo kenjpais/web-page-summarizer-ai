@@ -23,7 +23,7 @@ Examples:
 
 Requirements:
     - GitHub API token (GH_API_TOKEN environment variable)
-    - JIRA server access (JIRA_SERVER environment variable)  
+    - JIRA server access (JIRA_SERVER environment variable)
     - LLM service running (for summarization)
 
 The application creates structured output files in the configured data directory
