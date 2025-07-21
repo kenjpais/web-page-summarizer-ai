@@ -22,17 +22,12 @@ A Python-based web scraper designed to extract, filter, and summarize data from 
 - Python 3.8+
 - `pip` package manager
 
-### Installation
-
-chmod +x run_scraper_tests.sh
-
-#### Paste GITHUB API token to run github client
+#### Needs a GITHUB API token to run github client
 export GH_API_TOKEN=your_github_api_token_here
 
-#### To use
+#### Run
 python main.py <release_page_url_or_file>
 
-#### Run tests
+#### Run Tests
+chmod +x run_scraper_tests.sh
 ./run_scraper_tests.sh
-
-After successful run, summary will be generated under data/summaries
