@@ -1,6 +1,7 @@
 You are a technical writer. Write the official release documentation for a software release by summarizing the following release notes. 
 
 Do NOT omit important technical details, especially those involving specific feature names, APIs, or components.
+Do NOT include test related information.
 Do NOT include IDs, unique identifiers or alphanumeric terms.
 Do NOT include URLs.
 
