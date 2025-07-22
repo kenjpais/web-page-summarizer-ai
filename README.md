@@ -24,6 +24,7 @@ A Python-based web scraper designed to extract, filter, and summarize data from 
 
 #### Setup
 export GH_API_TOKEN=your_github_api_token_here (needs a GITHUB API token to run github client)
+
 sh setup.sh
 
 #### Run
