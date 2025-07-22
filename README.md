@@ -22,8 +22,9 @@ A Python-based web scraper designed to extract, filter, and summarize data from 
 - Python 3.8+
 - `pip` package manager
 
-#### Needs a GITHUB API token to run github client
-export GH_API_TOKEN=your_github_api_token_here
+#### Setup
+export GH_API_TOKEN=your_github_api_token_here (needs a GITHUB API token to run github client)
+sh setup.sh
 
 #### Run
 python main.py <release_page_url_or_file>
