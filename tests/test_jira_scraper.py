@@ -1,14 +1,10 @@
 import os
 import json
 import unittest
-import pandas as pd
 from typing import Dict
 from pathlib import Path
-from utils.file_utils import delete_all_in_directory
 from scrapers.jira_scraper import JiraScraper, render_to_markdown
-from scrapers.html_scraper import HtmlScraper
 from scrapers.exceptions import ScraperException
-from filters.filter_enabled_feature_gates import filter_enabled_feature_gates
 from config.settings import get_settings
 from utils.logging_config import setup_logging
 
@@ -47,7 +43,6 @@ class TestJiraScraper(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.jf = JiraScraper(filter_on=False)
-        delete_all_in_directory(data_dir)
 
     def load_jira_files(self):
         with open(data_dir / "jira.json") as f:
