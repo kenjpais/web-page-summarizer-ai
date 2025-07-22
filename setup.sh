@@ -7,3 +7,5 @@ python3.11 -m pip install --upgrade pip
 pip install -r requirements.txt
 
 mv .env.example .env
+
+nohup ollama serve > ollama.log 2>&1 &

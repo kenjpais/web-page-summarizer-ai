@@ -27,7 +27,7 @@ export GH_API_TOKEN=your_github_api_token_here (needs a GITHUB API token to run 
 sh setup.sh
 
 #### Run
-python main.py <release_page_url_or_file>
+python main.py <release_page_url_or_file> (Summary will be generated under ~/data/summaries/<release-version>/)
 
 #### Run Tests
 chmod +x run_scraper_tests.sh
