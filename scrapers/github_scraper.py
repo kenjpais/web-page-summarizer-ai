@@ -16,18 +16,18 @@ BATCH_SCRAPE_SIZE = settings.processing.github_batch_size
 class GithubScraper:
     """
     GitHub scraper that extracts PR and commit information using GraphQL batching.
-    
+
     Key Features:
     - URL parsing for both PRs and commits
     - Batched GraphQL queries for efficient API usage
     - Error handling for rate limits and API failures
     - Structured data extraction and normalization
-    
+
     The scraper is designed to handle GitHub's API rate limits by batching
     multiple requests into single GraphQL queries, significantly reducing
     the number of API calls needed.
     """
-    
+
     # Regex patterns for parsing GitHub URLs
     # These handle the standard GitHub URL patterns for PRs and commits
     PR_REGEX = re.compile(r"https://github\.com/([^/]+)/([^/]+)/pull/(\d+)")
@@ -38,7 +38,7 @@ class GithubScraper:
     def __init__(self, batch_size: int = BATCH_SCRAPE_SIZE) -> None:
         """
         Initialize GitHub scraper with GraphQL client and batching configuration.
-        
+
         Args:
             batch_size: Number of items to include in each GraphQL batch request.
                        Larger batches are more efficient but may hit query complexity limits.
@@ -49,17 +49,17 @@ class GithubScraper:
     def parse_github_url(self, url: str) -> Optional[Dict[str, str]]:
         """
         Parse a GitHub URL to extract repository and item information.
-        
+
         Supports two URL types:
         1. Pull Requests: https://github.com/owner/repo/pull/123
         2. Commits: https://github.com/owner/repo/commit/abc123...
-        
+
         Args:
             url: GitHub URL to parse
-            
+
         Returns:
             Dictionary with parsed components (type, owner, repo, id) or None if invalid
-            
+
         Example:
             parse_github_url("https://github.com/openshift/console/pull/123")
             Returns: {"type": "pr", "owner": "openshift", "repo": "console", "id": "123"}
@@ -75,31 +75,31 @@ class GithubScraper:
     def extract(self, urls: List[str]) -> None:
         """
         Extract GitHub data from multiple URLs using batched GraphQL queries.
-        
+
         Process:
         1. Parse all URLs to identify valid GitHub resources
         2. Group parsed items into batches for efficient API usage
         3. Execute GraphQL queries for each batch
         4. Transform responses into standardized format
         5. Write results to JSON file for downstream processing
-        
+
         The batching strategy is critical for performance - instead of making
         N individual API calls, this makes N/batch_size calls, significantly
         reducing API usage and improving speed.
-        
+
         Args:
             urls: List of GitHub URLs to process
-            
+
         Raises:
             ScraperException: If no valid URLs found or API errors occur
         """
         results = []
-        
+
         # Parse and validate all URLs first
         parsed_items = [
             parsed for url in urls if (parsed := self.parse_github_url(url))
         ]
-        
+
         if not parsed_items:
             raise_scraper_exception(
                 f"""[!][ERROR] Unsupported or invalid GitHub URL. 
@@ -110,15 +110,13 @@ class GithubScraper:
         # Process items in batches to optimize API usage
         for batch_start in range(0, len(parsed_items), self.batch_size):
             batch = parsed_items[batch_start : batch_start + self.batch_size]
-            
+
             try:
-                # Build a single GraphQL query for the entire batch
                 gql_query = self.client.build_graphql_query(batch)
                 raw_response = self.client.post_query(gql_query)
             except Exception as e:
                 raise_scraper_exception(f"[!][ERROR] Fetching GitHub data failed: {e}")
 
-            # Validate response structure
             if not raw_response:
                 raise_scraper_exception(
                     f"[!][ERROR] Empty response from GraphQL for batch starting at {batch_start}"
@@ -144,7 +142,6 @@ class GithubScraper:
                     )
 
                 # Extract data based on item type
-                # GraphQL responses have different structures for PRs vs commits
                 if pr := item_content.get("pullRequest"):
                     # Pull Request data extraction
                     results.append(
@@ -157,7 +154,6 @@ class GithubScraper:
                     )
 
                 elif obj := item_content.get("object"):
-                    # Commit data extraction  
                     results.append(
                         GithubModel(
                             id=obj.get("oid"),
@@ -165,18 +161,18 @@ class GithubScraper:
                             message=obj.get("message"),
                         ).to_dict()
                     )
-                    
-        # Write all results to file for downstream processing        
+
+        # Write all results to file for downstream processing
         write_json_file(results)
 
 
 def write_json_file(results: List[Dict[str, Any]]) -> None:
     """
     Write GitHub extraction results to JSON file.
-    
+
     Creates a structured JSON file that can be consumed by the correlation
     and summarization steps in the pipeline.
-    
+
     Args:
         results: List of dictionaries containing GitHub data
     """

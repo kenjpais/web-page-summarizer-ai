@@ -1,3 +1,4 @@
+import os
 import json
 import unittest
 import pandas as pd
@@ -28,6 +29,7 @@ urls = [
     "https://issues.redhat.com/browse/ETCD-726",
     "https://issues.redhat.com/browse/NE-2017",
     "https://issues.redhat.com/browse/TRT-2005",
+    "https://issues.redhat.com/browse/OTA-923",
 ]
 
 
@@ -99,7 +101,9 @@ class TestJiraScraper(unittest.TestCase):
                                     f"Issue {issue_id} has empty {item}",
                                 )
 
-    def test_extract_urls_valid(self):
+    def test_extract_urls_valid_filter_on(self):
+        os.environ["FILTER_ON"] = "True"
+
         self.jf.extract(urls)
 
         result, result_md = self.load_jira_files()
@@ -107,6 +111,23 @@ class TestJiraScraper(unittest.TestCase):
         self.assert_hierarchy_valid(result)
 
         result_json_str = json.dumps(result)
+
+        for issue_id in expected_ids:
+            self.assertIn(issue_id, result_json_str)
+            self.assertIn(issue_id, result_md)
+
+    def test_extract_urls_valid_filter_off(self):
+        os.environ["FILTER_ON"] = "False"
+
+        self.jf.extract(urls)
+
+        result, result_md = self.load_jira_files()
+
+        self.assert_hierarchy_valid(result)
+
+        result_json_str = json.dumps(result)
+
+        expected_ids.remove("STOR-2251")
         for issue_id in expected_ids:
             self.assertIn(issue_id, result_json_str)
             self.assertIn(issue_id, result_md)

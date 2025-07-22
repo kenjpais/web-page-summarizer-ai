@@ -28,26 +28,30 @@ class TestCorrelateWithJiraIssueId(unittest.TestCase):
         cls.github_file = cls.data_dir / "github.json"
         cls.correlated_file = cls.data_dir / "correlated.json"
         cls.correlated_table_file = cls.data_dir / "correlated_table_file.json"
-        cls.required_fields_file = settings.config_files.required_github_fields_file
-
-        cls.jira_scraper = JiraScraper()
-        delete_all_in_directory(cls.data_dir)
-
-    def test_correlate_with_jira_issue_id(self):
-        url = "https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-stable/release/4.19.0-okd-scos.0"
+        cls.required_github_fields_file = (
+            settings.config_files.required_github_fields_file
+        )
 
         os.environ["FILTER_ON"] = "False"
 
-        sources = settings.processing.sources
+        url = "https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-stable/release/4.19.0-okd-scos.0"
 
-        with open(self.required_fields_file, "w") as f:
+        with open(cls.required_github_fields_file, "w") as f:
             json.dump(["title", "body"], f)
 
-        # Run the pipeline
-        scrape_html(url)
-        filter_urls()
-        scrape_all()
-        correlate_with_jira_issue_id()
+        cls.jira_scraper = JiraScraper()
+
+        def run_pipeline():
+            delete_all_in_directory(cls.data_dir)
+            scrape_html(url)
+            filter_urls()
+            scrape_all()
+            correlate_with_jira_issue_id()
+
+        run_pipeline()
+
+    def test_correlate_with_jira_issue_id(self):
+        sources = settings.processing.sources
 
         with open(self.correlated_file) as f:
             result = json.load(f)

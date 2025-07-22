@@ -1,7 +1,5 @@
 import unittest
-import tempfile
-import os
-import shutil
+import pandas as pd
 from pathlib import Path
 from scrapers.html_scraper import HtmlScraper
 from filters.filter_enabled_feature_gates import filter_enabled_feature_gates
@@ -12,29 +10,37 @@ from utils.logging_config import setup_logging
 # Set up logging for tests
 setup_logging()
 
+settings = get_settings()
+data_dir = Path(settings.directories.data_dir)
+
 url = "https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-stable/release/4.19.0-okd-scos.0"
 scraper = HtmlScraper(url)
+
+table_file = data_dir / "feature_gate_table.pkl"
 
 
 class TestFilters(unittest.TestCase):
     def test_df_filter_enabled_feature_gates(self):
-        return
-        df = scraper.scrape_table_info()
+        scraper.scrape()
+        df = pd.read_pickle(table_file)
+        if isinstance(df, pd.Series):
+            df = df.to_frame()
+
         result = filter_enabled_feature_gates(df)
         expected = [
-            "CSIDriverSharedResource (0 tests)",
-            "VSphereControlPlaneMachineSet (0 tests)",
-            "VSphereStaticIPs (0 tests)",
-            "GatewayAPI (6 tests)",
-            "AdditionalRoutingCapabilities (0 tests)",
-            "ConsolePluginContentSecurityPolicy (0 tests)",
-            "MetricsCollectionProfiles (5 tests)",
-            "OnClusterBuild (0 tests)",
-            "OpenShiftPodSecurityAdmission (0 tests)",
-            "RouteExternalCertificate (19 tests)",
-            "ServiceAccountTokenNodeBinding (0 tests)",
-            "CPMSMachineNamePrefix (0 tests)",
-            "GatewayAPIController (5 tests)",
+            "CSIDriverSharedResource",
+            "VSphereControlPlaneMachineSet",
+            "VSphereStaticIPs",
+            "GatewayAPI",
+            "AdditionalRoutingCapabilities",
+            "ConsolePluginContentSecurityPolicy",
+            "MetricsCollectionProfiles",
+            "OnClusterBuild",
+            "OpenShiftPodSecurityAdmission",
+            "RouteExternalCertificate",
+            "ServiceAccountTokenNodeBinding",
+            "CPMSMachineNamePrefix",
+            "GatewayAPIController",
         ]
         self.assertListEqual(expected, result)
 

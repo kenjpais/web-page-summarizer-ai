@@ -19,10 +19,10 @@ SOURCE_SCRAPERS_MAP: Dict[str, Type[Any]] = {
 def scrape_sources() -> None:
     """
     Orchestrate scraping across all configured sources.
-    
+
     This function iterates through each configured source type (GitHub, JIRA, etc.),
     loads the URLs specific to that source, and executes the appropriate scraper.
-    
+
     Process:
     1. Load source configuration from environment
     2. For each source, load its filtered URLs
@@ -34,20 +34,20 @@ def scrape_sources() -> None:
 
     for src in sources:
         logger.info(f"Scraping {src} links...")
-        
+
         # Load URLs that were filtered for this specific source type
         # These come from the filter_urls step that categorized URLs by domain
         urls = get_urls(src)
         if not urls:
             logger.warning(f"No URLs found for {src}, skipping.")
             continue
-            
+
         # Get the scraper class for this source type
         scraper_class = SOURCE_SCRAPERS_MAP.get(src)
         if not scraper_class:
             logger.error(f"No scraper defined for source: {src}")
             continue
-            
+
         # Instantiate and execute the scraper with source-specific URLs
         # Each scraper handles its own API authentication, rate limiting, etc.
         scraper_class().extract(urls)
