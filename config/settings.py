@@ -231,7 +231,7 @@ class AppSettings(BaseSettings):
     """Main application settings that combines all other settings."""
 
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
+        env_file=None, env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
     )
 
     # Environment
