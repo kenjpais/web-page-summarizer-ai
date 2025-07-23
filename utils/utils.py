@@ -131,7 +131,7 @@ def get_urls(src):
 
     file_path = data_dir / f"{src}_urls.txt"
     if not file_path.is_file():
-        logger.error(f"[!][ERROR] URL file not found for source: {src}")
+        logger.error(f"[!][ERROR] URL file {file_path} not found for source: {src}")
         return []
 
     try:

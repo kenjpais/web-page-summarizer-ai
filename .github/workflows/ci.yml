@@ -15,7 +15,7 @@ jobs:
       CONFIG_DIR: config
       DEBUG: "false"
       SOURCE_PAGE: https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-stable/release/4.19.0-okd-scos.0
-      GITHUB_GRAPHQL_API_URL: https://api.github.com/graphql
+      GITHUB_API_URL: https://api.github.com/graphql
       GITHUB_SERVER: https://github.com
       JIRA_SERVER: https://issues.redhat.com  
       LLM_MODEL: mistral
@@ -39,6 +39,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
 
 
       - name: Run tests
