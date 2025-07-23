@@ -13,11 +13,10 @@ from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-
-# Only load .env locally — not in GitHub Actions
+# Only load `.env` if not in CI
 if os.getenv("GITHUB_ACTIONS") != "true":
-    load_dotenv(dotenv_path=REPO_ROOT / ".env")
+    dotenv_path = Path(__file__).resolve().parent.parent / ".env"
+    load_dotenv(dotenv_path=dotenv_path)
 
 class APISettings(BaseSettings):
     """External API configuration settings."""
