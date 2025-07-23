@@ -1,17 +1,19 @@
 import json
 from pathlib import Path
-from utils.utils import get_env, json_to_markdown
+from utils.utils import json_to_markdown
 from clients.llm_client import LLMClient
 from chains.chains import project_summary_chain
 from chains.chains import summary_chain
-from chains.chains import feature_gate_summary_chain
+from config.settings import get_settings
 from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 
+settings = get_settings()
+
 # Configuration paths for summarization pipeline
-data_dir = Path(get_env("DATA_DIR"))
-config_dir = Path(get_env("CONFIG_DIR"))
+data_dir = Path(settings.directories.data_dir)
+config_dir = Path(settings.directories.config_dir)
 
 correlated_file = data_dir / "correlated.json"
 correlated_feature_gate_table_file = data_dir / "correlated_feature_gate_table.json"

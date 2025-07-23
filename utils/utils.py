@@ -1,5 +1,4 @@
 import re
-import os
 import json
 from pathlib import Path
 from urllib.parse import urlparse
@@ -105,28 +104,6 @@ def contains_valid_keywords(fields):
         if any(keyword in field_str for keyword in invalid_keywords):
             return False
     return True
-
-
-def get_env(env_name):
-    """
-    Get required environment variable with error handling.
-
-    Provides a consistent interface for accessing environment variables
-    with clear error messages when required values are missing.
-
-    Args:
-        env_name: Name of environment variable to retrieve
-
-    Returns:
-        Environment variable value
-
-    Raises:
-        ValueError: If environment variable is not set
-    """
-    env_var = os.getenv(env_name)
-    if env_var:
-        return env_var
-    raise ValueError(f"Environment variable {env_name} missing.")
 
 
 def get_urls(src):

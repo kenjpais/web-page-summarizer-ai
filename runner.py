@@ -1,6 +1,4 @@
-import logging
 from pathlib import Path
-from utils.utils import get_env
 from utils.file_utils import delete_all_in_directory
 from filters.filter_urls import filter_urls
 from scrapers.html_scraper import scrape_html
@@ -9,15 +7,10 @@ from correlators.correlator import correlate_all
 from summarizers.summarizer import summarize
 from config.settings import get_settings
 from utils.logging_config import get_logger, setup_logging
-
 setup_logging()
-
 logger = get_logger(__name__)
-
 settings = get_settings()
 data_dir = settings.directories.data_dir
-# Ensure data directory exists for pipeline output
-
 Path(data_dir).mkdir(exist_ok=True)
 
 
@@ -45,8 +38,7 @@ def run(source: str) -> None:
     """
     correlate_all()
     # Step 1: Clean workspace to ensure fresh start
-    # This prevents contamination from previous runs
-    # delete_all_in_directory(data_dir)
+    delete_all_in_directory(data_dir)
 
     # Step 2: Extract URLs from the main release page
     # This creates urls.txt with all discovered links
