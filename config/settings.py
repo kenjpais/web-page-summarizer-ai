@@ -23,7 +23,7 @@ class APISettings(BaseSettings):
 
     # GitHub API
     github_api_url: str = Field(
-        default="https://api.github.com/graphql", alias="GITHUB_API_URL"
+        default="https://api.github.com/graphql", alias="GITHUB_GRAPHQL_API_URL"
     )
     github_server: str = Field(default="https://github.com", alias="GITHUB_SERVER")
     github_token: str = Field(..., alias="GH_API_TOKEN")

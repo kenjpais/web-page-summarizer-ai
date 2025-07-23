@@ -46,7 +46,7 @@ class GithubGraphQLClient:
             raise ValueError("GITHUB_API_URL environment variable not set")
         
         import os
-        logger.info(f"ENV[GITHUB_API_URL]: {os.getenv('GITHUB_API_URL')}")
+        logger.info(f"ENV[GITHUB_GRAPHQL_API_URL]: {os.getenv('GITHUB_GRAPHQL_API_URL')}")
         logger.info(f"ENV[GH_API_TOKEN]: {os.getenv('GH_API_TOKEN')}")
         
         self.token: str = settings.api.github_token
