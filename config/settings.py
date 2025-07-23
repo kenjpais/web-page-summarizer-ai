@@ -14,8 +14,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-load_dotenv(dotenv_path=REPO_ROOT / ".env")
+IS_CI = os.getenv("GITHUB_ACTIONS", "") == "true"
 
+if not IS_CI:
+    load_dotenv(dotenv_path=REPO_ROOT / ".env")
 
 class APISettings(BaseSettings):
     """External API configuration settings."""

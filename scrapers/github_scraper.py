@@ -6,7 +6,9 @@ from clients.github_client import GithubGraphQLClient
 from models.github_model import GithubModel
 from scrapers.exceptions import raise_scraper_exception
 from config.settings import get_settings
+from utils.logging_config import get_logger
 
+logger = get_logger(__name__)
 settings = get_settings()
 
 data_dir = Path(settings.directories.data_dir)
@@ -43,6 +45,8 @@ class GithubScraper:
             batch_size: Number of items to include in each GraphQL batch request.
                        Larger batches are more efficient but may hit query complexity limits.
         """
+        import os
+        logger.info("BEFORE INIT GITHUBCLIENT ENV[GITHUB_API_URL] =", os.getenv("GITHUB_API_URL"))
         self.client: GithubGraphQLClient = GithubGraphQLClient()
         self.batch_size: int = batch_size
 
