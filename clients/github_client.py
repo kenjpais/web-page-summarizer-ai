@@ -5,8 +5,6 @@ from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 
-settings = get_settings()
-
 
 class GithubGraphQLClient:
     """
@@ -42,6 +40,7 @@ class GithubGraphQLClient:
         Raises:
             ValueError: If required environment variables are missing
         """
+        settings = get_settings()
         self.api_url: str = settings.api.github_api_url
         if not self.api_url:
             raise ValueError("GITHUB_API_URL environment variable not set")
