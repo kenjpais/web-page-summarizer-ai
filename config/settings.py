@@ -14,9 +14,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-IS_CI = os.getenv("GITHUB_ACTIONS", "") == "true"
 
-if not IS_CI:
+# Only load .env locally — not in GitHub Actions
+if os.getenv("GITHUB_ACTIONS") != "true":
     load_dotenv(dotenv_path=REPO_ROOT / ".env")
 
 class APISettings(BaseSettings):
