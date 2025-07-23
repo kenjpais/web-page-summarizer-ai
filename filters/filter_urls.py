@@ -47,3 +47,4 @@ def filter_urls():
         with open(data_dir / f"{src}_urls.txt", "w") as f:
             for url in urls:
                 f.write(url + "\n")
+                logger.debug(f"WRITTEN")
