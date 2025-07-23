@@ -9,7 +9,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    environment: test
     env:
       # General config
       DATA_DIR: data
