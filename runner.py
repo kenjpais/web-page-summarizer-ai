@@ -7,6 +7,7 @@ from correlators.correlator import correlate_all
 from summarizers.summarizer import summarize
 from config.settings import get_settings
 from utils.logging_config import get_logger, setup_logging
+
 setup_logging()
 logger = get_logger(__name__)
 settings = get_settings()

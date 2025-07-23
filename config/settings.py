@@ -18,6 +18,7 @@ if os.getenv("GITHUB_ACTIONS") != "true":
     dotenv_path = Path(__file__).resolve().parent.parent / ".env"
     load_dotenv(dotenv_path=dotenv_path)
 
+
 class APISettings(BaseSettings):
     """External API configuration settings."""
 

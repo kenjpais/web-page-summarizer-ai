@@ -45,8 +45,6 @@ class GithubScraper:
             batch_size: Number of items to include in each GraphQL batch request.
                        Larger batches are more efficient but may hit query complexity limits.
         """
-        import os
-        logger.info(f"BEFORE INIT GITHUBCLIENT ENV[GITHUB_GRAPHQL_API_URL] = {os.getenv('GITHUB_GRAPHQL_API_URL')}")
         self.client: GithubGraphQLClient = GithubGraphQLClient()
         self.batch_size: int = batch_size
 
