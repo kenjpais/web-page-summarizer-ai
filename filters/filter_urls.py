@@ -35,7 +35,7 @@ def filter_urls():
     with open(data_dir / "urls.txt") as f:
         for url in f:
             url = url.strip()
-
+            logger.debug(f"FETCHED {url}")
             # Check if URL matches any configured source server
             for src, server in servers.items():
                 if server in url:
