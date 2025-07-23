@@ -3,12 +3,10 @@ import os
 import json
 from pathlib import Path
 from urllib.parse import urlparse
-from dotenv import load_dotenv
 from config.settings import get_settings
 from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
-load_dotenv()
 settings = get_settings()
 
 ALLOWED_PROTOCOLS = ("http", "https")
