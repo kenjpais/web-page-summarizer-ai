@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: test
     env:
+      # General config
       DATA_DIR: data
       CONFIG_DIR: config
       DEBUG: "false"
@@ -22,6 +23,9 @@ jobs:
       LLM_API_URL: http://localhost:11434/api/generate
       CONFIG_FILE_PATH: config/filter.json
       SOURCES: '["JIRA", "GITHUB"]'
+      
+      # Secure token passed directly (not echoed, not saved in file)
+      GH_API_TOKEN: ${{ secrets.GH_API_TOKEN }}
 
     steps:
       - name: Checkout code
@@ -36,15 +40,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-        
+
       - name: Install and start Ollama
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
-          if [ "$(ollama list | wc -l)" -gt 1 ]; then
-              echo "Models are available."
-          else
-              ollama pull ${{ env.LLM_MODEL }}
-          fi
           fuser -k 11434/tcp || true
           nohup ollama serve &
 
@@ -55,24 +54,10 @@ jobs:
             sleep 3
           done
 
-      - name: Create .env file
+      - name: Debug environment (optional)
         run: |
-          echo "DATA_DIR=${{ env.DATA_DIR }}" >> .env
-          echo "DEBUG=${{ env.DEBUG }}" >> .env
-          echo "SOURCE_PAGE=${{ env.SOURCE_PAGE }}" >> .env
-          echo "GITHUB_API_URL=${{ env.GITHUB_API_URL }}" >> .env
-          echo "GITHUB_SERVER=${{ env.GITHUB_SERVER }}" >> .env
-          echo "JIRA_SERVER=${{ env.JIRA_SERVER }}" >> .env
-          echo "LLM_API_URL=${{ env.LLM_API_URL }}" >> .env
-          echo "CONFIG_FILE_PATH=${{ env.CONFIG_FILE_PATH }}" >> .env
-          echo 'SOURCES=["JIRA", "GITHUB"]' >> .env
-          echo ${{ secrets.GH_API_TOKEN }}
-          echo "GH_API_TOKEN=${{ secrets.GH_API_TOKEN }}" >> .env
-        
-      - name: Debug
-        run: |
-          echo "Dumping .env contents:"
-          cat .env
+          echo "Checking GH_API_TOKEN length:"
+          echo "${#GH_API_TOKEN}"
 
       - name: Run tests
         run: |
