@@ -32,7 +32,7 @@ def scrape_sources() -> None:
     """
     # Load the list of configured sources from environment settings
     settings = get_settings()
-    sources: List[str] = json.loads(settings.processing.sources)
+    sources: List[str] = settings.processing.sources
 
     for src in sources:
         logger.info(f"Scraping {src} links...")

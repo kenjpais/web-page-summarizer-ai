@@ -6,7 +6,7 @@ settings = get_settings()
 
 
 def remove_irrelevant_fields_from_correlated():
-    sources = json.loads(settings.processing.sources)
+    sources = settings.processing.sources
     data_dir = Path(settings.directories.data_dir)
     config_dir = Path(settings.directories.config_dir)
     correlated_file = data_dir / "correlated.json"
