@@ -1,11 +1,12 @@
 import requests
-from utils.utils import get_env
 from utils.logging_config import log_prompt
+from config.settings import get_settings
 
 
 class LLMClient:
     def __init__(self) -> None:
-        self.api_url: str = get_env("LLM_API_URL")
+        settings = get_settings()
+        self.api_url: str = settings.api.llm_api_url
         if not self.api_url:
             raise ValueError("LLM_API_URL environment variable not set")
 

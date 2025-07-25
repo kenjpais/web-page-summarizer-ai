@@ -1,12 +1,14 @@
 import json
 from pathlib import Path
-from utils.utils import get_env
+from config.settings import get_settings
+
+settings = get_settings()
 
 
 def remove_irrelevant_fields_from_correlated():
-    sources = json.loads(get_env("SOURCES"))
-    data_dir = Path(get_env("DATA_DIR"))
-    config_dir = Path(get_env("CONFIG_DIR"))
+    sources = settings.processing.sources
+    data_dir = Path(settings.directories.data_dir)
+    config_dir = Path(settings.directories.config_dir)
     correlated_file = data_dir / "correlated.json"
 
     # Load nested correlated data (dict of dict of dicts)

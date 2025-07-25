@@ -6,7 +6,6 @@ from scrapers.scrapers import scrape_all
 from filters.filter_urls import filter_urls
 from scrapers.html_scraper import scrape_html
 from correlators.correlator import (
-    correlate_all,
     correlate_table,
     correlate_with_jira_issue_id,
 )
@@ -58,10 +57,10 @@ class TestCorrelateTable(unittest.TestCase):
         )
 
         def run_pipeline():
-            # delete_all_in_directory(cls.data_dir)
-            # scrape_html(url)
-            # filter_urls()
-            # scrape_all()
+            delete_all_in_directory(cls.data_dir)
+            scrape_html(url)
+            filter_urls()
+            scrape_all()
             correlate_with_jira_issue_id()
             correlate_table()
 

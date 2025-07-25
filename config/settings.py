@@ -13,8 +13,10 @@ from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
-# This line makes .env values available in os.environ
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../.env"))
+# Only load `.env` if not in CI
+if os.getenv("GITHUB_ACTIONS") != "true":
+    dotenv_path = Path(__file__).resolve().parent.parent / ".env"
+    load_dotenv(dotenv_path=dotenv_path)
 
 
 class APISettings(BaseSettings):
@@ -22,7 +24,7 @@ class APISettings(BaseSettings):
 
     # GitHub API
     github_api_url: str = Field(
-        default="https://api.github.com/graphql", alias="GITHUB_API_URL"
+        default="https://api.github.com/graphql", alias="GITHUB_GRAPHQL_API_URL"
     )
     github_server: str = Field(default="https://github.com", alias="GITHUB_SERVER")
     github_token: str = Field(..., alias="GH_API_TOKEN")
@@ -102,6 +104,7 @@ class ProcessingSettings(BaseSettings):
     """Data processing configuration."""
 
     sources: List[str] = Field(default=["JIRA", "GITHUB"], alias="SOURCES")
+    summarize_enabled: bool = Field(default=True, alias="SUMMARIZE_ENABLED")
     filter_on: bool = Field(default=True, alias="FILTER_ON")
     debug: bool = Field(default=False, alias="DEBUG")
 
@@ -231,7 +234,7 @@ class AppSettings(BaseSettings):
     """Main application settings that combines all other settings."""
 
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
+        env_file=None, env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
     )
 
     # Environment

@@ -11,6 +11,7 @@ from correlators.correlator import (
     correlate_with_jira_issue_id,
     correlate_summarized_features,
 )
+from summarizers.summarizer import summarize_feature_gates
 from utils.file_utils import delete_all_in_directory
 from config.settings import get_settings
 from utils.logging_config import get_logger, setup_logging
@@ -59,13 +60,14 @@ class TestCorrelateTable(unittest.TestCase):
         )
 
         def run_pipeline():
-            # delete_all_in_directory(cls.data_dir)
-            # scrape_html(url)
-            # filter_urls()
-            # scrape_all()
-            # correlate_all()
+            delete_all_in_directory(cls.data_dir)
+            scrape_html(url)
+            filter_urls()
+            scrape_all()
+            correlate_all()
             correlate_with_jira_issue_id()
             correlate_table()
+            summarize_feature_gates()
             correlate_summarized_features()
 
         run_pipeline()

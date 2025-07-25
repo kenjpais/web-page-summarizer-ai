@@ -1,14 +1,11 @@
 import re
-import os
 import json
 from pathlib import Path
 from urllib.parse import urlparse
-from dotenv import load_dotenv
 from config.settings import get_settings
 from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
-load_dotenv()
 settings = get_settings()
 
 ALLOWED_PROTOCOLS = ("http", "https")
@@ -109,28 +106,6 @@ def contains_valid_keywords(fields):
     return True
 
 
-def get_env(env_name):
-    """
-    Get required environment variable with error handling.
-
-    Provides a consistent interface for accessing environment variables
-    with clear error messages when required values are missing.
-
-    Args:
-        env_name: Name of environment variable to retrieve
-
-    Returns:
-        Environment variable value
-
-    Raises:
-        ValueError: If environment variable is not set
-    """
-    env_var = os.getenv(env_name)
-    if env_var:
-        return env_var
-    raise ValueError(f"Environment variable {env_name} missing.")
-
-
 def get_urls(src):
     """
     Load URLs for a specific source type from the filtered URL files.
@@ -156,7 +131,7 @@ def get_urls(src):
 
     file_path = data_dir / f"{src}_urls.txt"
     if not file_path.is_file():
-        logger.error(f"[!][ERROR] URL file not found for source: {src}")
+        logger.error(f"[!][ERROR] URL file {file_path} not found for source: {src}")
         return []
 
     try:

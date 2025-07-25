@@ -1,5 +1,4 @@
 from pathlib import Path
-from utils.file_utils import MultiFileManager
 from config.settings import get_settings
 from utils.logging_config import get_logger
 
@@ -29,25 +28,21 @@ def filter_urls():
     """
     logger.info("[*] Filtering relevant URLs...")
 
-    # Use MultiFileManager for efficient concurrent file writing
-    # This prevents repeated file open/close operations and handles cleanup
-    fm = MultiFileManager()
-
     # Get the configured source servers for URL matching
     # Example: {"GITHUB": "https://github.com", "JIRA": "https://issues.redhat.com"}
     servers = settings.processing.get_sources_dict()
+    urls_dict = {}
+    with open(data_dir / "urls.txt") as f:
+        for url in f:
+            url = url.strip()
+            # Check if URL matches any configured source server
+            for src, server in servers.items():
+                if server in url:
+                    # Write matching URL to source-specific file
+                    # Example: GITHUB URLs go to github_urls.txt
+                    urls_dict.setdefault(src.lower(), set()).add(url)
 
-    with fm:
-        with open(data_dir / "urls.txt") as f:
-            for url in f:
-                url = url.strip()
-
-                # Check if URL matches any configured source server
-                for src, server in servers.items():
-                    if server in url:
-                        # Write matching URL to source-specific file
-                        # Example: GITHUB URLs go to github_urls.txt
-                        fm.write(
-                            data_dir / f"{src.lower()}_urls.txt",
-                            url + "\n",
-                        )
+    for src, urls in urls_dict.items():
+        with open(data_dir / f"{src}_urls.txt", "w") as f:
+            for url in urls:
+                f.write(url + "\n")

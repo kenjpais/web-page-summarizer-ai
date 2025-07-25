@@ -1,8 +1,9 @@
 import json
 from typing import List, Dict, Type, Any
-from utils.utils import get_env, get_urls
+from utils.utils import get_urls
 from scrapers.jira_scraper import JiraScraper
 from scrapers.github_scraper import GithubScraper
+from config.settings import get_settings
 from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -30,7 +31,8 @@ def scrape_sources() -> None:
     4. Handle missing URLs or scraper implementations gracefully
     """
     # Load the list of configured sources from environment settings
-    sources: List[str] = json.loads(get_env("SOURCES"))
+    settings = get_settings()
+    sources: List[str] = settings.processing.sources
 
     for src in sources:
         logger.info(f"Scraping {src} links...")

@@ -1,17 +1,19 @@
 import json
 from pathlib import Path
-from utils.utils import get_env, json_to_markdown
+from utils.utils import json_to_markdown
 from clients.llm_client import LLMClient
 from chains.chains import project_summary_chain
 from chains.chains import summary_chain
-from chains.chains import feature_gate_summary_chain
+from config.settings import get_settings
 from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 
+settings = get_settings()
+
 # Configuration paths for summarization pipeline
-data_dir = Path(get_env("DATA_DIR"))
-config_dir = Path(get_env("CONFIG_DIR"))
+data_dir = Path(settings.directories.data_dir)
+config_dir = Path(settings.directories.config_dir)
 
 correlated_file = data_dir / "correlated.json"
 correlated_feature_gate_table_file = data_dir / "correlated_feature_gate_table.json"
@@ -122,6 +124,7 @@ def summarize_feature_gates():
         feature_gate_artifacts = json.load(f)
 
     with open(summarized_features_file, "w") as f:
+        # Feature gate summaries Generated with Google Gemini, hardcoding for temp testing.
         json.dump(
             {
                 "RouteExternalCertificate": "The **RouteExternalCertificate** feature gate has been promoted to the default feature set, meaning it is now enabled by default for both Self-Managed and HyperShift OpenShift environments. This change makes it easier for developers and operators to leverage external certificates for routes, as the functionality is now natively available without explicit feature gate activation.",
@@ -147,7 +150,8 @@ def summarize_feature_gates():
 
 def summarize():
     logger.info("\n[*] Summarizing...")
-    summarize_correlated_info()
+    if settings.processing.summarize_enabled:
+        summarize_correlated_info()
 
 
 def summarize_correlated_info():
@@ -165,6 +169,9 @@ def summarize_correlated_info():
 
 
 def raw_summarize():
+    """
+    Feature gates are structured in a separate section for better highlighting.
+    """
     with open(correlated_feature_gate_table_file, "r") as f:
         feature_gate_info_md = json_to_markdown(f.read())
     with open(correlated_file, "r") as cor_file:

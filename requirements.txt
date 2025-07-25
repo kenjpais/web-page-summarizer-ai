@@ -49,7 +49,8 @@ jsonpointer==3.0.0
 kiwisolver==1.4.8
 langchain==0.3.26
 langchain-community==0.3.26
-langchain-core==0.3.66
+langchain-core==0.3.71
+langchain-ollama==0.3.6
 langchain-text-splitters==0.3.8
 langsmith==0.4.2
 lxml==5.4.0
@@ -87,6 +88,7 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.1.0
 pytz==2025.2
 PyYAML==6.0.2
+RapidFuzz==3.10.1
 regex==2024.11.6
 requests==2.32.3
 requests-oauthlib==2.0.0
@@ -111,4 +113,3 @@ virtualenv==20.31.2
 wrapt==1.17.2
 yarl==1.20.1
 zstandard==0.23.0
-rapidfuzz==3.10.1
