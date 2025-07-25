@@ -30,7 +30,7 @@ sh setup.sh
 sh start_llm.sh
 
 #### Run
-python main.py <release_page_url_or_file> (Summary will be generated under ~/data/summaries/<release-version>/)
+python main.py <release_page_url_or_file> (Summary will be generated under ~/data/summaries/release-version/)
 
 #### Run Tests
 chmod +x run_scraper_tests.sh
