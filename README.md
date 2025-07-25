@@ -34,6 +34,7 @@ python main.py <release_page_url_or_file> (Summary will be generated under ~/dat
 
 #### Run Tests
 chmod +x run_scraper_tests.sh
+
 ./run_scraper_tests.sh
 
-If you just want to use the scraper and not generate summaries, you can set SUMMARIZE_ENABLED flag as False.
+To just use the scraper and disable summary generation, you can set SUMMARIZE_ENABLED flag as False.
