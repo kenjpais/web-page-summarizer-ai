@@ -37,4 +37,4 @@ chmod +x run_scraper_tests.sh
 
 ./run_scraper_tests.sh
 
-To just use the scraper and disable summary generation, you can set SUMMARIZE_ENABLED flag as False.
+To just use the scraper and disable summary generation, set SUMMARIZE_ENABLED flag as False.
