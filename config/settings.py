@@ -104,6 +104,7 @@ class ProcessingSettings(BaseSettings):
     """Data processing configuration."""
 
     sources: List[str] = Field(default=["JIRA", "GITHUB"], alias="SOURCES")
+    summarize_enabled: bool = Field(default=True, alias="SUMMARIZE_ENABLED")
     filter_on: bool = Field(default=True, alias="FILTER_ON")
     debug: bool = Field(default=False, alias="DEBUG")
 

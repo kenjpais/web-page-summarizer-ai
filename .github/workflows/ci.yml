@@ -14,6 +14,7 @@ jobs:
       DATA_DIR: data
       CONFIG_DIR: config
       DEBUG: "false"
+      SUMMARIZE_ENABLED: "true"
       SOURCE_PAGE: https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-stable/release/4.19.0-okd-scos.0
       GITHUB_GRAPHQL_API_URL: https://api.github.com/graphql
       GITHUB_SERVER: https://github.com

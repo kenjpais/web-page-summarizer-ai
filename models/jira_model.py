@@ -24,10 +24,6 @@ def create_jira_issue_dict(issue):
     """
     fields = issue.fields
     issue_dict = {}
-    # if issue_type := getattr(fields.issuetype, "name", ""):
-    #    issue_dict["issue_type"] = issue_type
-    # if project_name := getattr(fields.project, "name", ""):
-    #    issue_dict["project_name"] = project_name
     if summary := getattr(fields, "summary", ""):
         issue_dict["summary"] = clean_md_text(summary)
     if description := getattr(fields, "description", ""):

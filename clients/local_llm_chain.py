@@ -34,5 +34,4 @@ class LLMClient(Runnable):
         return result
 
 
-# Instantiate with the new OllamaLLM class
 local_llm = LLMClient(OllamaLLM(model="mistral"))

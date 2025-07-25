@@ -37,7 +37,6 @@ def run(source: str) -> None:
     outputs from the previous step. Correlation requires both JIRA and
     GitHub data to be scraped first.
     """
-    correlate_all()
     # Step 1: Clean workspace to ensure fresh start
     delete_all_in_directory(data_dir)
 
