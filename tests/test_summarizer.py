@@ -53,9 +53,7 @@ class TestSummarizer(unittest.TestCase):
     def test_summarize_enabled(self):
         os.environ["SUMMARIZE_ENABLED"] = "False"
         get_settings.cache_clear()
-
         summarize()
-
         self.assertFalse(os.path.exists(self.summarized_features_file))
         self.assertFalse(os.path.exists(self.data_dir / "summaries"))
 
