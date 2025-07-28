@@ -150,7 +150,8 @@ def summarize_feature_gates():
 
 def summarize():
     logger.info("\n[*] Summarizing...")
-    if settings.processing.summarize_enabled:
+    current_settings = get_settings()
+    if current_settings.processing.summarize_enabled:
         summarize_correlated_info()
 
 

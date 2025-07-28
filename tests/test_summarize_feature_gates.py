@@ -1,12 +1,7 @@
 import json
 import unittest
-from pathlib import Path
-from scrapers.scrapers import scrape_all
-from filters.filter_urls import filter_urls
-from scrapers.html_scraper import scrape_html
 from summarizers.summarizer import summarize_feature_gates
 from correlators.correlator import correlate_table, correlate_with_jira_issue_id
-from utils.file_utils import delete_all_in_directory
 from config.settings import get_settings
 from utils.logging_config import get_logger, setup_logging
 
@@ -15,7 +10,8 @@ setup_logging()
 logger = get_logger(__name__)
 
 settings = get_settings()
-data_dir = Path(settings.directories.data_dir)
+data_dir = settings.directories.data_dir
+test_data_dir = settings.directories.test_data_dir
 
 summarized_features_file = data_dir / "summarized_features.json"
 
@@ -50,11 +46,7 @@ class TestSummarizeFeatureGates(unittest.TestCase):
         )
 
         def run_pipeline():
-            delete_all_in_directory(cls.data_dir)
-            scrape_html(url)
-            filter_urls()
-            scrape_all()
-            correlate_with_jira_issue_id()
+            correlate_with_jira_issue_id(data_directory=test_data_dir)
             correlate_table()
             summarize_feature_gates()
 

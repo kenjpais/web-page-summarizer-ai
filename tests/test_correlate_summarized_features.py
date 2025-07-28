@@ -1,10 +1,6 @@
+import os
 import json
 import unittest
-import os
-from pathlib import Path
-from scrapers.scrapers import scrape_all
-from filters.filter_urls import filter_urls
-from scrapers.html_scraper import scrape_html
 from correlators.correlator import (
     correlate_all,
     correlate_table,
@@ -12,7 +8,6 @@ from correlators.correlator import (
     correlate_summarized_features,
 )
 from summarizers.summarizer import summarize_feature_gates
-from utils.file_utils import delete_all_in_directory
 from config.settings import get_settings
 from utils.logging_config import get_logger, setup_logging
 
@@ -21,7 +16,8 @@ setup_logging()
 logger = get_logger(__name__)
 
 settings = get_settings()
-data_dir = Path(settings.directories.data_dir)
+data_dir = settings.directories.data_dir
+test_data_dir = settings.directories.test_data_dir
 
 
 class TestCorrelateTable(unittest.TestCase):
@@ -60,12 +56,8 @@ class TestCorrelateTable(unittest.TestCase):
         )
 
         def run_pipeline():
-            delete_all_in_directory(cls.data_dir)
-            scrape_html(url)
-            filter_urls()
-            scrape_all()
-            correlate_all()
-            correlate_with_jira_issue_id()
+            correlate_all(data_directory=test_data_dir)
+            correlate_with_jira_issue_id(data_directory=test_data_dir)
             correlate_table()
             summarize_feature_gates()
             correlate_summarized_features()

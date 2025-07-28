@@ -79,13 +79,18 @@ class DirectorySettings(BaseSettings):
     """File system and directory configuration."""
 
     data_dir: Path = Field(default=Path("data"), alias="DATA_DIR")
+    test_data_dir: Path = Field(
+        default=Path("test") / Path("data"), alias="TEST_DATA_DIR"
+    )
     config_dir: Path = Field(default=Path("config"), alias="CONFIG_DIR")
     logs_dir: Path = Field(default=Path("logs"), alias="LOGS_DIR")
 
     # Ensure directories exist on startup
     create_dirs_on_startup: bool = Field(default=True, alias="CREATE_DIRS_ON_STARTUP")
 
-    @field_validator("data_dir", "config_dir", "logs_dir", mode="before")
+    @field_validator(
+        "data_dir", "test_data_dir", "config_dir", "logs_dir", mode="before"
+    )
     @classmethod
     def convert_to_path(cls, v: Any) -> Path:
         """Convert string paths to Path objects."""
@@ -95,7 +100,12 @@ class DirectorySettings(BaseSettings):
     def create_directories(self) -> "DirectorySettings":
         """Create directories if they don't exist."""
         if self.create_dirs_on_startup:
-            for directory in [self.data_dir, self.config_dir, self.logs_dir]:
+            for directory in [
+                self.data_dir,
+                self.test_data_dir,
+                self.config_dir,
+                self.logs_dir,
+            ]:
                 directory.mkdir(parents=True, exist_ok=True)
         return self
 

@@ -38,7 +38,7 @@ def run(source: str) -> None:
     GitHub data to be scraped first.
     """
     # Step 1: Clean workspace to ensure fresh start
-    delete_all_in_directory(data_dir)
+    # delete_all_in_directory(data_dir)
 
     # Step 2: Extract URLs from the main release page
     # This creates urls.txt with all discovered links
