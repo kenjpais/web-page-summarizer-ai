@@ -2,6 +2,7 @@ from typing import Any, Dict, Optional, Union
 from utils.logging_config import log_prompt
 from langchain_ollama import OllamaLLM
 from langchain_core.runnables import Runnable
+from config.settings import get_settings
 
 
 class LLMClient(Runnable):
@@ -34,4 +35,8 @@ class LLMClient(Runnable):
         return result
 
 
-local_llm = LLMClient(OllamaLLM(model="mistral"))
+# Get settings and configure Ollama with the correct base URL
+settings = get_settings()
+# Convert the full API URL to base URL (remove the path part)
+llm_base_url = settings.api.llm_api_url.replace("/api/generate", "")
+local_llm = LLMClient(OllamaLLM(model=settings.api.llm_model, base_url=llm_base_url))
