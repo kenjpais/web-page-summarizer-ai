@@ -1,3 +1,5 @@
+from controllers.summarize_url_controller import summarize_release_page_from_url
+
 """
 Release Page Summarizer - Main Entry Point
 
@@ -55,4 +57,4 @@ if __name__ == "__main__":
         sys.exit(1)
     else:
         # Execute the main pipeline with the provided source
-        runner.run(sys.argv[1])
+        summarize_release_page_from_url(sys.argv[1])

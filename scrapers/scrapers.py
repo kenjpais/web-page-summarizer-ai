@@ -35,7 +35,7 @@ def scrape_sources() -> None:
 
     for src in sources:
         logger.info(f"Scraping {src} links...")
-        
+
         src = src.lower()
         # Load URLs that were filtered for this specific source type
         # These come from the filter_urls step that categorized URLs by domain
