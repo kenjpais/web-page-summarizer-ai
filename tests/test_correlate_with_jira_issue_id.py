@@ -10,7 +10,6 @@ setup_logging()
 logger = get_logger(__name__)
 
 settings = get_settings()
-data_dir = settings.directories.data_dir
 test_data_dir = settings.directories.test_data_dir
 
 
@@ -19,15 +18,12 @@ class TestCorrelateWithJiraIssueId(unittest.TestCase):
     def setUpClass(cls):
         os.environ["FILTER_ON"] = "False"
 
-        cls.correlated_file = data_dir / "correlated.json"
+        cls.correlated_file = test_data_dir / "correlated.json"
 
         with open(settings.config_files.required_github_fields_file, "w") as f:
             json.dump(["title", "body"], f)
 
-        def run_pipeline():
-            correlate_with_jira_issue_id(data_directory=test_data_dir)
-
-        run_pipeline()
+        correlate_with_jira_issue_id(data_directory=test_data_dir)
 
     def test_correlate_with_jira_issue_id(self):
         sources = settings.processing.sources
@@ -40,11 +36,12 @@ class TestCorrelateWithJiraIssueId(unittest.TestCase):
                 if isinstance(issue_dict, dict):
                     for issue_id, issue in issue_dict.items():
                         for src in sources:
-                            src_matched_issues = issue.get(src, [])
-                            for src_matched_issue in src_matched_issues:
-                                if title := src_matched_issue.get("title", ""):
-                                    self.assertIn(
-                                        issue_id,
-                                        title,
-                                        msg=f"Issue ID [{issue_id}] not in title: '{title}'",
-                                    )
+                            if isinstance(issue, dict):
+                                src_matched_issues = issue.get(src, [])
+                                for src_matched_issue in src_matched_issues:
+                                    if title := src_matched_issue.get("title", ""):
+                                        self.assertIn(
+                                            issue_id,
+                                            title,
+                                            msg=f"Issue ID [{issue_id}] not in title: '{title}'",
+                                        )

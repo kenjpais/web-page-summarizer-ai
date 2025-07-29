@@ -124,7 +124,7 @@ def summarize_feature_gates():
         feature_gate_artifacts = json.load(f)
 
     with open(summarized_features_file, "w") as f:
-        # Feature gate summaries Generated with Google Gemini, hardcoding for temp testing.
+        # Feature gate summaries Generated with Google Gemini, hardcoding for temp testing until Gemini is used with langchain
         json.dump(
             {
                 "RouteExternalCertificate": "The **RouteExternalCertificate** feature gate has been promoted to the default feature set, meaning it is now enabled by default for both Self-Managed and HyperShift OpenShift environments. This change makes it easier for developers and operators to leverage external certificates for routes, as the functionality is now natively available without explicit feature gate activation.",

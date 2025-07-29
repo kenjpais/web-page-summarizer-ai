@@ -8,7 +8,7 @@ logger = get_logger(__name__)
 settings = get_settings()
 
 # Configuration paths for input and output files
-data_dir = Path(settings.directories.data_dir)
+data_dir = settings.directories.data_dir
 
 # Pickle file paths
 feature_gate_project_map_file = data_dir / "feature_gate_project_map.pkl"

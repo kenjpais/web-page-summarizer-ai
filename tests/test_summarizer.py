@@ -11,7 +11,7 @@ setup_logging()
 logger = get_logger(__name__)
 
 settings = get_settings()
-test_data_dir = settings.directories.test_data_dir
+data_dir = settings.directories.data_dir
 
 
 class TestSummarizer(unittest.TestCase):
@@ -19,7 +19,7 @@ class TestSummarizer(unittest.TestCase):
     def setUpClass(cls):
         os.environ["FILTER_ON"] = "True"
         get_settings.cache_clear()
-        cls.data_dir = test_data_dir
+        cls.data_dir = data_dir
         cls.summarized_features_file = cls.data_dir / "summarized_features.json"
         cls.expected_feature_gates = set(
             sorted(
@@ -60,5 +60,5 @@ class TestSummarizer(unittest.TestCase):
 
 def setup_test_data():
     test_data = {"test": "data"}
-    with open(test_data_dir / "correlated.json", "w") as f:
+    with open(data_dir / "correlated.json", "w") as f:
         json.dump(test_data, f)

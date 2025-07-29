@@ -1,0 +1,448 @@
+{
+    "OnClusterBuild": [
+        {
+            "summary": "Graduate MOSB/MOSC API to v1",
+            "description": "To make OCL ready for GA, the first step would be graduating the MCO's APIs from v1alpha1 to v1. This requires changes in the openshift/api repo.",
+            "epic_key": "MCO-1316",
+            "GITHUB": [
+                {
+                    "id": "2090",
+                    "type": "pullRequest",
+                    "title": "MCO-1443: Promote onclusterbuild to GA",
+                    "body": "Opened for testing. Based on guidance this is currently the first step: create new v1 API, gate remains off, v1 API is excluded from the image manifests Also adds in:"
+                }
+            ]
+        },
+        {
+            "summary": "Separate OCL e2e tests into new test suite",
+            "description": "The original scope of this task is represented across this story & MCO-1494. With OCL GA'ing soon, we'll need a blocking path within our e2e test suite that must pass before a PR can be merged. This story represents the first stage in creating the blocking path: Migrate the tests from e2e-gcp-op-techpreview into a new test suite called e2e-ocl. This can be done by moving the tests in the MCO repo from the test/e2e-techpreview folder to a new test/e2e-ocl folder. There might be some minor cleanups such as fixing duplicate function names, etc. but it should be fairly straightforward to do. Make a new e2e-gcp-op-ocl job to call the newly created e2e-ocl test suite. This test should first be added as optional for 4.19 so it can be stability tested before it is made blocking for 4.18 & 4.19. This will require a PR to the openshift/release repo to call the new test for 4.19 & master. This should be a pretty straightforward config change.",
+            "epic_key": "MCO-828",
+            "GITHUB": [
+                {
+                    "id": "4750",
+                    "type": "pullRequest",
+                    "title": "MCO-1416: Update timeouts & improve debuggability of ocl e2e tests",
+                    "body": "- What I did - Undo timeout updates made here( - Pull in Zack's work( that updates the OCL e2e test suite \"to leave objects in-situ whenever the test suite is being run in OpenShift CI\" with the intent to capture the test cluster's state to improve test debugging. - How to verify it Verified in Zack's PR( - Description for the changelog MCO-1416( Update timeouts & improve debuggability of ocl e2e tests"
+                },
+                {
+                    "id": "4730",
+                    "type": "pullRequest",
+                    "title": "MCO-1416: Increase timeouts in OCL e2e tests",
+                    "body": "- What I did Increase the timeouts in different stages of the ocl e2e tests. - How to verify it N/A - Description for the changelog MCO-1416( Increase timeouts in OCL e2e tests"
+                },
+                {
+                    "id": "4699",
+                    "type": "pullRequest",
+                    "title": "MCO-1416: Create OCL e2e Test Suite & Remove Unneeded Helper",
+                    "body": "- What I did - Moved the OCL test files from the `test/e2e-techpreview` folder to a new `test/e2e-ocl` folder. - Removed the unneeded `MustHaveFeatureGatesEnabled` function. - How to verify it Test the Makefile update by running `make test-e2e-ocl`. ```bash $ make test-e2e-ocl --quiet Installing go-junit-report 2024/11/21 09:47:57 All required featuregates OnClusterBuild MachineConfigNodes present! === RUN TestOnClusterBuildsOnOKD helpers_test.go:630: OCP detected, skipping test TestOnClusterBuildsOnOKD helpers_test.go:631: --- SKIP: TestOnClusterBuildsOnOKD (0.08s) === RUN TestOnClusterBuildsCustomPodBuilder ... ``` - Description for the changelog MCO-1416( Separate OCL e2e tests from tech preview and remove unneeded helper"
+                }
+            ]
+        }
+    ],
+    "ConsolePluginContentSecurityPolicy": [
+        {
+            "summary": "Distribute the OpenShift CLI for both RHEL8 and RHEL9",
+            "description": "As a developer I want to download rhel8 and rhel9 _oc_ binaries which are now part of the cli-artifacts image which is meing used as builder image for _downloads_ image used used for downloads _oc_ binaries. AC: Update the console-operator code to provide rhel8 and rhel9 _oc_ binaries as part of the ConsoleCLIDownloads CR Add tests RFE - This story is probably a bug, which we should backport to the version in which the cli-artifacts image started to provide additional RHEL binaries.",
+            "epic_key": "CONSOLE-4562",
+            "GITHUB": [
+                {
+                    "id": "2275",
+                    "type": "pullRequest",
+                    "title": "CONSOLE-4523: Lift Featuregate for the ConsolePlugin ContentSecurityPolicy API",
+                    "body": "Sippy dashboard monitoring the OCPFeatureGate:ConsolePluginContentSecurityPolicy( tests /assign @joelanford FYI @spadgett"
+                },
+                {
+                    "id": "976",
+                    "type": "pullRequest",
+                    "title": "CONSOLE-4523: Add rhel8 and rhel9 oc binaries for Linux OS in CLI downloads",
+                    "body": "Updating the downloads server in order for it to serve the rhel8 and rhel9 binaries for the Linux OS. Also needed to update `CLIDownloadsSyncController` controller that is responsible for creating the ConsoleCLIDownloads CR of `oc` binaries. Screen: img width=\"1386\" alt=\"Screenshot 2025-04-09 at 13 20 54\" src=\" / Originally I wanted to put all the oc + oc.rhel8 + oc.rhel9 into a single archive, but that would be a huge one, more then 500MB \ud83e\udd2f so I rather added an archive for each binary type. /assign @Mylanos @opayne1 Im open for discussion about the name for the link, cause basically what I did is I've only appended ` - RHEL 8` or ` - RHEL 9` for RHEL binaries (`oc.rhel8` and `oc.rhel9`)"
+                }
+            ]
+        }
+    ],
+    "GatewayAPIController": [
+        {
+            "summary": "Enable GatewayAPIController feature gate in Default feature set",
+            "description": "The goal of this story is to enable the GatewayAPIController feature gate| in the Default feature set. Currently, this feature gate is enabled only in the DevPreview and TechPreview feature sets. This should be the final implementation story in the epic, ensuring that all required implementation tasks are completed beforehand. Additionally, before enabling GatewayAPIController in the Default feature set, we must have at least five origin tests in place, as required (see for implementation of the tests).",
+            "epic_key": "NE-1942",
+            "GITHUB": [
+                {
+                    "id": "2284",
+                    "type": "pullRequest",
+                    "title": "NE-2017: Enable GatewayAPIController featuregate in Default featureset",
+                    "body": "Promote the `GatewayAPIController` feature gate to GA by enabling it in the default feature set. This featuregate governs the OpenShift Gateway API controller implementation, which is currently based on Istio."
+                }
+            ]
+        },
+        {
+            "summary": "Defining FeatureGate e2e tests: GatewayAPIController featuregate",
+            "description": "After reviewing the existing GWAPI e2e tests| for GatewayAPIController featuregate and QE new designed cases in Polarion, we will cover below tests in Origin e2e: 1 OSSM installation succeed (check related resources) and default gatewayclass is accepted. 2 can create and delete custom gatewayclass (delete custom should not affect default and istiod-openshift-gateway) 3 Gateway object could be created (check LoadBalancer service, DNSRecords) 4 HTTPRoute object could be created (using separated gateway) 5 (negative) The OSSM related resource gets recreated after delete it (Subscription, Istio) 6 (negative) The Gateway related resource gets recreated after delete it (LoadBalancer service, DNSRecords...)",
+            "epic_key": "NE-1942",
+            "GITHUB": [
+                {
+                    "id": "29670",
+                    "type": "pullRequest",
+                    "title": "NE-1970: 5 e2e origin tests for gatewayApiController featureGate",
+                    "body": "PR for Network Ingress and DNS team for the 5 e2e tests to graduate featureGate to GA JIRA: Test Scenarios: Confirm that OLM and OSSM resources are created Confirm that default gatewayClass is accepted Confirm that a custom-gatewayclass can be created, deleted and not affect the state of the OSSM resources A Custom gateway Object can be created A HttpRoute can be created with no errors using a custom-gateway"
+                }
+            ]
+        },
+        {
+            "summary": "Implement GatewayAPI Controller featuregate",
+            "description": "What? Add a new featuregate for OSSM installation, and move OSSM installation from the existing GatewayAPI feature gate to the new separate featuregate, so we have one featuregate only for CRDs and one featuregate only for installing OSSM. This will help us with staging component releases.",
+            "epic_key": "NE-1898",
+            "GITHUB": [
+                {
+                    "id": "2219",
+                    "type": "pullRequest",
+                    "title": "NE-1954: Introduce GatewayAPIController feature gate",
+                    "body": "Previously, the \"GatewayAPI\" feature gate managed both the GatewayAPI CRDs and the Gateway Controller. However, with the introduction of Gateway CRD lifecycle management ( these responsibilities were separated. A dedicated feature gate now controls the Gateway Controller to distinguish its production readiness from that of the CRDs."
+                },
+                {
+                    "id": "1198",
+                    "type": "pullRequest",
+                    "title": "NE-1954: Implement GatewayAPIController feature gate",
+                    "body": "This PR bumps `openshift/api` to get GatewayAPIController feature gate( and implements it by skipping the start of the gatewayclass and service-dns controllers when it's disabled."
+                }
+            ]
+        }
+    ],
+    "VSphereStaticIPs": [
+        {
+            "summary": "vSphere Static IP GA+1 Cleanup",
+            "description": "USER STORY: As a developer, I need to remove all feature gates around vSphere Static IP support one release after GA so that feature gate logic is removed and all functions are no longer needing feature gate protections. DESCRIPTION: This story will clean up all of the feature gate logic for Static IP. Currently there are several projects that check to see if the feature gate is enabled in order for the logic to be performed. As part of being GA, the code is enabled by default. You can still force disable it in install-config if you wish, which is why we left it in GA+0, but GA+1 we are to remove it assuming all major bugs are fixed. ACCEPTANCE CRITERIA: All components referencing the static ip feature gate have been updated to no longer use it and point to a version of API where the feature gate no longer exists. ENGINEERING DETAILS: TBD",
+            "GITHUB": [
+                {
+                    "id": "9560",
+                    "type": "pullRequest",
+                    "title": "SPLAT-2078: Removed VSphereStaticIPs feature gate",
+                    "body": "SPLAT-2078( Changes - Removed references to VSphereStaticIPs feature gate Notes After a feature gate has been GA in an OCP release, we are supposed to clean up feature gate usage in the next release. VSphere static IP support GA'd in 4.16, so the intention is to remove the feature gate as part of 4.19."
+                },
+                {
+                    "id": "2232",
+                    "type": "pullRequest",
+                    "title": "SPLAT-2078: Removed VSphereStaticIPs feature gate",
+                    "body": "SPLAT-2078( Changes - Removed VSphereStaticIPs feature gate Dependencies - -"
+                },
+                {
+                    "id": "1346",
+                    "type": "pullRequest",
+                    "title": "SPLAT-2078: Removed VSphereStaticIPs feature gate",
+                    "body": "SPLAT-2078( Changes - Removed VSphereStaticIPs feature gate Notes After a feature gate has been GA in an OCP release, we are supposed to clean up feature gate usage in the next release. VSphere static IP support GA'd in 4.16, so the intention is to remove the feature gate as part of 4.19."
+                }
+            ]
+        }
+    ],
+    "RouteExternalCertificate": [
+        {
+            "summary": "As a developer, I want to promote the feature to default featureset",
+            "description": "Promote the _RouteExternalCertificate_ featuregate to default featureset and ensure that the gate is enabled by default.",
+            "epic_key": "OAPE-26",
+            "GITHUB": [
+                {
+                    "id": "2268",
+                    "type": "pullRequest",
+                    "title": "OAPE-92: Promote RouteExternalCertificate feature gate to default feature set",
+                    "body": "Promote `RouteExternalCertificate` feature gate to default feature set for both SelfManaged and HyperShift."
+                }
+            ]
+        }
+    ],
+    "VSphereControlPlaneMachineSet": [
+        {
+            "summary": "vSphere CPMS GA+1 Cleanup",
+            "description": "USER STORY: As a developer, I need to remove all feature gates around vSphere CPMS support one release after GA so that feature gate logic is removed and all functions are no longer needing feature gate protections. DESCRIPTION: This story will clean up all of the feature gate logic for vSphere CPMS. Currently there are several projects that check to see if the feature gate is enabled in order for the logic to be performed. As part of being GA, the code is enabled by default. You can still force disable it in install-config if you wish, which is why we left it in GA+0, but GA+1 we are to remove it assuming all major bugs are fixed. ACCEPTANCE CRITERIA: All components referencing the vSphere CPMS feature gate have been updated to no longer use it and point to a version of API where the feature gate no longer exists. ENGINEERING DETAILS: TBD",
+            "GITHUB": [
+                {
+                    "id": "2236",
+                    "type": "pullRequest",
+                    "title": "SPLAT-2079: Removed VSphereControlPlaneMachineSet feature gate",
+                    "body": "SPLAT-2079( Changes - Removed VSphereControlPlaneMachineSet feature gate - Fixed CRD to have config available as default Dependencies -"
+                },
+                {
+                    "id": "354",
+                    "type": "pullRequest",
+                    "title": "SPLAT-2079: Removed VSphereControlPlaneMachineset feature gate",
+                    "body": "SPLAT-2079( Changes - Removed VSphereControlPlaneMachineset feature gate"
+                }
+            ]
+        }
+    ],
+    "GatewayAPI": [
+        {
+            "summary": "Enable GatewayAPIController feature gate in Default feature set",
+            "description": "The goal of this story is to enable the GatewayAPIController feature gate| in the Default feature set. Currently, this feature gate is enabled only in the DevPreview and TechPreview feature sets. This should be the final implementation story in the epic, ensuring that all required implementation tasks are completed beforehand. Additionally, before enabling GatewayAPIController in the Default feature set, we must have at least five origin tests in place, as required (see for implementation of the tests).",
+            "epic_key": "NE-1942",
+            "GITHUB": [
+                {
+                    "id": "2284",
+                    "type": "pullRequest",
+                    "title": "NE-2017: Enable GatewayAPIController featuregate in Default featureset",
+                    "body": "Promote the `GatewayAPIController` feature gate to GA by enabling it in the default feature set. This featuregate governs the OpenShift Gateway API controller implementation, which is currently based on Istio."
+                }
+            ]
+        },
+        {
+            "summary": "Defining FeatureGate e2e tests: GatewayAPIController featuregate",
+            "description": "After reviewing the existing GWAPI e2e tests| for GatewayAPIController featuregate and QE new designed cases in Polarion, we will cover below tests in Origin e2e: 1 OSSM installation succeed (check related resources) and default gatewayclass is accepted. 2 can create and delete custom gatewayclass (delete custom should not affect default and istiod-openshift-gateway) 3 Gateway object could be created (check LoadBalancer service, DNSRecords) 4 HTTPRoute object could be created (using separated gateway) 5 (negative) The OSSM related resource gets recreated after delete it (Subscription, Istio) 6 (negative) The Gateway related resource gets recreated after delete it (LoadBalancer service, DNSRecords...)",
+            "epic_key": "NE-1942",
+            "GITHUB": [
+                {
+                    "id": "29670",
+                    "type": "pullRequest",
+                    "title": "NE-1970: 5 e2e origin tests for gatewayApiController featureGate",
+                    "body": "PR for Network Ingress and DNS team for the 5 e2e tests to graduate featureGate to GA JIRA: Test Scenarios: Confirm that OLM and OSSM resources are created Confirm that default gatewayClass is accepted Confirm that a custom-gatewayclass can be created, deleted and not affect the state of the OSSM resources A Custom gateway Object can be created A HttpRoute can be created with no errors using a custom-gateway"
+                }
+            ]
+        },
+        {
+            "summary": "Updates to CIO logic for Gateway API CRD Management",
+            "description": "What? On OCP 4.19 onward we will ensure the Gateway API CRDs are present a specific version with its own feature gate which will default to true. If we can not ensure the CRDs are present at the expected version we will mark the cluster degraded. Why? See the description of NE-1898. How? The Cluster Ingress Operator (CIO)",
+            "epic_key": "NE-1898",
+            "GITHUB": [
+                {
+                    "id": "1205",
+                    "type": "pullRequest",
+                    "title": "NE-1969: Set Degraded=True if unmanaged Gateway API CRDs exist",
+                    "body": "Set the ingress cluster operator\u2019s `Degraded` status to `true` if unmanaged Gateway API CRDs exist on the cluster. An unmanaged Gateway API CRD is one with \"gateway.networking.k8s.io\" or \"gateway.networking.x-k8s.io\" in its `spec.group` field, and not managed by the gatewayapi controller. This PR uses the cluster operator\u2019s `status.extension` field to store the names of unmanaged CRDs. The gatewayapi controller writes to this field, while the status controller reads it and updates the ingress cluster operator\u2019s `Degraded` status accordingly."
+                },
+                {
+                    "id": "1202",
+                    "type": "pullRequest",
+                    "title": "NE-1969: Add \"v1\" version to OpenShift GatewayClass controller name",
+                    "body": "Add the \"v1\" suffix to the GatewayClass controllerName to allow for alternative OpenShift Gateway API implementations in the future."
+                }
+            ]
+        },
+        {
+            "summary": "Enable GatewayAPI feature gate in Default feature set",
+            "description": "The goal of this story is to enable the GatewayAPI feature gate This should be the final implementation story in the epic, ensuring that all required implementation tasks are completed beforehand. Additionally, before enabling GatewayAPI in the Default feature set, we must have at least five origin tests in place, as required.",
+            "epic_key": "NE-1898",
+            "GITHUB": [
+                {
+                    "id": "2281",
+                    "type": "pullRequest",
+                    "title": "NE-2009: Re-enable GatewayAPI featuregate in Default featureset",
+                    "body": "This PR re-applies which was reverted PR which fixed the missing `GatewayAPI` featuregate in `Default` on Hypershift: PR which added HyperShift conformance tests to the api presubmites:"
+                },
+                {
+                    "id": "2261",
+                    "type": "pullRequest",
+                    "title": "NE-2009: Enable GatewayAPI featuregate in Default featureset",
+                    "body": "Promote `GatewayAPI` featuregate which covers the GatewayAPI CRD lifecycle management implemented in the cluster ingress operator."
+                },
+                {
+                    "id": "1221",
+                    "type": "pullRequest",
+                    "title": "NE-2009: Relax pod bound validating admission rule for HyperShift",
+                    "body": "In HyperShift, the ingress operator runs on the management cluster and communicates with the hosted cluster via a generated Kubeconfig. This setup breaks the validating admission rule that enforces requests to originate from a pod within `openshift-ingress-operator-gatewayapi-crd-admission` VAP. This commit adds a dedicated VAP manifest for HyperShift clusters, which relaxes the rule mentioned above. Slack discussion: link( Failed HyperShift conformance test: link( Ingress operator logs: logs( Error from the logs: ``` ValidatingAdmissionPolicy 'openshift-ingress-operator-gatewayapi-crd-admission' with binding 'openshift-ingress-operator-gatewayapi-crd-admission' denied request: this user must have both \\\"authentication.kubernetes.io/node-name\\\" and \\\"authentication.kubernetes.io/pod-name\\\" claims, failed to create CRD httproutes.gateway.networking.k8s.io: customresourcedefinitions.apiextensions.k8s.io \\\"httproutes.gateway.networking.k8s.io\\\" is forbidden: ValidatingAdmissionPolicy 'openshift-ingress-operator-gatewayapi-crd-admission' with binding 'openshift-ingress-operator-gatewayapi-crd-admission' denied request: this user must have both \\\"authentication.kubernetes.io/node-name\\\" and \\\"authentication.kubernetes.io/pod-name\\\" claims, ```"
+                },
+                {
+                    "id": "1216",
+                    "type": "pullRequest",
+                    "title": "NE-2009: Move VAP to Default featureset",
+                    "body": "The `openshift-ingress-operator-gatewayapi-crd-admission` Validating Admission Policy is bound to `GatewayAPI` featuregate, which has been promoted to GA ( This PR removes the `feature-set` annotation from manifests related to VAP, this effectively makes them part of the `Default` featureset."
+                }
+            ]
+        },
+        {
+            "summary": "Defining FeatureGate e2e tests: GatewayAPI featuregate",
+            "description": "see thread: and the tests would be covered in Origin are: Verify Gateway API CRDs and esnure required CRDs should already be installed Verify Gateway API CRDs and ensure existing CRDs can not be deleted Verify Gateway API CRDs and ensure existing CRDs can not be updated Verify Gateway API CRDs and ensure CRD of standard group can not be created Verify Gateway API CRDs and ensure CRD of experimental group is not installed Verify Gateway API CRDs and ensure CRD of experimental group can not be created",
+            "epic_key": "NE-1942",
+            "GITHUB": [
+                {
+                    "id": "29597",
+                    "type": "pullRequest",
+                    "title": "NE-1968: add e2e tests for FeatureGate GatewayAPI",
+                    "body": "Implements e2e tests for GatewayAPI featuregate. These tests cover the following scenarios: - Verify Gateway API CRDs and esnure required CRDs should already be installed - Verfiy Gateway API CRDs and ensure existing CRDs can not be deleted - Verify Gateway API CRDs and ensure existing CRDs can not be updated - Verify Gateway API CRDs and ensure CRD of standard group can not be created - Verify Gateway API CRDs and ensure CRD of experimental group is not installed - Verify Gateway API CRDs and ensure CRD of experimental group can not be created requires"
+                }
+            ]
+        },
+        {
+            "summary": "Implement GatewayAPI Controller featuregate",
+            "description": "What? Add a new featuregate for OSSM installation, and move OSSM installation from the existing GatewayAPI feature gate to the new separate featuregate, so we have one featuregate only for CRDs and one featuregate only for installing OSSM. This will help us with staging component releases.",
+            "epic_key": "NE-1898",
+            "GITHUB": [
+                {
+                    "id": "2219",
+                    "type": "pullRequest",
+                    "title": "NE-1954: Introduce GatewayAPIController feature gate",
+                    "body": "Previously, the \"GatewayAPI\" feature gate managed both the GatewayAPI CRDs and the Gateway Controller. However, with the introduction of Gateway CRD lifecycle management ( these responsibilities were separated. A dedicated feature gate now controls the Gateway Controller to distinguish its production readiness from that of the CRDs."
+                },
+                {
+                    "id": "1198",
+                    "type": "pullRequest",
+                    "title": "NE-1954: Implement GatewayAPIController feature gate",
+                    "body": "This PR bumps `openshift/api` to get GatewayAPIController feature gate( and implements it by skipping the start of the gatewayclass and service-dns controllers when it's disabled."
+                }
+            ]
+        },
+        {
+            "summary": "Update Gateway API Feature Gate to include Tech Preview",
+            "description": "Update the existing feature gate to enable Gateway API in clusters with either the DevPreviewNoUpgrade or TechPreviewNoUpgrade feature set.",
+            "epic_key": "NE-1747",
+            "GITHUB": [
+                {
+                    "id": "2081",
+                    "type": "pullRequest",
+                    "title": "NE-1871: Promote GatewayAPI to Tech Preview",
+                    "body": "Enhancement: Gateway API with Cluster Ingress Operator("
+                }
+            ]
+        },
+        {
+            "summary": "Add Gateway API to must-gather results",
+            "description": "GWAPI and istio logs are not in the must-gather reports. Add Gateway API resources and possibly OSSM resources to the operator's relatedObjects field.",
+            "epic_key": "NE-1117",
+            "GITHUB": [
+                {
+                    "id": "933",
+                    "type": "pullRequest",
+                    "title": "NE-1277: status: Add Gateway API objects to relatedObjects",
+                    "body": "`pkg/operator/controller/names.go` (`GlobalOperatorsNamespace`): New const for the \"openshift-operators\" namespace. (`ServiceMeshSubscriptionName`): Use `GlobalOperatorsNamespace`. `pkg/operator/controller/status/controller.go` (`New`): Add a watch for subscriptions so that the status controller updates `relatedObjects` when the OSSM subscription is added or removed. (`Config`): Add `GatewayAPIEnabled` field. (`Reconcile`): If `GatewayAPIEnabled` is true, add resources related to Gateway API to `relatedObjects`. If `haveOSSMSubscription` is true, add resources that require the subscription. (`operatorState`): Add `haveOSSMSubscription` field. (`getOperatorState`): Set `haveOSSMSubscription`. `pkg/operator/operator.go` (`New`): Watch the \"openshift-operators\" namespace, and specify `GatewayAPIEnabled` in the status controller's config."
+                }
+            ]
+        },
+        {
+            "summary": "Graduate \"GatewayAPI\" featuregate to TechPreviewNoUpgrade",
+            "description": "As a developer, I need a featuregate to develop behind so that the Gateway API work does not impact other development teams until tests pass. The featuregate is currently in the DevPreviewNoUpgrade featureset. We need to graduate it to the TechPreviewNoUpgrade featureset to give us more CI signal and testing. Ultimately the featuregate needs to graduate to GA (default on) once tests pass so that the feature can GA. See also: - - -"
+        }
+    ],
+    "CPMSMachineNamePrefix": [
+        {
+            "summary": "As a developer, I want to promote MachineNamePrefix feature to default featureset",
+            "description": "Promote the _CPMSMachineNamePrefix_ featuregate to default featureset and ensure that the gate is enabled by default.",
+            "epic_key": "OAPE-142",
+            "GITHUB": [
+                {
+                    "id": "2254",
+                    "type": "pullRequest",
+                    "title": "OAPE-148: Promote CPMSMachineNamePrefix feature gate to default feature set",
+                    "body": "Promote `CPMSMachineNamePrefix` feature gate to default feature set"
+                }
+            ]
+        },
+        {
+            "summary": "Include CPMSMachineNamePrefix feature-gate name in e2e tests",
+            "description": "Include `CPMSMachineNamePrefix` feature gate name in e2e tests. This is required for sippy tool to filter the e2e tests specific to this featuregate. xRef:",
+            "epic_key": "OAPE-142",
+            "GITHUB": [
+                {
+                    "id": "351",
+                    "type": "pullRequest",
+                    "title": "OAPE-126: Include CPMSMachineNamePrefix feature-gate name in e2e tests",
+                    "body": "Include `CPMSMachineNamePrefix` feature gate name in e2e tests. This is required for sippy tool to filter the e2e tests specific to this featuregate. xRef:"
+                }
+            ]
+        },
+        {
+            "summary": "As a developer, I want to support prefix name formats to control plane machines via CPMS-operator",
+            "description": "Utilize the new field added in openshift/api and add the implementation so that custom name (prefix) formats can be assigned to Control Plane Machines via CPMS. All the changes should be behind the feature gate. This prefix will supersede the current usage of the control plane label and role combination we use today The names must still continue to be suffixed with charsidx as this is important to the operation of CPMS Add unit tests and E2E tests.",
+            "epic_key": "OAPE-16",
+            "GITHUB": [
+                {
+                    "id": "332",
+                    "type": "pullRequest",
+                    "title": "OAPE-19: Support customized control plane machine names with prefix",
+                    "body": "This PR introduces the ability to customize the naming format of Control Plane Machines. This is achieved through a new `machineNamePrefix` field in the ControlPlaneMachineSet spec, gated behind the `CPMSMachineNamePrefix` feature gate. When feature gate is enabled and `machineNamePrefix` field is specified, it allows users to specify a prefix that will be used in `getMachineName`. The resulting machine name will consist of the provided prefix, followed by a randomly generated string of 5 characters and the machine index. Otherwise, it will fall back to the default naming convention. - Implementes : - API PR: - Part of: OAPE-19("
+                }
+            ]
+        },
+        {
+            "summary": "As a developer, I want to vendor openshift/api changes into cpms-operator",
+            "description": "Bump openshift/api to vendor machineNamePrefix field and CPMSMachineNamePrefix feature-gate into cpms-operator",
+            "epic_key": "OAPE-16",
+            "GITHUB": [
+                {
+                    "id": "333",
+                    "type": "pullRequest",
+                    "title": "OAPE-18: Bump openshift/api to vendor machineNamePrefix field",
+                    "body": "Bump `openshift/api` to vendor `machineNamePrefix` field and `CPMSMachineNamePrefix` feature-gate - Part of : OAPE-18( - Implementes : - API PR:"
+                }
+            ]
+        },
+        {
+            "summary": "As a developer, I want to add a new field to openshift/api",
+            "description": "Provide a new field to the CPMS that allows to define a Machine name prefix",
+            "epic_key": "OAPE-16",
+            "GITHUB": [
+                {
+                    "id": "2086",
+                    "type": "pullRequest",
+                    "title": "CFE-1167: Feature-gated MachineNamePrefix field for CPMS",
+                    "body": "This PR - Introduces `MachineNamePrefix` field in `ControlPlaneMachineSet` allowing custom prefixes to be used for Control Plane Machine names. - This feature is gated behind the `CPMSMachineNamePrefix` feature gate. - Feature gate PR : - This PR fixed the feature-gate naming typo. - Implements - Part of CFE-1167("
+                }
+            ]
+        }
+    ],
+    "CSIDriverSharedResource": [
+        {
+            "summary": "Remove Shared Resource CSI Driver Feature",
+            "description": "Epic Goal Remove the Shared Resource CSI Driver as a tech preview feature. Why is this important? (mandatory) Shared Resources was originally introduced as a tech preview feature in OpenShift Container Platform. After extensive review, we have decided to GA this component through the Builds for OpenShift layered product. Expected GA will be alongside OpenShift 4.16. Therefore it is safe to remove in OpenShift 4.17 Scenarios (mandatory) Accessing RHEL content in builds/workloads Sharing other information across namespaces in the cluster (ex: OpenShift pull secret) Dependencies (internal and external) (mandatory) BUILD-793 Contributing Teams(and contacts) (mandatory) Our expectation is that teams would modify the list below to fit the epic. Some epics may not need all the default groups but what is included here should accurately reflect who will be involved in delivering the epic. Development - OpenShift Storage, OpenShift Builds (forum-openshift-builds) Documentation - QE - PX - Others - Acceptance Criteria (optional) Shared Resource CSI driver cannot be installed using OCP feature gates/tech preview feature set. Drawbacks or Risk (optional) Using Shared Resources requires installation of a layered product, not part of OCP core. Done - Checklist (mandatory) The following points apply to all epics and are what the OpenShift team believes are the minimum set of criteria that epics should meet for us to consider them potentially shippable. We request that epic owners modify this list to reflect the work to be completed in order to produce something that is potentially shippable. CI Testing - Basic e2e automationTests are merged and completing successfully Documentation - Content development is complete. QE - Test scenarios are written and executed successfully. Technical Enablement - Slides are complete (if requested by PLM) Engineering Stories Merged All associated work items with the Epic are closed Epic status should be \"Release Pending\"",
+            "GITHUB": [
+                {
+                    "id": "2052",
+                    "type": "pullRequest",
+                    "title": "STOR-1823: Remove CSIDriverSharedResource feature gate",
+                    "body": "/hold for /cc @openshift/storage @adambkaplan @sayan-biswas"
+                }
+            ]
+        }
+    ],
+    "AdditionalRoutingCapabilities": [
+        {
+            "id": "2087",
+            "type": "pullRequest",
+            "title": "ClusterNetworkOperator API: promote the additionalRoutingCapabilities gate",
+            "body": "Promoting the feature gate as the deployed daemonset is being used by metallb and covered by MetalLB tests. This feature is baremetal specific. By setting this flag, CNO will deploy the frr-k8s daemonset which is used (among others) by core features of metallb. Part of this work is to move the daemonset from being deployed by the MetalLB operator to being deployed by CNO. For the time being, we have a CI lane (gating PRs) that is flipping the feature gate and it's testing MetalLB functionalities plus another one testing the FRR-K8s functionalities. Given the feature is baremetal specific, we need an exception to the regular process, as described here We added a periodic informing job here( plus we have both telco and openshift QE validating MetalLB releases (and this feature as a consequence)."
+        },
+        {
+            "id": "2586",
+            "type": "pullRequest",
+            "title": "CNF-15518: Bump the openshift api version",
+            "body": "This is needed for the AdditionalRoutingCapabilities field promoted to default."
+        }
+    ],
+    "OpenShiftPodSecurityAdmission": [
+        {
+            "id": "5362",
+            "type": "pullRequest",
+            "title": "NO-JIRA: Enforce EnsurePSANotPrivileged for 4.19 and later",
+            "body": "OpenShiftPodSecurityAdmission feature gate is not enabled by default in 4.18. We need to stop EnsurePSANotPrivileged in 4.18. Which issue(s) this PR fixes (optional, use `fixes issue_number(, fixes issue_number, ...)` format, where issue_number might be a GitHub issue, or a Jira story: Fixes Checklist - x Subject and description added to both, commit and PR. - x Relevant issues have been referenced. - This change includes docs. - This change includes unit tests."
+        }
+    ],
+    "ServiceAccountTokenNodeBinding": [
+        {
+            "id": "2139",
+            "type": "pullRequest",
+            "title": "OCPBUGS-48286: feature-gates - enable ServiceAccountTokenNodeBinding",
+            "body": "What Enable `ServiceAccountTokenNodeBinding`. Why It is available in Beta on Kubernetes."
+        },
+        {
+            "id": "2139",
+            "type": "pullRequest",
+            "title": "OCPBUGS-48286: feature-gates - enable ServiceAccountTokenNodeBinding",
+            "body": "What Enable `ServiceAccountTokenNodeBinding`. Why It is available in Beta on Kubernetes."
+        }
+    ],
+    "MetricsCollectionProfiles": [
+        {
+            "id": "2286",
+            "type": "pullRequest",
+            "title": "MON-4071: GA `MetricsCollectionProfiles`",
+            "body": "This pull request aims to GA the `MetricsCollectionProfiles` feature-gate, as it meets the graduation standards: see 1. Please note that the above results are from 4.19 runs, however, 4.18 results were impacted by issues fixed in a backport: see 2. We are actively looking at the % increases since the backport goes in, as well as a QE-signoff, not to override the requirements, but to add to the confidence for its 4.18 counterpart in order to GA this. 1: 2:"
+        },
+        {
+            "id": "2286",
+            "type": "pullRequest",
+            "title": "MON-4071: GA `MetricsCollectionProfiles`",
+            "body": "This pull request aims to GA the `MetricsCollectionProfiles` feature-gate, as it meets the graduation standards: see 1. Please note that the above results are from 4.19 runs, however, 4.18 results were impacted by issues fixed in a backport: see 2. We are actively looking at the % increases since the backport goes in, as well as a QE-signoff, not to override the requirements, but to add to the confidence for its 4.18 counterpart in order to GA this. 1: 2:"
+        },
+        {
+            "id": "29330",
+            "type": "pullRequest",
+            "title": "TRT-1898: Revert \"NO-JIRA: address malformed CMO configmap post-test\"",
+            "body": "Reverts openshift/origin29309; tracked by Per OpenShift policy( we are reverting this breaking change to get CI and/or nightly payloads flowing again. This PR has causd the nightly failures for many techpreview jobs. Here is one example: Test is stuck with this error: I1127 09:11:20.327512 62130 client.go:421 Project \"e2e-test-monitoring-collection-profiles-mqvzf\" has been fully provisioned. STEP: restoring the original configuration for the operator @ 11/27/24 09:11:21.232 INTERRUPTED in AfterAll - github.com/openshift/origin/test/extended/prometheus/collection_profiles.go:99 @ 11/27/24 09:26:06.355 ------------------------------ Interrupted by User First interrupt received; Ginkgo will run any cleanup and reporting nodes but will skip all remaining specs. Interrupt again to skip cleanup. Here's a current progress report: sig-instrumentationOCPFeatureGate:MetricsCollectionProfiles The collection profiles feature-set initially, in a homogeneous default environment, should expose default metrics Suite:openshift/conformance/parallel (Spec Runtime: 14m49.846s) github.com/openshift/origin/test/extended/prometheus/collection_profiles.go:140 In AfterAll (Node Runtime: 14m45.187s) github.com/openshift/origin/test/extended/prometheus/collection_profiles.go:99 At By Step restoring the original configuration for the operator (Step Runtime: 14m45.123s) github.com/openshift/origin/test/extended/prometheus/collection_profiles.go:104 Spec Goroutine goroutine 236 select github.com/onsi/gomega/internal.(AsyncAssertion).match(0xc000fa2070, {0x7e574e8, 0xc23fb80}, 0x1, {0x0, 0x0, 0x0}) github.com/onsi/gomega@v1.34.2/internal/async_assertion.go:538 github.com/onsi/gomega/internal.(AsyncAssertion).Should(0xc000fa2070, {0x7e574e8, 0xc23fb80}, {0x0, 0x0, 0x0}) github.com/onsi/gomega@v1.34.2/internal/async_assertion.go:145 github.com/openshift/origin/test/extended/prometheus.init.func1.2() github.com/openshift/origin/test/extended/prometheus/collection_profiles.go:118 github.com/onsi/ginkgo/v2/internal.extractBodyFunction.func3({0xc006c77b00?, 0xc006c5fe00?}) github.com/onsi/ginkgo/v2@v2.20.2/internal/node.go:472 github.com/onsi/ginkgo/v2/internal.(Suite).runNode.func3() github.com/onsi/ginkgo/v2@v2.20.2/internal/suite.go:901 github.com/onsi/ginkgo/v2/internal.(Suite).runNode in goroutine 1 github.com/onsi/ginkgo/v2@v2.20.2/internal/suite.go:888 ------------------------------ To unrevert this, revert this PR, and layer an additional separate commit on top that addresses the problem. Before merging the unrevert, please run these jobs on the PR and check the result of (job/X or job/X, test/Y tuple) to confirm the fix has corrected the problem: /payload-job periodic-ci-openshift-release-master-ci-4.19-e2e-aws-ovn-techpreview CC: @rexagod"
+        }
+    ]
+}

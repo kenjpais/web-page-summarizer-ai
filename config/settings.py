@@ -80,7 +80,7 @@ class DirectorySettings(BaseSettings):
 
     data_dir: Path = Field(default=Path("data"), alias="DATA_DIR")
     test_data_dir: Path = Field(
-        default=Path("test") / Path("data"), alias="TEST_DATA_DIR"
+        default=Path("tests") / Path("mocks"), alias="TEST_DATA_DIR"
     )
     config_dir: Path = Field(default=Path("config"), alias="CONFIG_DIR")
     logs_dir: Path = Field(default=Path("logs"), alias="LOGS_DIR")
