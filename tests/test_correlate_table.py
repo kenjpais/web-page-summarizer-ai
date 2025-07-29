@@ -28,6 +28,7 @@ class TestCorrelateTable(unittest.TestCase):
         # This is needed because other tests may have modified os.environ["FILTER_ON"]
         os.environ["FILTER_ON"] = "True"
         get_settings.cache_clear()
+
         cls.correlated_table_file = data_dir / "correlated_feature_gate_table.json"
         cls.expected_feature_gates = set(
             sorted(

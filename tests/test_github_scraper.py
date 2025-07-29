@@ -13,7 +13,7 @@ from utils.logging_config import setup_logging
 
 setup_logging()
 settings = get_settings()
-data_dir = Path(settings.directories.data_dir)
+data_dir = settings.directories.data_dir
 github_file_path = data_dir / "github.json"
 
 

@@ -1,5 +1,3 @@
-from pathlib import Path
-from utils.file_utils import delete_all_in_directory
 from filters.filter_urls import filter_urls
 from scrapers.html_scraper import scrape_html
 from scrapers.scrapers import scrape_all
@@ -12,7 +10,7 @@ setup_logging()
 logger = get_logger(__name__)
 settings = get_settings()
 data_dir = settings.directories.data_dir
-Path(data_dir).mkdir(exist_ok=True)
+data_dir.mkdir(exist_ok=True)
 
 
 def run(source: str) -> None:

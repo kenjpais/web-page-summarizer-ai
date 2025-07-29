@@ -12,7 +12,7 @@ from utils.logging_config import setup_logging
 setup_logging()
 
 settings = get_settings()
-data_dir = Path(settings.directories.data_dir)
+data_dir = settings.directories.data_dir
 
 urls = [
     "https://issues.redhat.com/browse/ODC-7710",

@@ -1,4 +1,3 @@
-import json
 from typing import List, Dict, Type, Any
 from utils.utils import get_urls
 from scrapers.jira_scraper import JiraScraper

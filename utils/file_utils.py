@@ -3,7 +3,7 @@ from pathlib import Path
 from config.settings import get_settings
 
 settings = get_settings()
-data_dir = Path(settings.directories.data_dir)
+data_dir = settings.directories.data_dir
 
 
 def read_file_str(file_path):

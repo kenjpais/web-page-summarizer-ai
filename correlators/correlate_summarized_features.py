@@ -1,10 +1,7 @@
 import json
 import pickle
-from pathlib import Path
 from config.settings import get_settings
-from utils.logging_config import get_logger
 
-logger = get_logger(__name__)
 settings = get_settings()
 
 # Configuration paths for input and output files

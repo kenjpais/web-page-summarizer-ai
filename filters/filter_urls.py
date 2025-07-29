@@ -1,11 +1,10 @@
-from pathlib import Path
 from config.settings import get_settings
 from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 
 settings = get_settings()
-data_dir = Path(settings.directories.data_dir)
+data_dir = settings.directories.data_dir
 
 
 def filter_urls():

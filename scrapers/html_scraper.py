@@ -10,7 +10,7 @@ from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 settings = get_settings()
-data_dir = Path(settings.directories.data_dir)
+data_dir = settings.directories.data_dir
 feature_gate_table_file = data_dir / "feature_gate_table.pkl"
 
 

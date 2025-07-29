@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 from scrapers.jira_scraper import extract_jira_ids
 from config.settings import get_settings
 from utils.logging_config import get_logger
