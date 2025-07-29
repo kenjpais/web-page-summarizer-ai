@@ -1,14 +1,11 @@
 import json
 import pickle
-from pathlib import Path
 from config.settings import get_settings
-from utils.logging_config import get_logger
 
-logger = get_logger(__name__)
 settings = get_settings()
 
 # Configuration paths for input and output files
-data_dir = Path(settings.directories.data_dir)
+data_dir = settings.directories.data_dir
 
 # Pickle file paths
 feature_gate_project_map_file = data_dir / "feature_gate_project_map.pkl"

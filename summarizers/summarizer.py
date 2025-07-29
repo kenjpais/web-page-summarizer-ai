@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 from utils.utils import json_to_markdown
 from clients.llm_client import LLMClient
 from chains.chains import project_summary_chain
@@ -12,8 +11,8 @@ logger = get_logger(__name__)
 settings = get_settings()
 
 # Configuration paths for summarization pipeline
-data_dir = Path(settings.directories.data_dir)
-config_dir = Path(settings.directories.config_dir)
+data_dir = settings.directories.data_dir
+config_dir = settings.directories.config_dir
 
 correlated_file = data_dir / "correlated.json"
 correlated_feature_gate_table_file = data_dir / "correlated_feature_gate_table.json"
@@ -124,7 +123,7 @@ def summarize_feature_gates():
         feature_gate_artifacts = json.load(f)
 
     with open(summarized_features_file, "w") as f:
-        # Feature gate summaries Generated with Google Gemini, hardcoding for temp testing.
+        # Feature gate summaries Generated with Google Gemini, hardcoding for temp testing until Gemini is used with langchain
         json.dump(
             {
                 "RouteExternalCertificate": "The **RouteExternalCertificate** feature gate has been promoted to the default feature set, meaning it is now enabled by default for both Self-Managed and HyperShift OpenShift environments. This change makes it easier for developers and operators to leverage external certificates for routes, as the functionality is now natively available without explicit feature gate activation.",
@@ -150,7 +149,8 @@ def summarize_feature_gates():
 
 def summarize():
     logger.info("\n[*] Summarizing...")
-    if settings.processing.summarize_enabled:
+    current_settings = get_settings()
+    if current_settings.processing.summarize_enabled:
         summarize_correlated_info()
 
 

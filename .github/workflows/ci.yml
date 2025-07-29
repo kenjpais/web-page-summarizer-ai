@@ -44,20 +44,37 @@ jobs:
       - name: Install and start Ollama
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
-          if [ "$(ollama list | wc -l)" -gt 1 ]; then
-              echo "Models are available."
-          else
-              ollama pull ${{ env.LLM_MODEL }}
-          fi
+          # Kill any existing Ollama processes
+          pkill -f "ollama serve" || true
           fuser -k 11434/tcp || true
+          
+          # Start Ollama in background
           nohup ollama serve &
-
+          
           # Wait for Ollama to be ready
-          for i in {1..10}; do
-            curl -s http://localhost:11434/api/tags && break
-            echo "Waiting for Ollama to start..."
-            sleep 3
+          echo "Waiting for Ollama to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
+              echo "Ollama is ready!"
+              break
+            fi
+            echo "Attempt $i: Ollama not ready yet, waiting..."
+            sleep 2
           done
+          
+          # Verify Ollama is responding
+          if ! curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
+            echo "Failed to start Ollama after 60 seconds"
+            exit 1
+          fi
+          
+          # Pull the model
+          echo "Pulling model: ${{ env.LLM_MODEL }}"
+          ollama pull ${{ env.LLM_MODEL }}
+          
+          # Verify model is available
+          echo "Available models:"
+          ollama list
           
       - name: Run tests
         run: |

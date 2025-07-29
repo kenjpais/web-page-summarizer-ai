@@ -1,6 +1,5 @@
 import re
 import json
-from pathlib import Path
 from urllib.parse import urlparse
 from config.settings import get_settings
 from utils.logging_config import get_logger
@@ -124,7 +123,7 @@ def get_urls(src):
     - github_urls.txt (for GitHub URLs)
     - jira_urls.txt (for JIRA URLs)
     """
-    data_dir = Path(settings.directories.data_dir)
+    data_dir = settings.directories.data_dir
     if not data_dir:
         logger.error(f"[!][ERROR] DATA_DIR not configured")
         return []

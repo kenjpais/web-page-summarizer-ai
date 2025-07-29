@@ -1,4 +1,3 @@
-from pathlib import Path
 from clients.local_llm_chain import local_llm
 from langchain_core.runnables import Runnable
 from langchain_core.prompts import PromptTemplate
@@ -6,7 +5,7 @@ from config.settings import get_settings, get_config_loader
 
 settings = get_settings()
 config_loader = get_config_loader()
-config_dir = Path(settings.directories.data_dir)
+config_dir = settings.directories.data_dir
 if not config_dir:
     raise ValueError(f"Invalid CONFIG_DIR {config_dir}")
 

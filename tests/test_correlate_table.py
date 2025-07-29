@@ -1,15 +1,10 @@
+import os
 import json
 import unittest
-import os
-from pathlib import Path
-from scrapers.scrapers import scrape_all
-from filters.filter_urls import filter_urls
-from scrapers.html_scraper import scrape_html
 from correlators.correlator import (
     correlate_table,
-    correlate_with_jira_issue_id,
 )
-from utils.file_utils import delete_all_in_directory
+from utils.file_utils import copy_file, delete_all_in_directory
 from config.settings import get_settings
 from utils.logging_config import get_logger, setup_logging
 
@@ -18,7 +13,12 @@ setup_logging()
 logger = get_logger(__name__)
 
 settings = get_settings()
-data_dir = Path(settings.directories.data_dir)
+
+data_dir = settings.directories.data_dir
+test_data_dir = settings.directories.test_data_dir
+correlated_file = test_data_dir / "correlated.json"
+table_file = test_data_dir / "feature_gate_table.pkl"
+github_file = test_data_dir / "github.json"
 
 
 class TestCorrelateTable(unittest.TestCase):
@@ -29,13 +29,7 @@ class TestCorrelateTable(unittest.TestCase):
         os.environ["FILTER_ON"] = "True"
         get_settings.cache_clear()
 
-        url = (
-            "https://amd64.origin.releases.ci.openshift.org/releasestream/"
-            "4-scos-stable/release/4.19.0-okd-scos.0"
-        )
-        cls.data_dir = data_dir
-        cls.correlated_table_file = cls.data_dir / "correlated_feature_gate_table.json"
-        cls.summarized_features_file = cls.data_dir / "summarized_features.json"
+        cls.correlated_table_file = data_dir / "correlated_feature_gate_table.json"
         cls.expected_feature_gates = set(
             sorted(
                 {
@@ -56,15 +50,14 @@ class TestCorrelateTable(unittest.TestCase):
             )
         )
 
-        def run_pipeline():
-            delete_all_in_directory(cls.data_dir)
-            scrape_html(url)
-            filter_urls()
-            scrape_all()
-            correlate_with_jira_issue_id()
-            correlate_table()
+        delete_all_in_directory(data_dir)
 
-        run_pipeline()
+        # Mock data
+        copy_file(src_path=correlated_file, dest_dir=data_dir)
+        copy_file(src_path=table_file, dest_dir=data_dir)
+        copy_file(src_path=github_file, dest_dir=data_dir)
+
+        correlate_table()
 
         with open(cls.correlated_table_file, "r") as f:
             cls.correlated_table = json.load(f)

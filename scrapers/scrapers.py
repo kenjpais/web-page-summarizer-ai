@@ -1,4 +1,3 @@
-import json
 from typing import List, Dict, Type, Any
 from utils.utils import get_urls
 from scrapers.jira_scraper import JiraScraper
@@ -12,8 +11,8 @@ logger = get_logger(__name__)
 # This extensible pattern allows adding new sources without modifying core logic
 # Each scraper must implement the extract(urls) method interface
 SOURCE_SCRAPERS_MAP: Dict[str, Type[Any]] = {
-    "JIRA": JiraScraper,
-    "GITHUB": GithubScraper,
+    "jira": JiraScraper,
+    "github": GithubScraper,
 }
 
 
@@ -36,7 +35,8 @@ def scrape_sources() -> None:
 
     for src in sources:
         logger.info(f"Scraping {src} links...")
-
+        
+        src = src.lower()
         # Load URLs that were filtered for this specific source type
         # These come from the filter_urls step that categorized URLs by domain
         urls = get_urls(src)

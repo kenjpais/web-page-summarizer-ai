@@ -10,7 +10,6 @@ from clients.jira_client import JiraClient
 from models.jira_model import create_jira_issue_dict
 from scrapers.exceptions import raise_scraper_exception
 from utils.utils import contains_valid_keywords
-from utils.parser_utils import clean_md_text
 from config.settings import get_settings, get_config_loader
 from utils.logging_config import get_logger
 
@@ -24,7 +23,7 @@ FILTER_ON = settings.processing.filter_on  # Enable/disable issue filtering
 FEATURE_FILTER_ON = False  # Feature-specific filtering (currently disabled)
 KEYWORD_MATCHING_ON = False  # Content-based keyword filtering (currently disabled)
 
-data_dir = Path(settings.directories.data_dir)
+data_dir = settings.directories.data_dir
 
 
 class JiraScraper:

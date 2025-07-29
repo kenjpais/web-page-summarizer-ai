@@ -50,6 +50,107 @@ class GithubGraphQLClient:
         if not self.token:
             raise ValueError("GH_API_TOKEN environment variable not set")
 
+    def test_token_validity(self) -> Dict[str, Any]:
+        """
+        Test if the GitHub API token loaded from pydantic settings is valid.
+
+        This method performs a simple authenticated GraphQL query to fetch the
+        current user's information, which validates that:
+        1. The token is correctly loaded from pydantic settings
+        2. The token has valid authentication with GitHub
+        3. The API endpoint is accessible
+
+        Returns:
+            Dictionary containing test results with the following keys:
+            - 'is_valid': Boolean indicating if the token is valid
+            - 'user_login': String with the authenticated user's login (if valid)
+            - 'message': String with success/error message
+            - 'error': String with error details (if invalid)
+
+        Example return values:
+        Success: {
+            'is_valid': True,
+            'user_login': 'username',
+            'message': 'Token is valid and authenticated successfully'
+        }
+
+        Failure: {
+            'is_valid': False,
+            'message': 'Token validation failed',
+            'error': 'Bad credentials'
+        }
+        """
+        # Simple GraphQL query to fetch authenticated user info
+        # Using only basic fields that don't require special scopes
+        test_query = """
+        query {
+            viewer {
+                login
+                name
+                id
+            }
+        }
+        """
+
+        try:
+            logger.info("Testing GitHub API token validity...")
+
+            # Execute the test query
+            response = self.post_query(test_query)
+
+            # Extract user data from response
+            viewer_data = response.get("data", {}).get("viewer", {})
+
+            if viewer_data and viewer_data.get("login"):
+                user_login = viewer_data.get("login")
+                logger.info(f"Token validation successful for user: {user_login}")
+
+                return {
+                    "is_valid": True,
+                    "user_login": user_login,
+                    "message": "Token is valid and authenticated successfully",
+                }
+            else:
+                logger.error("Token validation failed: No user data returned")
+                return {
+                    "is_valid": False,
+                    "message": "Token validation failed: No user data returned",
+                    "error": "Invalid response structure",
+                }
+
+        except ValueError as e:
+            # GraphQL errors (like bad credentials, invalid token format)
+            error_msg = str(e)
+            logger.error(f"Token validation failed with GraphQL error: {error_msg}")
+
+            return {
+                "is_valid": False,
+                "message": "Token validation failed",
+                "error": error_msg,
+            }
+
+        except requests.RequestException as e:
+            # Network/HTTP errors
+            error_msg = str(e)
+            logger.error(f"Token validation failed with request error: {error_msg}")
+
+            return {
+                "is_valid": False,
+                "message": "Token validation failed due to network error",
+                "error": error_msg,
+            }
+
+        except Exception as e:
+            # Unexpected errors
+            error_msg = f"Unexpected error during token validation: {str(e)}"
+            logger.error(error_msg)
+
+            return {
+                "is_valid": False,
+                "message": "Token validation failed with unexpected error",
+                "error": error_msg,
+            }
+
     def build_graphql_query(self, parsed_items: List[Dict[str, str]]) -> str:
         """
         Construct a batched GraphQL query for multiple GitHub items.
@@ -168,3 +269,36 @@ class GithubGraphQLClient:
             error_msg = f"[!][ERROR] Request failed: {e}"
             logger.error(error_msg)
             raise requests.RequestException(error_msg)
+
+
+def test_github_token() -> Dict[str, Any]:
+    """
+    Standalone utility function to test GitHub API token validity.
+
+    This is a convenience function that creates a GithubGraphQLClient instance
+    and tests the token validity using the pydantic settings system.
+
+    Returns:
+        Dictionary containing test results with the same structure as
+        GithubGraphQLClient.test_token_validity()
+
+    Example usage:
+        ```python
+        from clients.github_client import test_github_token
+
+        result = test_github_token()
+        if result['is_valid']:
+            print(f"Token is valid for user: {result['user_login']}")
+        else:
+            print(f"Token validation failed: {result['error']}")
+        ```
+    """
+    try:
+        client = GithubGraphQLClient()
+        return client.test_token_validity()
+    except Exception as e:
+        return {
+            "is_valid": False,
+            "message": "Failed to initialize GitHub client",
+            "error": str(e),
+        }

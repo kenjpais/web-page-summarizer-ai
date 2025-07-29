@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 from scrapers.jira_scraper import extract_jira_ids
 from config.settings import get_settings
 from utils.logging_config import get_logger
@@ -8,13 +7,7 @@ logger = get_logger(__name__)
 settings = get_settings()
 
 # Configuration paths for input and output files
-data_dir = Path(settings.directories.data_dir)
-
-# JSON file paths
-jira_file_path = data_dir / "jira.json"
-github_file_path = data_dir / "github.json"
-correlated_file = data_dir / "correlated.json"
-non_correlated_file = data_dir / "non_correlated.json"
+data_dir = settings.directories.data_dir
 
 
 def build_github_item_index(data_directory=None):
@@ -29,6 +22,8 @@ def build_github_item_index(data_directory=None):
     """
     if data_directory is None:
         data_directory = data_dir
+
+    github_file_path = data_directory / "github.json"
 
     index = {}
     with open(github_file_path, "r") as srcfile:
@@ -92,12 +87,14 @@ def correlate_with_jira_issue_id(
 
     if data_directory is None:
         data_directory = data_dir
-    if output_correlated_file is None:
-        output_correlated_file = correlated_file
-    if output_non_correlated_file is None:
-        output_non_correlated_file = non_correlated_file
 
-    # Determine which sources to correlate (exclude JIRA since it's the base)
+    if output_correlated_file is None:
+        output_correlated_file = data_directory / "correlated.json"
+    if output_non_correlated_file is None:
+        output_non_correlated_file = data_directory / "non_correlated.json"
+
+    jira_file_path = data_directory / "jira.json"
+
     all_sources = settings.processing.sources
     sources = [
         src

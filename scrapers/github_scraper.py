@@ -131,10 +131,6 @@ class GithubScraper:
                     error_msg += f" GraphQL Errors: {raw_response['errors']}"
                 raise_scraper_exception(error_msg)
 
-            # Type assertion: data is guaranteed to be not None after the check above
-            assert data is not None
-
-            # Process each item in the batch response
             for i, parsed in enumerate(batch):
                 item_content = data.get(f"item{i}")
 
@@ -143,9 +139,7 @@ class GithubScraper:
                         f"[!][ERROR] Missing item{i} content in GraphQL response for {parsed}"
                     )
 
-                # Extract data based on item type
                 if pr := item_content.get("pullRequest"):
-                    # Pull Request data extraction
                     results.append(
                         GithubModel(
                             id=str(pr.get("number")),
@@ -164,7 +158,6 @@ class GithubScraper:
                         ).to_dict()
                     )
 
-        # Write all results to file for downstream processing
         write_json_file(results)
 
 

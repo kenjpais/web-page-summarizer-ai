@@ -2,7 +2,6 @@ import os
 import json
 import unittest
 from typing import Dict
-from pathlib import Path
 from scrapers.jira_scraper import JiraScraper, render_to_markdown
 from scrapers.exceptions import ScraperException
 from config.settings import get_settings
@@ -12,7 +11,7 @@ from utils.logging_config import setup_logging
 setup_logging()
 
 settings = get_settings()
-data_dir = Path(settings.directories.data_dir)
+data_dir = settings.directories.data_dir
 
 urls = [
     "https://issues.redhat.com/browse/ODC-7710",

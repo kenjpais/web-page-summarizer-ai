@@ -11,7 +11,7 @@ from utils.logging_config import setup_logging
 setup_logging()
 
 settings = get_settings()
-data_dir = Path(settings.directories.data_dir)
+data_dir = settings.directories.data_dir
 
 url = "https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-stable/release/4.19.0-okd-scos.0"
 scraper = HtmlScraper(url)

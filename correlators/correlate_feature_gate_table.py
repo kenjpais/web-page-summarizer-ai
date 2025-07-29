@@ -1,9 +1,7 @@
 import json
 import pickle
 import pandas as pd
-from pathlib import Path
 from collections import defaultdict
-from summarizers.summarizer import summarize_feature_gates
 from filters.filter_enabled_feature_gates import filter_enabled_feature_gates
 from config.settings import get_settings
 from utils.logging_config import get_logger
@@ -12,7 +10,7 @@ logger = get_logger(__name__)
 settings = get_settings()
 
 # Configuration paths for input and output files
-data_dir = Path(settings.directories.data_dir)
+data_dir = settings.directories.data_dir
 
 # Pickle file paths
 table_file = data_dir / "feature_gate_table.pkl"
@@ -21,10 +19,6 @@ feature_gate_project_map_file = data_dir / "feature_gate_project_map.pkl"
 # JSON file paths
 correlated_file = data_dir / "correlated.json"
 correlated_feature_gate_table_file = data_dir / "correlated_feature_gate_table.json"
-summarized_features_file = data_dir / "summarized_features.json"
-
-# Markdown file paths
-correlated_table_md_file = data_dir / "correlated_feature_gate_table.md"
 
 
 def correlate_table():
@@ -150,6 +144,7 @@ def correlate_table():
 
         for fg in unmatched_feature_gates:
             for src in sources:
+                src = src.lower()
                 with open(data_dir / f"{src}.json") as f:
                     src_data = json.load(f)
                 if isinstance(src_data, list):

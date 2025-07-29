@@ -7,8 +7,8 @@ settings = get_settings()
 
 def remove_irrelevant_fields_from_correlated():
     sources = settings.processing.sources
-    data_dir = Path(settings.directories.data_dir)
-    config_dir = Path(settings.directories.config_dir)
+    data_dir = settings.directories.data_dir
+    config_dir = settings.directories.config_dir
     correlated_file = data_dir / "correlated.json"
 
     # Load nested correlated data (dict of dict of dicts)

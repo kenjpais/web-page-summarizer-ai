@@ -13,7 +13,7 @@ from utils.logging_config import setup_logging
 
 setup_logging()
 settings = get_settings()
-data_dir = Path(settings.directories.data_dir)
+data_dir = settings.directories.data_dir
 github_file_path = data_dir / "github.json"
 
 
@@ -88,7 +88,7 @@ class TestGithubScraper(unittest.TestCase):
         scrape_html(url)
         filter_urls()
 
-        src = "GITHUB"
+        src = "github"
         urls = get_urls(src)
         if not urls:
             self.fail(f"[!] No URLs found for {src}.")

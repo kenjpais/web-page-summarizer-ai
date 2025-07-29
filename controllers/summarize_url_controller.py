@@ -1,12 +1,11 @@
 import shutil
 import runner
-from pathlib import Path
 from utils.utils import is_valid_url
 from urllib.error import URLError
 from config.settings import get_settings
 
 settings = get_settings()
-data_dir = Path(settings.directories.data_dir)
+data_dir = settings.directories.data_dir
 
 SUMMARY_FILE_PATH = data_dir / "summaries"
 

@@ -3,7 +3,7 @@ from pathlib import Path
 from config.settings import get_settings
 
 settings = get_settings()
-data_dir = Path(settings.directories.data_dir)
+data_dir = settings.directories.data_dir
 
 
 def read_file_str(file_path):
@@ -63,3 +63,25 @@ def delete_all_in_directory(dir_path):
             item.unlink()
         elif item.is_dir():
             shutil.rmtree(item)
+
+
+def copy_file(src_path: Path, dest_dir: Path) -> Path:
+    """
+    Copies a file from src_path to dest_dir.
+
+    Parameters:
+        src_path (Path): The path to the source file.
+        dest_dir (Path): The path to the destination directory.
+
+    Returns:
+        Path: The path to the copied file in the destination directory.
+    """
+    if not src_path.is_file():
+        raise FileNotFoundError(f"Source file not found: {src_path}")
+
+    if not dest_dir.exists():
+        dest_dir.mkdir(parents=True, exist_ok=True)
+
+    dest_path = dest_dir / src_path.name
+    shutil.copy2(src_path, dest_path)
+    return dest_path

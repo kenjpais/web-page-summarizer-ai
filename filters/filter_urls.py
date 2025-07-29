@@ -1,11 +1,10 @@
-from pathlib import Path
 from config.settings import get_settings
 from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 
 settings = get_settings()
-data_dir = Path(settings.directories.data_dir)
+data_dir = settings.directories.data_dir
 
 
 def filter_urls():
@@ -40,7 +39,11 @@ def filter_urls():
                 if server in url:
                     # Write matching URL to source-specific file
                     # Example: GITHUB URLs go to github_urls.txt
-                    urls_dict.setdefault(src.lower(), set()).add(url)
+                    if src.lower() not in urls_dict:
+                        urls_dict[src.lower()] = []
+                    # Only add if not already present to avoid duplicates while preserving order
+                    if url not in urls_dict[src.lower()]:
+                        urls_dict[src.lower()].append(url)
 
     for src, urls in urls_dict.items():
         with open(data_dir / f"{src}_urls.txt", "w") as f:

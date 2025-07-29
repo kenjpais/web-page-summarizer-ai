@@ -1,18 +1,9 @@
+import os
 import json
 import unittest
-import os
-from pathlib import Path
-from scrapers.scrapers import scrape_all
-from filters.filter_urls import filter_urls
-from scrapers.html_scraper import scrape_html
-from correlators.correlator import (
-    correlate_all,
-    correlate_table,
-    correlate_with_jira_issue_id,
-    correlate_summarized_features,
-)
+from correlators.correlator import correlate_summarized_features
 from summarizers.summarizer import summarize_feature_gates
-from utils.file_utils import delete_all_in_directory
+from utils.file_utils import copy_file, delete_all_in_directory
 from config.settings import get_settings
 from utils.logging_config import get_logger, setup_logging
 
@@ -21,7 +12,13 @@ setup_logging()
 logger = get_logger(__name__)
 
 settings = get_settings()
-data_dir = Path(settings.directories.data_dir)
+data_dir = settings.directories.data_dir
+test_data_dir = settings.directories.test_data_dir
+
+correlated_file = test_data_dir / "correlated.json"
+correlated_feature_gate_table = test_data_dir / "correlated_feature_gate_table.json"
+summarized_features_file = test_data_dir / "summarized_features.json"
+feature_gate_project_map_file = test_data_dir / "feature_gate_project_map.pkl"
 
 
 class TestCorrelateTable(unittest.TestCase):
@@ -32,10 +29,7 @@ class TestCorrelateTable(unittest.TestCase):
         os.environ["FILTER_ON"] = "True"
         get_settings.cache_clear()
 
-        url = (
-            "https://amd64.origin.releases.ci.openshift.org/releasestream/"
-            "4-scos-stable/release/4.19.0-okd-scos.0"
-        )
+        # Result files
         cls.data_dir = data_dir
         cls.correlated_table_file = cls.data_dir / "correlated_feature_gate_table.json"
         cls.summarized_features_file = cls.data_dir / "summarized_features.json"
@@ -59,14 +53,15 @@ class TestCorrelateTable(unittest.TestCase):
             )
         )
 
+        delete_all_in_directory(data_dir)
+
+        # Mock data
+        copy_file(src_path=correlated_file, dest_dir=data_dir)
+        copy_file(src_path=correlated_feature_gate_table, dest_dir=data_dir)
+        copy_file(src_path=summarized_features_file, dest_dir=data_dir)
+        copy_file(src_path=feature_gate_project_map_file, dest_dir=data_dir)
+
         def run_pipeline():
-            delete_all_in_directory(cls.data_dir)
-            scrape_html(url)
-            filter_urls()
-            scrape_all()
-            correlate_all()
-            correlate_with_jira_issue_id()
-            correlate_table()
             summarize_feature_gates()
             correlate_summarized_features()
 
