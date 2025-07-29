@@ -2,7 +2,6 @@ import os
 import json
 import unittest
 from typing import Dict
-from pathlib import Path
 from scrapers.jira_scraper import JiraScraper, render_to_markdown
 from scrapers.exceptions import ScraperException
 from config.settings import get_settings

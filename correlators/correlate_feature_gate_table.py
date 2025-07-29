@@ -144,6 +144,7 @@ def correlate_table():
 
         for fg in unmatched_feature_gates:
             for src in sources:
+                src = src.lower()
                 with open(data_dir / f"{src}.json") as f:
                     src_data = json.load(f)
                 if isinstance(src_data, list):
