@@ -11,8 +11,8 @@ logger = get_logger(__name__)
 # This extensible pattern allows adding new sources without modifying core logic
 # Each scraper must implement the extract(urls) method interface
 SOURCE_SCRAPERS_MAP: Dict[str, Type[Any]] = {
-    "JIRA": JiraScraper,
-    "GITHUB": GithubScraper,
+    "jira": JiraScraper,
+    "github": GithubScraper,
 }
 
 
