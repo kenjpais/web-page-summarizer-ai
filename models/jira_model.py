@@ -34,10 +34,3 @@ def create_jira_issue_dict(issue):
         issue_dict["parent_key"] = parent.key
 
     return issue_dict
-    raw_comments = issue.raw.get("fields", {}).get("comment", {}).get("comments", [])
-    if raw_comments:
-        issue_dict["comments"] = [
-            body for comment in raw_comments if (body := comment.get("body"))
-        ]
-
-    return issue_dict

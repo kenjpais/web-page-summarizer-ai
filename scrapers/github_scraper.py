@@ -37,7 +37,15 @@ class GithubScraper:
         r"https://github\.com/([^/]+)/([^/]+)/commit/([a-fA-F0-9]+)"
     )
 
-    def __init__(self, batch_size: int = BATCH_SCRAPE_SIZE) -> None:
+    def __init__(
+        self,
+        urls: List[str] = [],
+        batch_size: int = BATCH_SCRAPE_SIZE,
+        github_server: str = None,
+        github_username: str = None,
+        github_password: str = None,
+        github_token: str = None,
+    ) -> None:
         """
         Initialize GitHub scraper with GraphQL client and batching configuration.
 
@@ -45,8 +53,22 @@ class GithubScraper:
             batch_size: Number of items to include in each GraphQL batch request.
                        Larger batches are more efficient but may hit query complexity limits.
         """
-        self.client: GithubGraphQLClient = GithubGraphQLClient()
+        self.client: GithubGraphQLClient = GithubGraphQLClient(
+            github_server=github_server,
+            github_username=github_username,
+            github_password=github_password,
+            github_token=github_token,
+        )
         self.batch_size: int = batch_size
+        self.urls = urls or []
+
+    def get_config(self) -> dict[str, Any]:
+        """
+        Get the configuration for the GitHub scraper.
+        """
+        return {
+            "github_server": self.client.get_config(),
+        }
 
     def parse_github_url(self, url: str) -> Optional[Dict[str, str]]:
         """
@@ -74,7 +96,7 @@ class GithubScraper:
             return {"type": "commit", "owner": owner, "repo": repo, "id": sha}
         return None
 
-    def extract(self, urls: List[str]) -> None:
+    def extract(self) -> None:
         """
         Extract GitHub data from multiple URLs using batched GraphQL queries.
 
@@ -97,6 +119,7 @@ class GithubScraper:
         """
         results = []
 
+        urls = self.urls
         if not urls:
             raise_scraper_exception(
                 f"""[!][ERROR] {len(urls)} URLs sent to github scraper."""

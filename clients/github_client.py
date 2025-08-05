@@ -3,6 +3,7 @@ import time
 from typing import List, Dict, Any
 from config.settings import get_settings
 from utils.logging_config import get_logger
+from utils.http_session import get_http_session
 
 logger = get_logger(__name__)
 
@@ -31,25 +32,52 @@ class GithubGraphQLClient:
     ```
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        github_server: str = None,
+        github_username: str = None,
+        github_password: str = None,
+        github_token: str = None,
+    ) -> None:
         """
         Initialize GitHub client with API configuration and authentication.
 
         Validates that required environment variables are set and configures
-        the client for API access.
+        the client for API access with connection pooling.
 
         Raises:
             ValueError: If required environment variables are missing
         """
         settings = get_settings()
         self.api_url: str = settings.api.github_api_url
-
+        self.github_username = github_username
+        self.github_password = github_password
         if not self.api_url:
             raise ValueError("GITHUB_API_URL environment variable not set")
 
-        self.token: str = settings.api.github_token
+        self.token: str = github_token or settings.api.github_token
         if not self.token:
             raise ValueError("GH_API_TOKEN environment variable not set")
+
+        # Initialize HTTP session with connection pooling
+        self.session = get_http_session(
+            base_url=self.api_url,
+            pool_connections=5,
+            pool_maxsize=15,
+            max_retries=3,
+            timeout=settings.api.github_timeout,
+        )
+
+    def get_config(self) -> dict[str, Any]:
+        """
+        Get the configuration for the GitHub client.
+        """
+        return {
+            "github_api_url": self.api_url,
+            "github_username": self.github_username,
+            "github_password": self.github_password,
+            "github_token": self.token,
+        }
 
     def test_token_validity(self) -> Dict[str, Any]:
         """
@@ -254,13 +282,11 @@ class GithubGraphQLClient:
                 "X-GitHub-Api-Version": "2022-11-28",
             }
 
-            # Execute the GraphQL query via HTTP POST with timeout
-            settings = get_settings()
-            response: requests.Response = requests.post(
+            # Execute the GraphQL query via HTTP POST using connection pool
+            response: requests.Response = self.session.post(
                 self.api_url,
                 json={"query": query},
                 headers=headers,
-                timeout=settings.api.github_timeout,
             )
 
             # Raise exception for HTTP error status codes
@@ -296,17 +322,6 @@ def test_github_token() -> Dict[str, Any]:
     Returns:
         Dictionary containing test results with the same structure as
         GithubGraphQLClient.test_token_validity()
-
-    Example usage:
-        ```python
-        from clients.github_client import test_github_token
-
-        result = test_github_token()
-        if result['is_valid']:
-            print(f"Token is valid for user: {result['user_login']}")
-        else:
-            print(f"Token validation failed: {result['error']}")
-        ```
     """
     try:
         client = GithubGraphQLClient()

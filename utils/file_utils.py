@@ -85,3 +85,22 @@ def copy_file(src_path: Path, dest_dir: Path) -> Path:
     dest_path = dest_dir / src_path.name
     shutil.copy2(src_path, dest_path)
     return dest_path
+
+
+def validate_file_path(file_path: Path, file_type: str) -> None:
+    """Validate that a file path exists and is readable.
+
+    Args:
+        file_path: Path to validate
+        file_type: Human-readable description of file type
+
+    Raises:
+        FileNotFoundError: If file doesn't exist
+        PermissionError: If file is not readable
+    """
+    if not file_path.exists():
+        raise FileNotFoundError(f"{file_type} not found: {file_path}")
+    if not file_path.is_file():
+        raise ValueError(f"{file_type} is not a regular file: {file_path}")
+    if not file_path.stat().st_size < 10 * 1024 * 1024:  # 10MB limit
+        raise ValueError(f"{file_type} is too large (>10MB): {file_path}")

@@ -105,7 +105,7 @@ def contains_valid_keywords(fields):
     return True
 
 
-def get_urls(src):
+def get_urls(src=None):
     """
     Load URLs for a specific source type from the filtered URL files.
 
@@ -128,7 +128,11 @@ def get_urls(src):
         logger.error(f"[!][ERROR] DATA_DIR not configured")
         return []
 
-    file_path = data_dir / f"{src}_urls.txt"
+    if src:
+        file_path = data_dir / f"{src}_urls.txt"
+    else:
+        file_path = data_dir / "urls.txt"
+
     if not file_path.is_file():
         logger.error(f"[!][ERROR] URL file {file_path} not found for source: {src}")
         return []
@@ -140,6 +144,12 @@ def get_urls(src):
     except IOError as e:
         logger.error(f"[!][ERROR] Failed to read URL file: {e}")
         return []
+
+
+def add_urls_to_file(urls: list[str], file_path: str, mode: str = "a"):
+    with open(file_path, mode) as f:
+        for url in urls:
+            f.write(url + "\n")
 
 
 def json_to_markdown(data, heading_level=1):
@@ -191,3 +201,41 @@ def remove_urls(text):
     # Regex pattern to match URLs (http, https, www)
     url_pattern = r"(https?://\S+|www\.\S+)"
     return re.sub(url_pattern, "", text)
+
+
+def strings_to_list(s: str) -> list:
+    # Convert single issue_ids string to list (split by comma if multiple)
+    return [item.strip() for item in s.split(",")]
+
+
+def validate_cs_input_str(input_str: str, field_name: str) -> list[str]:
+    """Validate and parse comma-separated input string.
+
+    Args:
+        input_str: Comma-separated string to parse
+        field_name: Name of field for error messages
+
+    Returns:
+        List of parsed and validated strings
+
+    Raises:
+        ValueError: If input contains invalid characters
+    """
+    if not input_str or not input_str.strip():
+        return []
+
+    items = strings_to_list(input_str)
+    validated_items = []
+
+    for item in items:
+        item = item.strip()
+        if not item:
+            continue
+        # Basic validation - no control characters
+        if any(ord(c) < 32 for c in item if c not in "\t\n\r"):
+            raise ValueError(
+                f"Invalid {field_name} contains control characters: {item}"
+            )
+        validated_items.append(item)
+
+    return validated_items

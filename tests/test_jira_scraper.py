@@ -39,27 +39,15 @@ expected_ids = {
 
 
 class TestJiraScraper(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.jf = JiraScraper(filter_on=False)
-
-    def load_jira_files(self):
-        with open(data_dir / "jira.json") as f:
-            result = json.load(f)
-
-        with open(data_dir / "jira.md") as f:
-            result_md = f.read()
-
-        return result, result_md
-
     def test_extract_urls_invalid(self):
         urls = [
             "https://example.com/this/is/invalid",
             "https://example.com/invalid/this/is",
         ]
+        jf = JiraScraper(urls=urls)
         with self.assertRaises(ScraperException) as cm:
-            self.jf.extract(urls)
-        self.assertIn("Invalid JIRA URLs", str(cm.exception))
+            jf.extract()
+        self.assertIn("Invalid JIRA issue IDs", str(cm.exception))
 
     def assert_hierarchy_valid(self, result: Dict):
         issue_types = ("epics", "stories", "features", "bugs")
@@ -98,9 +86,10 @@ class TestJiraScraper(unittest.TestCase):
     def test_extract_urls_valid_filter_on(self):
         os.environ["FILTER_ON"] = "True"
 
-        self.jf.extract(urls)
+        jf = JiraScraper(urls=urls)
+        jf.extract()
 
-        result, result_md = self.load_jira_files()
+        result, result_md = load_jira_files()
 
         self.assert_hierarchy_valid(result)
 
@@ -113,9 +102,10 @@ class TestJiraScraper(unittest.TestCase):
     def test_extract_urls_valid_filter_off(self):
         os.environ["FILTER_ON"] = "False"
 
-        self.jf.extract(urls)
+        jf = JiraScraper(urls=urls)
+        jf.extract()
 
-        result, result_md = self.load_jira_files()
+        result, result_md = load_jira_files()
 
         self.assert_hierarchy_valid(result)
 
@@ -200,13 +190,12 @@ class TestJiraScraper(unittest.TestCase):
         self.assertIn("Epic comment 1", markdown)
         self.assertIn("Epic comment 2", markdown)
 
-    def _test_filter_issue_keys(self):
+    def _test_filter_issue_keys(self, jf):
         irrelevant_jira_issue_keys = ["TRT-2005", "TRT-2188"]
-        self.jf.filter_out["issuetype"]["id"] = irrelevant_jira_issue_keys
+        jf.filter_out["issuetype"]["id"] = irrelevant_jira_issue_keys
+        jf.extract()
 
-        self.jf.extract(urls)
-
-        result, result_md = self.load_jira_files()
+        result, result_md = load_jira_files()
         self.assert_hierarchy_valid(result)
 
         result_json_str = json.dumps(result)
@@ -216,7 +205,7 @@ class TestJiraScraper(unittest.TestCase):
             self.assertIn(issue_id, result_md)
 
         for issue_id in irrelevant_jira_issue_keys:
-            if self.jf.filter_on:
+            if jf.filter_on:
                 self.assertNotIn(issue_id, result_json_str)
                 self.assertNotIn(issue_id, result_md)
             else:
@@ -224,20 +213,20 @@ class TestJiraScraper(unittest.TestCase):
                 self.assertIn(issue_id, result_md)
 
     def test_filter_issue_keys_on(self):
-        self.jf.filter_on = True
-        self._test_filter_issue_keys()
+        jf = JiraScraper(urls=urls, filter_on=True)
+        self._test_filter_issue_keys(jf)
 
     def test_filter_issue_keys_off(self):
-        self.jf.filter_on = False
-        self._test_filter_issue_keys()
+        jf = JiraScraper(urls=urls, filter_on=True)
+        self._test_filter_issue_keys(jf)
 
-    def _test_filter_project_keys(self):
+    def _test_filter_project_keys(self, jf):
         irrelevant_project_keys = ["TRT"]
-        self.jf.filter_out["project"]["key"] = irrelevant_project_keys
+        jf.filter_out["project"]["key"] = irrelevant_project_keys
 
-        self.jf.extract(urls)
+        jf.extract()
 
-        result, result_md = self.load_jira_files()
+        result, result_md = load_jira_files()
         self.assert_hierarchy_valid(result)
 
         result_json_str = json.dumps(result)
@@ -247,7 +236,7 @@ class TestJiraScraper(unittest.TestCase):
             self.assertIn(issue_id, result_md)
 
         for project_key in irrelevant_project_keys:
-            if self.jf.filter_on:
+            if jf.filter_on:
                 self.assertNotIn(f"{project_key}-", result_json_str)
                 self.assertNotIn(f"{project_key}-", result_md)
             else:
@@ -255,12 +244,12 @@ class TestJiraScraper(unittest.TestCase):
                 self.assertIn(f"{project_key}-", result_md)
 
     def test_filter_project_keys_on(self):
-        self.jf = JiraScraper(filter_on=True)
-        self._test_filter_project_keys()
+        jf = JiraScraper(urls=urls, filter_on=True)
+        self._test_filter_project_keys(jf)
 
     def test_filter_project_keys_off(self):
-        self.jf = JiraScraper(filter_on=False)
-        self._test_filter_project_keys()
+        jf = JiraScraper(urls=urls, filter_on=False)
+        self._test_filter_project_keys(jf)
 
     def test_search_unauthorized_issues_handling(self):
         unauthorized_keys = {"SDN-5772", "STOR-1880", "STOR-1881"}
@@ -275,7 +264,8 @@ class TestJiraScraper(unittest.TestCase):
 
         issue_ids = list(unauthorized_keys | expected_keys)
 
-        issues = self.jf.search_issues(issue_ids)
+        jf = JiraScraper(issue_ids=issue_ids)
+        issues = jf.search_issues(issue_ids)
         returned_keys = {issue.key for issue in issues}
 
         self.assertLess(
@@ -291,6 +281,40 @@ class TestJiraScraper(unittest.TestCase):
             expected_keys.issubset(returned_keys),
             "Expected accessible issues should be returned",
         )
+
+    def test_extract_usernames(self):
+        jf = JiraScraper(
+            usernames=[
+                "rhn-support-ngirard",
+                "jcallen@redhat.com",
+            ]
+        )
+        jf.extract()
+
+        result, result_md = load_jira_files()
+        self.assert_hierarchy_valid(result)
+
+    def test_extract_issue_ids(self):
+        jf = JiraScraper(
+            issue_ids=[
+                "SPLAT-1800",
+                "SPLAT-1809",
+            ]
+        )
+        jf.extract()
+
+        result, result_md = load_jira_files()
+        self.assert_hierarchy_valid(result)
+
+
+def load_jira_files():
+    with open(data_dir / "jira.json") as f:
+        result = json.load(f)
+
+    with open(data_dir / "jira.md") as f:
+        result_md = f.read()
+
+    return result, result_md
 
 
 if __name__ == "__main__":

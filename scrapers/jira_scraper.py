@@ -39,58 +39,99 @@ class JiraScraper:
     - Markdown generation for readable reports
     """
 
-    def __init__(self, filter_on: bool = FILTER_ON) -> None:
+    def __init__(
+        self,
+        filter_on: bool = FILTER_ON,
+        jira_server: str = None,
+        jira_username: str = None,
+        jira_password: str = None,
+        usernames: List[str] = None,
+        issue_ids: List[str] = None,
+        urls: List[str] = None,
+    ) -> None:
         """
         Initialize JIRA scraper with connection and caching.
 
         Args:
             filter_on: Whether to apply issue filtering based on configuration
+            jira_server: JIRA server URL (overrides default from settings)
+            jira_username: JIRA username for authentication
+            jira_password: JIRA password for authentication
+            usernames: List of usernames to filter by
+            issue_ids: List of specific issue IDs to scrape
+            urls: List of URLs to scrape from
         """
+
+        def init_jira_client():
+            try:
+                self.jira_client: JiraClient = JiraClient(
+                    jira_server=self.jira_server,
+                    jira_username=self.jira_username,
+                    jira_password=self.jira_password,
+                )
+                if not self.jira_client:
+                    raise_scraper_exception(
+                        f"[!][ERROR] JiraClient() is {self.jira_client}"
+                    )
+
+                self.jira: JIRA = self.jira_client.jira
+
+                # Find the custom "feature" field by scanning all available fields
+                # This field links issues to features and varies by JIRA instance
+                self.feature_field_id: str = ""
+                for field in self.jira.fields():
+                    if "feature" in field["name"].lower():
+                        self.feature_field_id = field["id"]
+
+            except JIRAError as e:
+                raise_scraper_exception(
+                    f'[!][ERROR] Failed to connect to JIRA Server: {getattr(e, "status_code", "N/A")} - {getattr(e, "text", str(e))}'
+                )
+            except Exception as e:
+                raise_scraper_exception(f"[!][ERROR] Unexpected error: {e}")
+
+        def init_caches():
+            # Issue cache: prevents re-fetching the same issue multiple times
+            # Project cache: stores project metadata for hierarchy building
+            self.issue_result_cache = {}
+            self.project_result_cache = {}
+
+            try:
+                with open(data_dir / "project_result_cache.pkl", "rb") as f:
+                    self.project_result_cache = pickle.load(f)
+                with open(data_dir / "issue_result_cache.pkl", "rb") as f:
+                    self.issue_result_cache = pickle.load(f)
+            except FileNotFoundError:
+                pass
+
+        def init_filtering():
+            # Load filtering configuration from JSON files
+            # These define which issue types and projects to include/exclude
+            self.filter = config_loader.get_jira_filter()
+            self.filter_out = config_loader.get_jira_filter_out()
+
         data_dir.mkdir(exist_ok=True)
         self.filter_on = filter_on
+        self.jira_server = jira_server
+        self.jira_username = jira_username
+        self.jira_password = jira_password
+        self.usernames = usernames or []
+        self.issue_ids = issue_ids or []
+        self.urls = urls or []
 
-        try:
-            # Initialize JIRA client with error handling
-            self.jira_client: JiraClient = JiraClient()
-            if not self.jira_client:
-                raise_scraper_exception(
-                    f"[!][ERROR] JiraClient() is {self.jira_client}"
-                )
+        init_jira_client()
+        init_caches()
+        init_filtering()
 
-            self.jira: JIRA = self.jira_client.jira
+        if self.urls:
+            logger.info(f"Extracting issue IDs from {len(self.urls)} URLs")
+            self.issue_ids.extend(self.get_issue_ids_from_urls(self.urls))
 
-            # Find the custom "feature" field by scanning all available fields
-            # This field links issues to features and varies by JIRA instance
-            self.feature_field_id: str = ""
-            for field in self.jira.fields():
-                if "feature" in field["name"].lower():
-                    self.feature_field_id = field["id"]
+        if self.usernames:
+            logger.info(f"Extracting issue IDs from {len(self.usernames)} usernames")
+            self.issue_ids.extend(self.get_issues_assigned_to_usernames(self.usernames))
 
-        except JIRAError as e:
-            raise_scraper_exception(
-                f'[!][ERROR] Failed to connect to JIRA Server: {getattr(e, "status_code", "N/A")} - {getattr(e, "text", str(e))}'
-            )
-        except Exception as e:
-            raise_scraper_exception(f"[!][ERROR] Unexpected error: {e}")
-
-        # Load filtering configuration from JSON files
-        # These define which issue types and projects to include/exclude
-        self.filter = config_loader.get_jira_filter()
-        self.filter_out = config_loader.get_jira_filter_out()
-
-        # Initialize caches for performance
-        # Issue cache: prevents re-fetching the same issue multiple times
-        # Project cache: stores project metadata for hierarchy building
-        self.issue_result_cache = {}
-        self.project_result_cache = {}
-
-        try:
-            with open(data_dir / "project_result_cache.pkl", "rb") as f:
-                self.project_result_cache = pickle.load(f)
-            with open(data_dir / "issue_result_cache.pkl", "rb") as f:
-                self.issue_result_cache = pickle.load(f)
-        except FileNotFoundError:
-            pass
+        self.issue_ids = list(set(self.issue_ids))
 
         try:
             unauth_keys = config_loader.load_json_config("unauthorized_jira_keys.json")
@@ -99,9 +140,69 @@ class JiraScraper:
 
         self.unauthorized_keys = set(unauth_keys)
 
+    def get_config(self) -> dict[str, Any]:
+        """
+        Get the configuration for the JIRA scraper.
+        """
+        return {
+            "filter_on": self.filter_on,
+            "jira_client": self.jira_client.get_config(),
+            "usernames": self.usernames,
+            "issue_ids": self.issue_ids,
+            "urls": self.urls,
+        }
+
     def validate_jira_url(self, url: str) -> bool:
         """Validate that URL is a proper JIRA issue browse URL."""
         return "browse/" in url
+
+    def get_issues_assigned_to_usernames(self, usernames: List[str]) -> List[str]:
+        """
+        Fetch JIRA issues assigned to a list of usernames.
+        """
+        if not usernames:
+            return []
+
+        issue_ids = set()
+
+        quoted_usernames = ",".join(f'"{u}"' for u in usernames)
+        jql_query = f"assignee IN ({quoted_usernames})"
+
+        start_at = 0
+        max_results = 50
+
+        while True:
+            issues = self.jira.search_issues(
+                jql_str=jql_query,
+                startAt=start_at,
+                maxResults=max_results,
+                fields="key",
+            )
+
+            if not issues:
+                break
+
+            issue_ids.update(issue.key for issue in issues)
+            if len(issues) < max_results:
+                break
+            start_at += max_results
+        
+        return list(issue_ids)
+
+    def get_issue_ids_from_urls(self, urls: List[str]) -> List[str]:
+        """
+        Extract JIRA issue IDs from a list of URLs.
+        """
+        issue_ids = set()
+        for url in urls:
+            if self.validate_jira_url(url):
+                parts = url.strip().split("browse/")
+                if len(parts) > 1 and parts[1]:
+                    # Extract issue ID and handle potential suffixes
+                    issue_id = parts[1].split("_")[0]
+                    if issue_id:
+                        issue_ids.add(issue_id)
+        return list(issue_ids)
 
     def filter_pass(self, jira_issue: Issue) -> bool:
         """
@@ -143,9 +244,7 @@ class JiraScraper:
         """
         if project_key not in self.project_result_cache:
             try:
-                self.project_result_cache[project_key] = self.jira_client.jira.project(
-                    project_key
-                )
+                self.project_result_cache[project_key] = self.jira.project(project_key)
             except JIRAError as je:
                 raise_scraper_exception(f"[JIRAError] Failed JIRA fetch: {je}")
             except Exception as e:
@@ -201,9 +300,7 @@ class JiraScraper:
                 if len(issue_ids) == 1:
                     issue_id = issue_ids[0]
                     if issue_id not in self.issue_result_cache:
-                        self.issue_result_cache[issue_id] = [
-                            self.jira_client.jira.issue(issue_id)
-                        ]
+                        self.issue_result_cache[issue_id] = [self.jira.issue(issue_id)]
                     return self.issue_result_cache[issue_id]
 
                 # For multiple issues, use JQL search
@@ -251,7 +348,7 @@ class JiraScraper:
 
         return issues
 
-    def extract(self, urls):
+    def extract(self):
         """
         Main extraction method that orchestrates the entire JIRA scraping process.
 
@@ -441,37 +538,25 @@ class JiraScraper:
 
             return hierarchy
 
+        logger.info(f"[*] Extracting {len(self.issue_ids)} JIRA tickets")
         logger.debug(f"FILTER IS {'ON' if self.filter_on else 'OFF'}")
 
-        # Parse JIRA issue IDs from URLs
-        issue_ids = set()
-        for url in urls:
-            if self.validate_jira_url(url):
-                parts = url.strip().split("browse/")
-                if len(parts) > 1 and parts[1]:
-                    # Extract issue ID and handle potential suffixes
-                    issue_id = parts[1].split("_")[0]
-                    if issue_id:
-                        issue_ids.add(issue_id)
-
+        issue_ids = self.issue_ids
         if not issue_ids:
-            raise_scraper_exception("[!][ERROR] Invalid JIRA URLs")
+            raise_scraper_exception("[!][ERROR] Invalid JIRA issue IDs")
 
-        logger.info(f"[*] Extracted {len(issue_ids)} Issue IDs")
+        project_ids = [id.split("-")[0] for id in issue_ids]
+        self.populate_project_result_cache(project_ids)
 
-        # Pre-populate project cache for efficiency
-        self.populate_project_result_cache([id.split("-")[0] for id in issue_ids])
-
-        # Fetch all issues via API
-        issues = self.search_issues(list(issue_ids))
+        issues = self.search_issues(issue_ids)
         if not issues:
             raise_scraper_exception("[!][ERROR] No JIRA issues found")
 
-        logger.debug(f"\nFetched {len(issues)} JIRA issues")
+        logger.debug(f"\nFetched {len(issues)}/{len(issue_ids)} JIRA issues")
 
         # Report any issues that failed to fetch (permissions, deleted, etc.)
         if len(issues) < len(issue_ids):
-            failed_issue_ids = issue_ids - set(issue.key for issue in issues)
+            failed_issue_ids = set(issue_ids) - set(issue.key for issue in issues)
             logger.warning(
                 f"{len(failed_issue_ids)} Issue IDs failed fetched: {failed_issue_ids}"
             )
