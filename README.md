@@ -24,6 +24,11 @@ A Python-based web scraper designed to extract, filter, and summarize data from 
 
 #### Setup
 export GH_API_TOKEN=your_github_api_token_here (needs a GITHUB API token to run github client)
+export GOOGLE_API_KEY=your_gemini_token_here (if LLM_MODEL is set as gemini) 
+
+Note:
+refer LLM_SETUP.md if any issues
+
 sh setup.sh
 sh start_llm.sh
 

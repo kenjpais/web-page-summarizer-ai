@@ -37,12 +37,32 @@ class APISettings(BaseSettings):
     jira_batch_size: int = Field(default=500, alias="JIRA_BATCH_SIZE")
     # jira_max_results: int = Field(default=200, alias="JIRA_MAX_RESULTS")
 
-    # LLM API
+    # LLM Configuration
+    llm_provider: str = Field(
+        default="local", alias="LLM_PROVIDER"
+    )  # "local" or "gemini"
+
+    # Local LLM API (Ollama)
     llm_api_url: str = Field(
         default="http://localhost:11434/api/generate", alias="LLM_API_URL"
     )
     llm_model: str = Field(default="mistral", alias="LLM_MODEL")
     # llm_timeout: int = Field(default=120, alias="LLM_TIMEOUT")
+
+    # Google Gemini API
+    google_api_key: str = Field(default="", alias="GOOGLE_API_KEY")
+    gemini_model: str = Field(default="gemini-1.5-flash", alias="GEMINI_MODEL")
+
+    # LLM Input Limits
+    max_input_tokens: int = Field(
+        default=50000, alias="MAX_INPUT_TOKENS"
+    )  # Conservative limit for chunking
+    chunk_overlap: int = Field(
+        default=1000, alias="CHUNK_OVERLAP"
+    )  # Overlap between chunks
+    chunk_size: int = Field(
+        default=40000, alias="CHUNK_SIZE"
+    )  # Target chunk size in tokens
 
     @field_validator("github_api_url", "jira_server", "llm_api_url")
     @classmethod
@@ -185,18 +205,6 @@ class ProcessingSettings(BaseSettings):
 class SecuritySettings(BaseSettings):
     """Security-related configuration."""
 
-    # Request timeouts
-    default_timeout: int = Field(default=30, alias="DEFAULT_TIMEOUT")
-    max_timeout: int = Field(default=300, alias="MAX_TIMEOUT")
-
-    # Rate limiting
-    enable_rate_limiting: bool = Field(default=True, alias="ENABLE_RATE_LIMITING")
-    requests_per_minute: int = Field(default=60, alias="REQUESTS_PER_MINUTE")
-
-    # Input validation
-    max_url_length: int = Field(default=2048, alias="MAX_URL_LENGTH")
-    max_file_size_mb: int = Field(default=100, alias="MAX_FILE_SIZE_MB")
-
     # Allowed domains for external requests
     allowed_domains: List[str] = Field(
         default=["github.com", "api.github.com", "issues.redhat.com", "localhost"],
@@ -237,6 +245,9 @@ class ConfigFileSettings(BaseSettings):
     project_summary_template: str = "summarize_project_prompt_template.txt"
     summarize_enabled_feature_gate_prompt_template: str = (
         "summarize_enabled_feature_gate_prompt_template.txt"
+    )
+    summarize_single_feature_gate_prompt_template: str = (
+        "summarize_single_feature_gate_prompt_template.txt"
     )
 
 
@@ -343,6 +354,12 @@ class ConfigLoader:
         """Get feature gate summarization prompt template."""
         return self.load_text_config(
             self.settings.config_files.summarize_enabled_feature_gate_prompt_template
+        )
+
+    def get_single_feature_gate_summarize_prompt_template(self) -> str:
+        """Get single feature gate summarization prompt template."""
+        return self.load_text_config(
+            self.settings.config_files.summarize_single_feature_gate_prompt_template
         )
 
     def get_project_summary_template(self) -> str:

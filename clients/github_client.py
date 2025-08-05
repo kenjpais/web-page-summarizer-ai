@@ -1,4 +1,5 @@
 import requests
+import time
 from typing import List, Dict, Any
 from config.settings import get_settings
 from utils.logging_config import get_logger
@@ -243,14 +244,25 @@ class GithubGraphQLClient:
         - GraphQL errors (invalid queries, permission issues)
         - Rate limiting and API quota issues
         """
-        # Set up authentication headers for GitHub API access
-        headers = {"Authorization": f"Bearer {self.token}"}
-
         try:
-            # Execute the GraphQL query via HTTP POST
+
+            # Set up authentication headers for GitHub API access
+            headers = {
+                "Authorization": f"Bearer {self.token}",
+                "User-Agent": "release-page-summarizer/1.0",
+                "Accept": "application/vnd.github.v4+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+            }
+
+            # Execute the GraphQL query via HTTP POST with timeout
+            settings = get_settings()
             response: requests.Response = requests.post(
-                self.api_url, json={"query": query}, headers=headers
+                self.api_url,
+                json={"query": query},
+                headers=headers,
+                timeout=settings.api.github_timeout,
             )
+
             # Raise exception for HTTP error status codes
             response.raise_for_status()
 
@@ -262,6 +274,9 @@ class GithubGraphQLClient:
                 error_msg = f"GraphQL Errors: {data['errors']}"
                 logger.error(error_msg)
                 raise ValueError(error_msg)
+
+            # Log successful API call for monitoring
+            logger.debug(f"GitHub API call successful: {len(query)} chars query")
 
             return data
 

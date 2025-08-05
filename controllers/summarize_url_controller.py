@@ -1,3 +1,4 @@
+import re
 import shutil
 import runner
 from utils.utils import is_valid_url
@@ -37,3 +38,19 @@ def summarize_release_page_from_url(url):
 
     dest_summary = summary_dir / "summary.txt"
     shutil.copy(src_summary, dest_summary)
+
+    clean_summary(dest_summary)
+
+
+def clean_summary(dest_summary):
+    """
+    Remove mentions of Part <i>
+    """
+    pattern = re.compile(r"^## Part ([1-9][0-9]?|100)\s*$")
+    with open(dest_summary, "r") as f:
+        summary_lines = f.readlines()
+
+    new_lines = [line for line in summary_lines if not pattern.match(line.strip())]
+
+    with open(dest_summary, "w") as file:
+        file.writelines(new_lines)

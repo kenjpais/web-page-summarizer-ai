@@ -1,8 +1,12 @@
+import os
 import json
 import unittest
+
+# Set LLM provider to local BEFORE any imports that would trigger LLM instantiation
+os.environ["LLM_PROVIDER"] = "local"
+os.environ["LLM_MODEL"] = "mistral"
+
 from summarizers.summarizer import summarize_feature_gates
-from correlators.correlator import correlate_table, correlate_with_jira_issue_id
-from scrapers.html_scraper import scrape_html
 from utils.file_utils import copy_file, delete_all_in_directory
 from config.settings import get_settings
 from utils.logging_config import get_logger, setup_logging
@@ -11,15 +15,18 @@ setup_logging()
 
 logger = get_logger(__name__)
 
+# Clear settings cache to pick up new environment variables
+get_settings.cache_clear()
 settings = get_settings()
+
 data_dir = settings.directories.data_dir
 test_data_dir = settings.directories.test_data_dir
 
 correlated_feature_gate_table_file = (
     test_data_dir / "correlated_feature_gate_table.json"
 )
-summarized_features_file = test_data_dir / "summarized_features.json"
 correlated_file = test_data_dir / "correlated.json"
+summarized_features_file = data_dir / "summarized_features.json"
 
 
 class TestSummarizeFeatureGates(unittest.TestCase):
@@ -55,7 +62,6 @@ class TestSummarizeFeatureGates(unittest.TestCase):
 
         # Mock data
         copy_file(src_path=correlated_feature_gate_table_file, dest_dir=data_dir)
-        copy_file(src_path=summarized_features_file, dest_dir=data_dir)
         copy_file(src_path=correlated_file, dest_dir=data_dir)
 
         summarize_feature_gates()
@@ -67,3 +73,8 @@ class TestSummarizeFeatureGates(unittest.TestCase):
         result = self.summarized_features
         self.assertTrue(isinstance(result, dict))
         self.assertTrue(self.expected_feature_gates.issubset(set(result.keys())))
+        self.assertTrue(isinstance(result, dict))
+        self.assertTrue(len(result) > 0)
+        self.assertTrue(all(isinstance(k, str) for k in result.keys()))
+        self.assertTrue(all(isinstance(v, str) for v in result.values()))
+        self.assertTrue(all(isinstance(k, str) for k in result.keys()))

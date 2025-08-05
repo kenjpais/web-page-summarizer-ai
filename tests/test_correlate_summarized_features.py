@@ -1,6 +1,11 @@
 import os
 import json
 import unittest
+
+# Set LLM provider to local BEFORE any imports that would trigger LLM instantiation
+os.environ["LLM_PROVIDER"] = "local"
+os.environ["LLM_MODEL"] = "mistral"
+
 from correlators.correlator import correlate_summarized_features
 from summarizers.summarizer import summarize_feature_gates
 from utils.file_utils import copy_file, delete_all_in_directory
@@ -11,7 +16,10 @@ setup_logging()
 
 logger = get_logger(__name__)
 
+# Clear settings cache to pick up new environment variables
+get_settings.cache_clear()
 settings = get_settings()
+
 data_dir = settings.directories.data_dir
 test_data_dir = settings.directories.test_data_dir
 

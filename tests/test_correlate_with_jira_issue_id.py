@@ -1,6 +1,9 @@
 import os
 import json
 import unittest
+
+os.environ["LLM_PROVIDER"] = "local"
+os.environ["LLM_MODEL"] = "mistral"
 from correlators.correlator import correlate_with_jira_issue_id
 from config.settings import get_settings
 from utils.logging_config import get_logger, setup_logging
@@ -10,6 +13,7 @@ setup_logging()
 logger = get_logger(__name__)
 
 settings = get_settings()
+
 test_data_dir = settings.directories.test_data_dir
 
 

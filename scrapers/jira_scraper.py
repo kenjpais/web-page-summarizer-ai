@@ -53,7 +53,9 @@ class JiraScraper:
             # Initialize JIRA client with error handling
             self.jira_client: JiraClient = JiraClient()
             if not self.jira_client:
-                raise_scraper_exception(f"JiraClient() is {self.jira_client}")
+                raise_scraper_exception(
+                    f"[!][ERROR] JiraClient() is {self.jira_client}"
+                )
 
             self.jira: JIRA = self.jira_client.jira
 
@@ -66,10 +68,10 @@ class JiraScraper:
 
         except JIRAError as e:
             raise_scraper_exception(
-                f'Failed to connect to JIRA Server: {getattr(e, "status_code", "N/A")} - {getattr(e, "text", str(e))}'
+                f'[!][ERROR] Failed to connect to JIRA Server: {getattr(e, "status_code", "N/A")} - {getattr(e, "text", str(e))}'
             )
         except Exception as e:
-            raise_scraper_exception(f"Unexpected error: {e}")
+            raise_scraper_exception(f"[!][ERROR] Unexpected error: {e}")
 
         # Load filtering configuration from JSON files
         # These define which issue types and projects to include/exclude
@@ -220,7 +222,7 @@ class JiraScraper:
                     logger.error(f"Unauthorized JIRA key: {issue_ids[0]}")
                 return []
             except Exception as e:
-                logger.error(f"[ERROR] Failed JIRA fetch: {e}")
+                logger.error(f"[!][ERROR] Failed JIRA fetch: {e}")
                 return []
 
         def chunked(iterator, size):
@@ -302,7 +304,7 @@ class JiraScraper:
                 5. Recursively processes linked issues (epics, features)
                 """
                 if not issue or not hasattr(issue, "fields"):
-                    raise ValueError("[ERROR] Invalid issue")
+                    raise ValueError("[!][ERROR] Invalid issue")
 
                 fields = issue.fields
 
@@ -477,7 +479,7 @@ class JiraScraper:
         # Build the hierarchical structure
         hierarchy = organize_issues(issues, self.jira_client.epic_link_field_id)
         if not hierarchy:
-            raise_scraper_exception("[ERROR] JIRA Hierarchy construction failed")
+            raise_scraper_exception("[!][ERROR] JIRA Hierarchy construction failed")
 
         save_unauthorized_keys(self.unauthorized_keys)
         save_project_result_cache(self.project_result_cache)

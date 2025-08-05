@@ -1,26 +1,24 @@
 from typing import Any, Dict, Optional, Union
 from utils.logging_config import log_prompt
-from langchain_ollama import OllamaLLM
 from langchain_core.runnables import Runnable
 from config.settings import get_settings
 
 
-class LLMClient(Runnable):
-    def __init__(
-        self, llm: OllamaLLM, domain: str = "localhost", port: int = 11434
-    ) -> None:
+class GeminiLLMClient(Runnable):
+    def __init__(self, llm) -> None:
         super().__init__()
-        self.llm: OllamaLLM = llm
-        self.domain: str = domain
-        self.port: int = port
+        self.llm = llm
         self.prompt: Optional[Union[str, Dict[str, Any]]] = None
 
     @log_prompt
     def test_llm_connection(self, prompt: str = "Say hello") -> bool:
         self.prompt = prompt
         response = self.llm.invoke(prompt)
-        assert isinstance(response, str)
-        assert len(response) > 0
+        response_text = (
+            response.content if hasattr(response, "content") else str(response)
+        )
+        assert isinstance(response_text, str)
+        assert len(response_text) > 0
         return True
 
     @log_prompt
@@ -32,25 +30,38 @@ class LLMClient(Runnable):
     ) -> str:
         self.prompt = input
         result = self.llm.invoke(input, config=config, **kwargs)
-        return result
+        return result.content if hasattr(result, "content") else str(result)
 
 
-def _create_local_llm():
-    """Create local LLM client with current settings."""
+def _create_gemini_llm():
+    """Create Gemini LLM client with lazy import to avoid dependency issues."""
+    try:
+        from langchain_google_genai import ChatGoogleGenerativeAI
+    except ImportError:
+        raise ImportError(
+            "langchain-google-genai package is required for Gemini provider. "
+            "Install it with: pip install langchain-google-genai"
+        )
+
     settings = get_settings()
-    llm_base_url = settings.api.llm_api_url.replace("/api/generate", "")
-    return LLMClient(OllamaLLM(model=settings.api.llm_model, base_url=llm_base_url))
+    return GeminiLLMClient(
+        ChatGoogleGenerativeAI(
+            model=settings.api.gemini_model,
+            google_api_key=settings.api.google_api_key,
+            temperature=0.0,
+        )
+    )
 
 
-class LazyLocalLLM:
-    """Lazy wrapper for local LLM that only initializes when first accessed."""
+class LazyGeminiLLM:
+    """Lazy wrapper for Gemini LLM that only initializes when first accessed."""
 
     def __init__(self):
         self._client = None
 
     def _get_client(self):
         if self._client is None:
-            self._client = _create_local_llm()
+            self._client = _create_gemini_llm()
         return self._client
 
     def invoke(self, *args, **kwargs):
@@ -62,4 +73,4 @@ class LazyLocalLLM:
 
 
 # Create lazy client instance
-local_llm = LazyLocalLLM()
+gemini_llm = LazyGeminiLLM()

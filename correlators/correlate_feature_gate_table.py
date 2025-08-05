@@ -136,7 +136,6 @@ def correlate_table():
         logger.info(
             f"""
         Searching raw source data for unmatched feature gates: {json.dumps(list(unmatched_feature_gates), indent=4)}
-        This catches cases where feature gates are mentioned in items that weren't correlated with JIRA issues.
         """
         )
         sources = settings.processing.sources

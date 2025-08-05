@@ -1,6 +1,10 @@
 import os
 import json
 import unittest
+
+os.environ["LLM_PROVIDER"] = "local"
+os.environ["LLM_MODEL"] = "mistral"
+
 from correlators.correlator import (
     correlate_table,
 )
@@ -12,6 +16,8 @@ setup_logging()
 
 logger = get_logger(__name__)
 
+# Clear settings cache to pick up new environment variables
+get_settings.cache_clear()
 settings = get_settings()
 
 data_dir = settings.directories.data_dir

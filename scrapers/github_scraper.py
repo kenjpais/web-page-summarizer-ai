@@ -97,6 +97,11 @@ class GithubScraper:
         """
         results = []
 
+        if not urls:
+            raise_scraper_exception(
+                f"""[!][ERROR] {len(urls)} URLs sent to github scraper."""
+            )
+
         # Parse and validate all URLs first
         parsed_items = [
             parsed for url in urls if (parsed := self.parse_github_url(url))
