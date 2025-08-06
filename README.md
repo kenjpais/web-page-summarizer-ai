@@ -30,13 +30,15 @@ Note:
 refer LLM_SETUP.md if any issues
 
 sh setup.sh
+
 sh start_llm.sh
 
 #### Run
-python main.py <release_page_url_or_file> (Summary will be generated under ~/data/summaries/<release-version>/)
+python main.py <release_page_url_or_file> (Summary will be generated under ~/data/summaries/release-version/)
 
 #### Run Tests
 chmod +x run_scraper_tests.sh
+
 ./run_scraper_tests.sh
 
-If you just want to use the scraper and not generate summaries, you can set SUMMARIZE_ENABLED flag as False.
+To just use the scraper and disable summary generation, set SUMMARIZE_ENABLED flag as False.
