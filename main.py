@@ -27,6 +27,7 @@ Requirements:
 The application creates structured output files in the configured data directory
 including JSON data files, Markdown reports, and final summaries.
 """
+
 from utils.logging_config import setup_logging, get_logger
 from cli.cli import main_cli
 

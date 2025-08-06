@@ -26,7 +26,7 @@ logger = get_logger(__name__)
 class HTTPSessionManager:
     """
     Centralized HTTP session manager with connection pooling.
-    
+
     This class provides optimized HTTP sessions with:
     - Connection pooling for better performance
     - Automatic retries with exponential backoff
@@ -47,7 +47,7 @@ class HTTPSessionManager:
         pool_maxsize: int = 20,
         max_retries: int = 3,
         backoff_factor: float = 0.3,
-        timeout: Optional[float] = None
+        timeout: Optional[float] = None,
     ) -> requests.Session:
         """
         Get or create an optimized HTTP session for a specific base URL.
@@ -70,11 +70,11 @@ class HTTPSessionManager:
                     pool_maxsize=pool_maxsize,
                     max_retries=max_retries,
                     backoff_factor=backoff_factor,
-                    timeout=timeout
+                    timeout=timeout,
                 )
                 self._sessions[base_url] = session
                 logger.debug(f"Created new HTTP session for {base_url}")
-            
+
             return self._sessions[base_url]
 
     def _create_session(
@@ -83,7 +83,7 @@ class HTTPSessionManager:
         pool_maxsize: int,
         max_retries: int,
         backoff_factor: float,
-        timeout: Optional[float]
+        timeout: Optional[float],
     ) -> requests.Session:
         """
         Create a new HTTP session with optimized configuration.
@@ -105,14 +105,14 @@ class HTTPSessionManager:
             total=max_retries,
             backoff_factor=backoff_factor,
             status_forcelist=[429, 500, 502, 503, 504],
-            allowed_methods=["HEAD", "GET", "OPTIONS", "POST", "PUT", "DELETE"]
+            allowed_methods=["HEAD", "GET", "OPTIONS", "POST", "PUT", "DELETE"],
         )
 
         # Create HTTP adapter with connection pooling
         adapter = HTTPAdapter(
             pool_connections=pool_connections,
             pool_maxsize=pool_maxsize,
-            max_retries=retry_strategy
+            max_retries=retry_strategy,
         )
 
         # Mount adapter for both HTTP and HTTPS
@@ -143,7 +143,7 @@ class HTTPSessionManager:
         with self._lock:
             return {
                 "active_sessions": len(self._sessions),
-                "session_urls": list(self._sessions.keys())
+                "session_urls": list(self._sessions.keys()),
             }
 
 
@@ -172,7 +172,7 @@ def get_http_session(
     pool_connections: int = 10,
     pool_maxsize: int = 20,
     max_retries: int = 3,
-    timeout: Optional[float] = None
+    timeout: Optional[float] = None,
 ) -> requests.Session:
     """
     Convenience function to get an optimized HTTP session.
@@ -190,7 +190,7 @@ def get_http_session(
     Example:
         ```python
         from utils.http_session import get_http_session
-        
+
         # Get a session for GitHub API
         session = get_http_session("https://api.github.com", timeout=30)
         response = session.post("/graphql", json={"query": "..."})
@@ -202,7 +202,7 @@ def get_http_session(
         pool_connections=pool_connections,
         pool_maxsize=pool_maxsize,
         max_retries=max_retries,
-        timeout=timeout
+        timeout=timeout,
     )
 
 

@@ -33,21 +33,21 @@ def main_cli():
 
 def run_workflow(kwargs: dict):
     """Execute the complete workflow pipeline.
-    
+
     Args:
         kwargs: Dictionary containing configuration from CLI parsers
-        
+
     Raises:
         SystemExit: On any workflow error
     """
     try:
         logger.info("Starting workflow execution...")
         logger.debug(f"Workflow configuration: {kwargs}")
-        
+
         scrape_sources(kwargs)
         correlate_all()
         summarize()
-        
+
         logger.info("Workflow completed successfully")
 
     except Exception as e:

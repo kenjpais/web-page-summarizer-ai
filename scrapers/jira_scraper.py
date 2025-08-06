@@ -186,7 +186,7 @@ class JiraScraper:
             if len(issues) < max_results:
                 break
             start_at += max_results
-        
+
         return list(issue_ids)
 
     def get_issue_ids_from_urls(self, urls: List[str]) -> List[str]:
