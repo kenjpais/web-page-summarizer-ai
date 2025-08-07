@@ -13,11 +13,10 @@ Features:
 """
 
 import requests
+import threading
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from typing import Dict, Optional
-import threading
-from config.settings import get_settings
 from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -35,8 +34,6 @@ class HTTPSessionManager:
     """
 
     def __init__(self):
-        """Initialize the session manager with configuration from settings."""
-        self.settings = get_settings()
         self._sessions: Dict[str, requests.Session] = {}
         self._lock = threading.Lock()
 

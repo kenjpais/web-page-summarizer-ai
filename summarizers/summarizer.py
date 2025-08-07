@@ -1,16 +1,10 @@
+import re
 import json
-import os
 import time
 from utils.utils import json_to_markdown
 from utils.parser_utils import convert_json_text_to_dict
-from clients.llm_client import LLMClient
-from chains.chains import (
-    project_summary_chain,
-    summary_chain,
-    feature_gate_summary_chain,
-    single_feature_gate_summary_chain,
-)
-from config.settings import get_settings, get_config_loader
+from chains.chains import Chains
+from config.settings import get_config_loader, AppSettings
 from utils.logging_config import get_logger
 from utils.text_chunker import (
     chunk_text_for_llm,
@@ -20,405 +14,284 @@ from utils.text_chunker import (
 
 logger = get_logger(__name__)
 
-settings = get_settings()
-llm_provider = settings.api.llm_provider
-llm_model = settings.api.llm_model
 
-# Configuration paths for summarization pipeline
-data_dir = settings.directories.data_dir
-config_dir = settings.directories.config_dir
+class Summarizer:
+    def __init__(self, settings: AppSettings, chains=None):
+        self.settings = settings
+        if chains is None:
+            self.chains = Chains(settings)
+        else:
+            self.chains = chains
 
-correlated_file = data_dir / "correlated.json"
-correlated_feature_gate_table_file = data_dir / "correlated_feature_gate_table.json"
-summarized_features_file = data_dir / "summarized_features.json"
-prompt_payload = data_dir / "prompt_payload.txt"
-summary_file = data_dir / "summary.txt"
+    def summarize_projects(self):
+        logger.info("\n[*] Generating summary for projects...")
 
+        data_dir = self.settings.file_paths.data_dir
+        llm_provider = self.settings.api.llm_provider
+        llm_model = self.settings.api.llm_model
+        projects_summary_file = data_dir / "projects_summary.txt"
 
-# Without langchain
-def summarize_():
-    """
-    Generate a comprehensive summary of release data using LLM processing.
-
-    This function orchestrates the summarization process by:
-    1. Loading correlated JIRA/GitHub data
-    2. Converting data to human-readable Markdown format
-    3. Building a structured prompt with examples
-    4. Processing through the LLM to generate final summary
-    5. Writing the summary to output file
-
-    Output: Creates summary.txt with the final release summary
-    """
-    logger.info("\n[*] Summarizing...")
-
-    # Output files for the summarization process
-    prompt_payload = data_dir / "prompt_payload.txt"  # Intermediate prompt file
-    summary_file = data_dir / "summary.txt"  # Final summary output
-
-    def build_prompt_payload():
-        """
-        Construct the complete prompt for LLM summarization.
-
-        This function assembles the prompt by combining:
-        - Template structure (defines output format)
-        - Example summary (shows desired style and content)
-        - Actual release data (converted to Markdown)
-
-        Returns:
-            Complete prompt string ready for LLM processing
-        """
-        # Load prompt components from configuration files
-        summarize_prompt_template = config_dir / "summarize_prompt_template.txt"
-        example_summary_file_path = config_dir / "example_summary.txt"
-
-        with open(correlated_file, "r") as cor_file, open(
-            summarize_prompt_template, "r"
-        ) as template_file, open(example_summary_file_path, "r") as example_file:
-
-            # Load the example summary for few-shot learning
-            example_summary = example_file.read()
-
-            # Convert JSON data to readable Markdown format
+        with open(self.settings.file_paths.correlated_file_path, "r") as cor_file:
             release_notes = json_to_markdown(cor_file.read())
 
-            # Load the prompt template with placeholders
-            prompt_payload_str = template_file.read()
+        # Get the project summary prompt template for chunking
+        config_loader = get_config_loader(self.settings)
+        prompt_template = config_loader.get_project_summary_template()
 
-            # Inject the example summary into the template
-            # This provides the LLM with a concrete example of desired output
-            prompt_payload_str = prompt_payload_str.replace(
-                "{summary-example}", f"\n{example_summary}"
-            )
+        # Check if chunking is needed
+        chunk_info = get_chunk_info(self.settings, release_notes, prompt_template)
 
-            # Inject the actual release data to be summarized
-            prompt_payload_str = prompt_payload_str.replace(
-                "{release-notes}", f"\n{release_notes}"
-            )
-
-        # Save the complete prompt for debugging and review
-        with open(prompt_payload, "w") as out:
-            out.write(prompt_payload_str)
-
-        return prompt_payload_str
-
-    # Generate the summary using the LLM client
-    result = LLMClient().prompt_llm(build_prompt_payload())
-
-    # Write the final summary to output file
-    with open(summary_file, "w") as summary:
-        summary.write(result)
-
-
-def summarize_projects():
-    """
-    Generate project-level summaries using LangChain processing with chunking support.
-
-    This function creates higher-level summaries focused on project
-    organization and strategic overview rather than detailed technical
-    changes. It uses the project_summary_chain for structured processing.
-    """
-    logger.info("\n[*] Generating summary for projects...")
-    projects_summary_file = data_dir / "projects_summary.txt"
-
-    with open(correlated_file, "r") as cor_file:
-        release_notes = json_to_markdown(cor_file.read())
-
-    # Get the project summary prompt template for chunking
-    config_loader = get_config_loader()
-    prompt_template = config_loader.get_project_summary_template()
-
-    # Check if chunking is needed
-    chunk_info = get_chunk_info(release_notes, prompt_template)
-
-    logger.info(
-        f"Project summary analysis: {chunk_info['total_tokens']} tokens, "
-        f"needs chunking: {chunk_info['needs_chunking']}"
-    )
-
-    if (
-        not chunk_info["needs_chunking"]
-        or llm_provider == "local"
-        or llm_model == "mistral"
-    ):
-        # Small payload - process normally
-        logger.info("Processing project summary as single payload")
-        result = project_summary_chain.invoke({"correlated_info": release_notes})
-    else:
-        # Large payload - use chunking
-        logger.info(f"Chunking project summary into {chunk_info['num_chunks']} parts")
-        chunks = chunk_text_for_llm(release_notes, prompt_template)
-
-        summaries = []
-        current_provider = settings.api.llm_provider
-
-        for i, chunk in enumerate(chunks, 1):
-            logger.info(
-                f"Processing project chunk {i}/{len(chunks)} "
-                f"({get_chunk_info(chunk)['total_tokens']} tokens)"
-            )
-
-            # Add rate limiting for Gemini API
-            if current_provider == "gemini" and i > 1:
-                logger.info(
-                    "Rate limiting: waiting 2 seconds between Gemini requests..."
-                )
-                time.sleep(2)
-
-            try:
-                chunk_summary = project_summary_chain.invoke({"correlated_info": chunk})
-                summaries.append(chunk_summary)
-
-                # Save individual chunk summaries for debugging
-                chunk_file = data_dir / f"project_chunk_summary_{i}.txt"
-                with open(chunk_file, "w") as f:
-                    f.write(chunk_summary)
-
-            except Exception as e:
-                logger.error(f"Failed to process project chunk {i}: {e}")
-                summaries.append(f"[Error processing chunk {i}: {str(e)}]")
-
-        # Combine all chunk summaries
-        result = combine_chunked_summaries(summaries)
         logger.info(
-            f"Combined {len(summaries)} project chunk summaries into final result"
+            f"Project summary analysis: {chunk_info['total_tokens']} tokens, "
+            f"needs chunking: {chunk_info['needs_chunking']}"
         )
 
-    with open(projects_summary_file, "w") as summary:
-        summary.write(result)
-    return result
-
-
-def summarize_feature_gates_individually():
-    with open(correlated_feature_gate_table_file, "r") as f:
-        feature_gate_artifacts = json.load(f)
-
-    feature_gate_summaries = {}
-    for feature_gate, artifacts in feature_gate_artifacts.items():
-        feature = {feature_gate: artifacts}
-        if feature_gate not in feature_gate_summaries:
-            feature_gate_summaries[feature_gate] = (
-                single_feature_gate_summary_chain.invoke(
-                    {"feature-gate": f"""{feature}"""}
-                )
+        if (
+            not chunk_info["needs_chunking"]
+            or llm_provider == "local"
+            or llm_model == "mistral"
+        ):
+            # Small payload - process normally
+            logger.info("Processing project summary as single payload")
+            result = self.chains.project_summary_chain.invoke(
+                {"correlated_info": release_notes}
             )
         else:
+            # Large payload - use chunking
+            logger.info(
+                f"Chunking project summary into {chunk_info['num_chunks']} parts"
+            )
+            chunks = chunk_text_for_llm(release_notes, prompt_template)
+
+            summaries = []
+            current_provider = self.settings.api.llm_provider
+
+            for i, chunk in enumerate(chunks, 1):
+                logger.info(
+                    f"Processing project chunk {i}/{len(chunks)} "
+                    f"({get_chunk_info(self.settings, chunk)['total_tokens']} tokens)"
+                )
+
+                # Add rate limiting for Gemini API
+                if current_provider == "gemini" and i > 1:
+                    logger.info(
+                        "Rate limiting: waiting 2 seconds between Gemini requests..."
+                    )
+                    time.sleep(2)
+
+                try:
+                    chunk_summary = self.chains.project_summary_chain.invoke(
+                        {"correlated_info": chunk}
+                    )
+                    summaries.append(chunk_summary)
+
+                    # Save individual chunk summaries for debugging
+                    chunk_file = data_dir / f"project_chunk_summary_{i}.txt"
+                    with open(chunk_file, "w") as f:
+                        f.write(chunk_summary)
+
+                except Exception as e:
+                    logger.error(f"Failed to process project chunk {i}: {e}")
+                    summaries.append(f"[Error processing chunk {i}: {str(e)}]")
+
+            # Combine all chunk summaries
+            result = combine_chunked_summaries(summaries)
+            logger.info(
+                f"Combined {len(summaries)} project chunk summaries into final result"
+            )
+
+        with open(projects_summary_file, "w") as summary:
+            summary.write(result)
+        return result
+
+    def summarize_feature_gates(self):
+        logger.info("[*] Summarizing feature gates...")
+        llm_provider = self.settings.api.llm_provider
+        llm_model = self.settings.api.llm_model
+        if llm_model == "mistral" or llm_provider == "local":
+            self.summarize_feature_gates_individually()
+            return
+
+        with open(
+            self.settings.file_paths.correlated_feature_gate_table_file_path, "r"
+        ) as f:
+            feature_gate_artifacts = json.load(f)
+
+        try:
+            summarized_feature_gates = convert_json_text_to_dict(
+                self.chains.feature_gate_summary_chain.invoke(
+                    {"feature-gates": f"""Feature Gates:\n{feature_gate_artifacts}"""}
+                )
+            )
+
+            assert isinstance(summarized_feature_gates, dict)
+            assert len(summarized_feature_gates) > 0
+            assert all(isinstance(k, str) for k in summarized_feature_gates.keys())
+            assert all(isinstance(v, str) for v in summarized_feature_gates.values())
+
+            with open(self.settings.file_paths.summarized_features_file_path, "w") as f:
+                json.dump(summarized_feature_gates, f)
+        except Exception as e:
             logger.error(
-                f"Feature gate {feature_gate} already exists in feature_gate_summaries"
+                f"Failed to summarize feature gates: Invalid JSON format received from LLM: {e}"
             )
-            continue
 
-    if len(feature_gate_summaries) == 0:
-        logger.error("No feature gate summaries found")
-        return
+    def summarize_feature_gates_individually(self):
+        with open(
+            self.settings.file_paths.correlated_feature_gate_table_file_path, "r"
+        ) as f:
+            feature_gate_artifacts = json.load(f)
+        feature_gate_summaries = {}
+        for feature_gate, artifacts in feature_gate_artifacts.items():
+            feature = {feature_gate: artifacts}
+            if feature_gate not in feature_gate_summaries:
+                summary = self.chains.single_feature_gate_summary_chain.invoke(
+                    {"feature-gate": f"""{feature}"""}
+                )
+                if isinstance(summary, str):
+                    feature_gate_summaries[feature_gate] = summary
+            else:
+                logger.error(
+                    f"Feature gate {feature_gate} already exists in feature_gate_summaries"
+                )
+                continue
 
-    with open(summarized_features_file, "w") as f:
-        json.dump(
-            feature_gate_summaries,
-            f,
+        if len(feature_gate_summaries) == 0:
+            logger.error("No feature gate summaries found")
+            return
+
+        with open(self.settings.file_paths.summarized_features_file_path, "w") as f:
+            json.dump(feature_gate_summaries, f)
+
+    def summarize(self):
+        """Main summarize method for the Summarizer class."""
+        if not self.settings.processing.summarize_enabled:
+            logger.info("Summarize is disabled, skipping...")
+            return
+        logger.info("\n[*] Summarizing...")
+        logger.info(
+            f"Using {self.settings.api.llm_provider} {self.settings.api.llm_model} model"
+        )
+        if self.settings.processing.summarize_enabled:
+            self.summarize_correlated_info()
+        self.clean_summary(self.settings.file_paths.summary_file_path)
+
+    def summarize_correlated_info(self):
+        """
+        Summarize correlated information with intelligent chunking for large payloads.
+
+        This function handles large release notes by:
+        1. Checking payload size against LLM limits
+        2. Splitting into chunks if necessary
+        3. Processing chunks with rate limiting
+        4. Combining results into final summary
+        """
+        with open(self.settings.file_paths.correlated_file_path, "r") as cor_file:
+            correlated_info_md = json_to_markdown(cor_file.read())
+
+        release_notes = f"""Release information:\n{correlated_info_md}"""
+
+        # Save the full payload for debugging
+        with open(self.settings.file_paths.release_notes_payload_file_path, "w") as f:
+            f.write(release_notes)
+
+        # Get the prompt template for proper chunking
+        config_loader = get_config_loader(self.settings)
+        prompt_template = config_loader.get_summarize_prompt_template()
+
+        # Check if chunking is needed
+        chunk_info = get_chunk_info(self.settings, release_notes, prompt_template)
+        logger.info(
+            f"Release notes analysis: {chunk_info['total_tokens']} tokens, "
+            f"needs chunking: {chunk_info['needs_chunking']}"
         )
 
+        if (
+            not chunk_info["needs_chunking"]
+            or self.settings.api.llm_provider == "local"
+            or self.settings.api.llm_model == "mistral"
+        ):
+            # Small payload - process normally
+            logger.info("Processing release notes as single payload")
+            try:
+                result = self.chains.summary_chain.invoke(
+                    {"release-notes": release_notes}
+                )
+            except Exception as e:
+                logger.error(f"[!][ERROR] Failed to process release notes: {e}")
+                if "429" in str(e):
+                    logger.error(f"[!][ERROR] Rate Limit exceeded: {e}")
+                raise
+        else:
+            # Large payload - use chunking
+            logger.info(f"Chunking release notes into {chunk_info['num_chunks']} parts")
+            chunks = chunk_text_for_llm(self.settings, release_notes, prompt_template)
 
-def summarize_feature_gates():
-    if llm_model == "mistral" or llm_provider == "local":
-        summarize_feature_gates_individually()
-        return
+            summaries = []
+            current_provider = self.settings.api.llm_provider
 
-    with open(correlated_feature_gate_table_file, "r") as f:
-        feature_gate_artifacts = json.load(f)
-    summarized_feature_gates = convert_json_text_to_dict(
-        feature_gate_summary_chain.invoke(
-            {"feature-gates": f"""Feature Gates:\n{feature_gate_artifacts}"""}
-        )
-    )
+            for i, chunk in enumerate(chunks, 1):
+                logger.info(
+                    f"Processing chunk {i}/{len(chunks)} "
+                    f"({get_chunk_info(self.settings, chunk)['total_tokens']} tokens)"
+                )
 
-    try:
-        assert isinstance(summarized_feature_gates, dict)
-        assert len(summarized_feature_gates) > 0
-        assert all(isinstance(k, str) for k in summarized_feature_gates.keys())
-        assert all(isinstance(v, str) for v in summarized_feature_gates.values())
-    except Exception as e:
-        logger.error(
-            f"Failed to summarize feature gates: Invalid JSON format received from LLM: {e}"
-        )
-        return
+                # Add rate limiting for Gemini API to avoid quota exhaustion
+                if current_provider == "gemini" and i > 1:
+                    logger.info(
+                        "Rate limiting: waiting 2 seconds between Gemini requests..."
+                    )
+                    time.sleep(2)
 
-    with open(summarized_features_file, "w") as f:
-        json.dump(
-            summarized_feature_gates,
-            f,
-        )
+                try:
+                    chunk_summary = self.chains.summary_chain.invoke(
+                        {"release-notes": chunk}
+                    )
+                    summaries.append(chunk_summary)
 
+                    if self.settings.processing.debug:
+                        # Save individual chunk summaries for debugging
+                        chunk_file = (
+                            self.settings.file_paths.data_dir / f"chunk_summary_{i}.txt"
+                        )
+                        with open(chunk_file, "w") as f:
+                            f.write(chunk_summary)
 
-def summarize():
-    current_settings = get_settings()
-    if not current_settings.processing.summarize_enabled:
-        logger.info("Summarize is disabled, skipping...")
-        return
-    logger.info("\n[*] Summarizing...")
-    logger.info(f"Using {llm_provider} {llm_model} model")
-    if current_settings.processing.summarize_enabled:
-        summarize_correlated_info()
+                except Exception as e:
+                    logger.error(f"[!][ERROR] Failed to process chunk {i}: {e}")
+                    if "429" in str(e):
+                        logger.error(f"[!][ERROR] Rate Limit exceeded: {e}")
+                        break
+                    # Continue with other chunks rather than failing completely
+                    summaries.append(
+                        f"[!][ERROR] error processing chunk {i}: {str(e)}]"
+                    )
 
+            # Combine all chunk summaries
+            result = combine_chunked_summaries(summaries)
+            logger.info(f"Combined {len(summaries)} chunk summaries into final result")
 
-def summarize_correlated_info():
-    """
-    Summarize correlated information with intelligent chunking for large payloads.
+        # Save final summary
+        with open(self.settings.file_paths.summary_file_path, "w") as summary:
+            summary.write(result)
 
-    This function handles large release notes by:
-    1. Checking payload size against LLM limits
-    2. Splitting into chunks if necessary
-    3. Processing chunks with rate limiting
-    4. Combining results into final summary
-    """
-    with open(correlated_file, "r") as cor_file:
-        correlated_info_md = json_to_markdown(cor_file.read())
-
-    release_notes = f"""Release information:\n{correlated_info_md}"""
-
-    # Save the full payload for debugging
-    with open(data_dir / "release_notes_payload.txt", "w") as f:
-        f.write(release_notes)
-
-    # Get the prompt template for proper chunking
-    config_loader = get_config_loader()
-    prompt_template = config_loader.get_summarize_prompt_template()
-
-    # Check if chunking is needed
-    chunk_info = get_chunk_info(release_notes, prompt_template)
-    logger.info(
-        f"Release notes analysis: {chunk_info['total_tokens']} tokens, "
-        f"needs chunking: {chunk_info['needs_chunking']}"
-    )
-
-    if (
-        not chunk_info["needs_chunking"]
-        or llm_provider == "local"
-        or llm_model == "mistral"
+    def update_summary_with_release_version(
+        self, summary_file_path, release_version_name
     ):
-        # Small payload - process normally
-        logger.info("Processing release notes as single payload")
-        result = summary_chain.invoke({"release-notes": release_notes})
-    else:
-        # Large payload - use chunking
-        logger.info(f"Chunking release notes into {chunk_info['num_chunks']} parts")
-        chunks = chunk_text_for_llm(release_notes, prompt_template)
+        """Update summary file with release version name."""
+        with open(summary_file_path, "r") as rf:
+            content = rf.read()
+        updated_content = f"Release Notes {release_version_name}\n{content}"
+        with open(summary_file_path, "w") as wf:
+            wf.write(updated_content)
 
-        summaries = []
-        current_provider = settings.api.llm_provider
+    def clean_summary(self, dest_summary):
+        """Remove mentions of Part <i>"""
+        pattern = re.compile(r"^## Part ([1-9][0-9]?|100)\s*$")
+        with open(dest_summary, "r") as f:
+            summary_lines = f.readlines()
 
-        for i, chunk in enumerate(chunks, 1):
-            logger.info(
-                f"Processing chunk {i}/{len(chunks)} "
-                f"({get_chunk_info(chunk)['total_tokens']} tokens)"
-            )
+        new_lines = [line for line in summary_lines if not pattern.match(line.strip())]
 
-            # Add rate limiting for Gemini API to avoid quota exhaustion
-            if current_provider == "gemini" and i > 1:
-                logger.info(
-                    "Rate limiting: waiting 2 seconds between Gemini requests..."
-                )
-                time.sleep(2)
-
-            try:
-                chunk_summary = summary_chain.invoke({"release-notes": chunk})
-                summaries.append(chunk_summary)
-
-                # Save individual chunk summaries for debugging
-                chunk_file = data_dir / f"chunk_summary_{i}.txt"
-                with open(chunk_file, "w") as f:
-                    f.write(chunk_summary)
-
-            except Exception as e:
-                logger.error(f"[!][ERROR] Failed to process chunk {i}: {e}")
-                if "429" in str(e):
-                    logger.error(f"[!][ERROR] Rate Limit exceeded: {e}")
-                    break
-                # Continue with other chunks rather than failing completely
-                summaries.append(f"[!][ERROR] error processing chunk {i}: {str(e)}]")
-
-        # Combine all chunk summaries
-        result = combine_chunked_summaries(summaries)
-        logger.info(f"Combined {len(summaries)} chunk summaries into final result")
-
-    # Save final summary
-    with open(summary_file, "w") as summary:
-        summary.write(result)
-
-
-def raw_summarize():
-    """
-    Feature gates are structured in a separate section for better highlighting.
-    Includes chunking support for large payloads.
-    """
-    with open(correlated_feature_gate_table_file, "r") as f:
-        feature_gate_info_md = json_to_markdown(f.read())
-    with open(correlated_file, "r") as cor_file:
-        correlated_info_md = json_to_markdown(cor_file.read())
-
-    release_notes = f"""FeatureGates:\n{feature_gate_info_md}\nRelease information:\n{correlated_info_md}"""
-
-    # Save the full payload for debugging
-    with open(data_dir / "release_notes_payload.txt", "w") as f:
-        f.write(release_notes)
-
-    # Get the prompt template for proper chunking
-    config_loader = get_config_loader()
-    prompt_template = config_loader.get_summarize_prompt_template()
-
-    # Check if chunking is needed
-    chunk_info = get_chunk_info(release_notes, prompt_template)
-    logger.info(
-        f"Raw summarize analysis: {chunk_info['total_tokens']} tokens, "
-        f"needs chunking: {chunk_info['needs_chunking']}"
-    )
-
-    if not chunk_info["needs_chunking"]:
-        # Small payload - process normally
-        logger.info("Processing raw summary as single payload")
-        result = summary_chain.invoke({"release-notes": release_notes})
-    else:
-        # Large payload - use chunking
-        logger.info(f"Chunking raw summary into {chunk_info['num_chunks']} parts")
-        chunks = chunk_text_for_llm(release_notes, prompt_template)
-
-        summaries = []
-        current_provider = settings.api.llm_provider
-
-        for i, chunk in enumerate(chunks, 1):
-            logger.info(
-                f"Processing raw chunk {i}/{len(chunks)} "
-                f"({get_chunk_info(chunk)['total_tokens']} tokens)"
-            )
-
-            # Add rate limiting for Gemini API
-            if current_provider == "gemini" and i > 1:
-                logger.info(
-                    "Rate limiting: waiting 2 seconds between Gemini requests..."
-                )
-                time.sleep(2)
-
-            try:
-                chunk_summary = summary_chain.invoke({"release-notes": chunk})
-                summaries.append(chunk_summary)
-
-                # Save individual chunk summaries for debugging
-                chunk_file = data_dir / f"raw_chunk_summary_{i}.txt"
-                with open(chunk_file, "w") as f:
-                    f.write(chunk_summary)
-
-            except Exception as e:
-                if "429" in str(e):
-                    logger.error(f"[!][ERROR] Rate Limit exceeded: {e}")
-                    break
-                logger.error(f"[!][ERROR] Failed to process raw chunk {i}: {e}")
-                summaries.append(f"[!][ERROR] Error processing chunk {i}: {str(e)}")
-
-        # Combine all chunk summaries
-        result = combine_chunked_summaries(summaries)
-        logger.info(f"Combined {len(summaries)} raw chunk summaries into final result")
-
-    # Save final summary
-    with open(summary_file, "w") as summary:
-        summary.write(result)
-
-    return
+        with open(dest_summary, "w") as file:
+            file.writelines(new_lines)

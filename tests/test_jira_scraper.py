@@ -1,4 +1,3 @@
-import os
 import json
 import unittest
 from typing import Dict
@@ -6,12 +5,12 @@ from scrapers.jira_scraper import JiraScraper, render_to_markdown
 from scrapers.exceptions import ScraperException
 from config.settings import get_settings
 from utils.logging_config import setup_logging
+from utils.file_utils import copy_file
 
 # Set up logging for tests
 setup_logging()
 
 settings = get_settings()
-data_dir = settings.directories.data_dir
 
 urls = [
     "https://issues.redhat.com/browse/ODC-7710",
@@ -39,12 +38,25 @@ expected_ids = {
 
 
 class TestJiraScraper(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        settings.directories.data_dir.mkdir(parents=True, exist_ok=True)
+        # Mock data
+        copy_file(
+            src_path=settings.directories.test_data_dir / "issue_result_cache.pkl",
+            dest_dir=settings.directories.data_dir,
+        )
+        copy_file(
+            src_path=settings.directories.test_data_dir / "project_result_cache.pkl",
+            dest_dir=settings.directories.data_dir,
+        )
+
     def test_extract_urls_invalid(self):
         urls = [
             "https://example.com/this/is/invalid",
             "https://example.com/invalid/this/is",
         ]
-        jf = JiraScraper(urls=urls)
+        jf = JiraScraper(settings=settings, urls=urls)
         with self.assertRaises(ScraperException) as cm:
             jf.extract()
         self.assertIn("Invalid JIRA issue IDs", str(cm.exception))
@@ -84,9 +96,7 @@ class TestJiraScraper(unittest.TestCase):
                                 )
 
     def test_extract_urls_valid_filter_on(self):
-        os.environ["FILTER_ON"] = "True"
-
-        jf = JiraScraper(urls=urls)
+        jf = JiraScraper(settings=settings, urls=urls, filter_on=True)
         jf.extract()
 
         result, result_md = load_jira_files()
@@ -100,9 +110,7 @@ class TestJiraScraper(unittest.TestCase):
             self.assertIn(issue_id, result_md)
 
     def test_extract_urls_valid_filter_off(self):
-        os.environ["FILTER_ON"] = "False"
-
-        jf = JiraScraper(urls=urls)
+        jf = JiraScraper(settings=settings, urls=urls, filter_on=False)
         jf.extract()
 
         result, result_md = load_jira_files()
@@ -213,11 +221,11 @@ class TestJiraScraper(unittest.TestCase):
                 self.assertIn(issue_id, result_md)
 
     def test_filter_issue_keys_on(self):
-        jf = JiraScraper(urls=urls, filter_on=True)
+        jf = JiraScraper(settings=settings, urls=urls, filter_on=True)
         self._test_filter_issue_keys(jf)
 
     def test_filter_issue_keys_off(self):
-        jf = JiraScraper(urls=urls, filter_on=True)
+        jf = JiraScraper(settings=settings, urls=urls, filter_on=False)
         self._test_filter_issue_keys(jf)
 
     def _test_filter_project_keys(self, jf):
@@ -244,11 +252,11 @@ class TestJiraScraper(unittest.TestCase):
                 self.assertIn(f"{project_key}-", result_md)
 
     def test_filter_project_keys_on(self):
-        jf = JiraScraper(urls=urls, filter_on=True)
+        jf = JiraScraper(settings=settings, urls=urls, filter_on=True)
         self._test_filter_project_keys(jf)
 
     def test_filter_project_keys_off(self):
-        jf = JiraScraper(urls=urls, filter_on=False)
+        jf = JiraScraper(settings=settings, urls=urls, filter_on=False)
         self._test_filter_project_keys(jf)
 
     def test_search_unauthorized_issues_handling(self):
@@ -264,7 +272,7 @@ class TestJiraScraper(unittest.TestCase):
 
         issue_ids = list(unauthorized_keys | expected_keys)
 
-        jf = JiraScraper(issue_ids=issue_ids)
+        jf = JiraScraper(settings=settings, issue_ids=issue_ids)
         issues = jf.search_issues(issue_ids)
         returned_keys = {issue.key for issue in issues}
 
@@ -284,10 +292,11 @@ class TestJiraScraper(unittest.TestCase):
 
     def test_extract_usernames(self):
         jf = JiraScraper(
+            settings=settings,
             usernames=[
                 "rhn-support-ngirard",
                 "jcallen@redhat.com",
-            ]
+            ],
         )
         jf.extract()
 
@@ -296,10 +305,11 @@ class TestJiraScraper(unittest.TestCase):
 
     def test_extract_issue_ids(self):
         jf = JiraScraper(
+            settings=settings,
             issue_ids=[
                 "SPLAT-1800",
                 "SPLAT-1809",
-            ]
+            ],
         )
         jf.extract()
 
@@ -308,10 +318,10 @@ class TestJiraScraper(unittest.TestCase):
 
 
 def load_jira_files():
-    with open(data_dir / "jira.json") as f:
+    with open(settings.file_paths.jira_json_file_path) as f:
         result = json.load(f)
 
-    with open(data_dir / "jira.md") as f:
+    with open(settings.file_paths.jira_md_file_path) as f:
         result_md = f.read()
 
     return result, result_md

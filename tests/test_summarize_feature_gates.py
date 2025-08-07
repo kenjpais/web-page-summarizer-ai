@@ -1,15 +1,12 @@
-import os
 import json
 import unittest
 
-# Set LLM provider to local BEFORE any imports that would trigger LLM instantiation
-os.environ["LLM_PROVIDER"] = "local"
-os.environ["LLM_MODEL"] = "mistral"
-
-from summarizers.summarizer import summarize_feature_gates
+from unittest.mock import patch
+from summarizers.summarizer import Summarizer
 from utils.file_utils import copy_file, delete_all_in_directory
 from config.settings import get_settings
 from utils.logging_config import get_logger, setup_logging
+from tests.mocks.mock_llm import create_mock_llm
 
 setup_logging()
 
@@ -31,7 +28,8 @@ summarized_features_file = data_dir / "summarized_features.json"
 
 class TestSummarizeFeatureGates(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):
+    @patch("clients.local_llm_chain.create_local_llm", side_effect=create_mock_llm)
+    def setUpClass(cls, mock_create_llm):
         url = (
             "https://amd64.origin.releases.ci.openshift.org/releasestream/"
             "4-scos-stable/release/4.19.0-okd-scos.0"
@@ -64,7 +62,8 @@ class TestSummarizeFeatureGates(unittest.TestCase):
         copy_file(src_path=correlated_feature_gate_table_file, dest_dir=data_dir)
         copy_file(src_path=correlated_file, dest_dir=data_dir)
 
-        summarize_feature_gates()
+        summarizer = Summarizer(settings)
+        summarizer.summarize_feature_gates()
 
         with open(summarized_features_file, "r") as f:
             cls.summarized_features = json.load(f)

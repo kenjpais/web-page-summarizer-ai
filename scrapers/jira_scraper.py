@@ -1,29 +1,22 @@
-import re
 import json
-import pickle
-from pathlib import Path
 from typing import List, Any
 from itertools import islice
+from config.settings import AppSettings
 
 from jira import JIRAError, Issue, JIRA
 from clients.jira_client import JiraClient
 from models.jira_model import create_jira_issue_dict
 from scrapers.exceptions import raise_scraper_exception
 from utils.utils import contains_valid_keywords
-from config.settings import get_settings, get_config_loader
+from utils.file_utils import read_pickle_file, write_pickle_file
+from config.settings import get_config_loader
 from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 
-settings = get_settings()
-config_loader = get_config_loader()
-
 # Feature flags for different processing modes
-FILTER_ON = settings.processing.filter_on  # Enable/disable issue filtering
 FEATURE_FILTER_ON = False  # Feature-specific filtering (currently disabled)
 KEYWORD_MATCHING_ON = False  # Content-based keyword filtering (currently disabled)
-
-data_dir = settings.directories.data_dir
 
 
 class JiraScraper:
@@ -41,7 +34,8 @@ class JiraScraper:
 
     def __init__(
         self,
-        filter_on: bool = FILTER_ON,
+        settings: AppSettings,
+        filter_on: bool = True,
         jira_server: str = None,
         jira_username: str = None,
         jira_password: str = None,
@@ -61,13 +55,15 @@ class JiraScraper:
             issue_ids: List of specific issue IDs to scrape
             urls: List of URLs to scrape from
         """
+        self.settings = settings
 
         def init_jira_client():
             try:
                 self.jira_client: JiraClient = JiraClient(
-                    jira_server=self.jira_server,
-                    jira_username=self.jira_username,
-                    jira_password=self.jira_password,
+                    jira_server=self.jira_server or self.settings.api.jira_server,
+                    jira_username=self.jira_username or "",
+                    jira_password=self.jira_password or "",
+                    debug_enabled=self.settings.processing.debug,
                 )
                 if not self.jira_client:
                     raise_scraper_exception(
@@ -93,24 +89,27 @@ class JiraScraper:
         def init_caches():
             # Issue cache: prevents re-fetching the same issue multiple times
             # Project cache: stores project metadata for hierarchy building
-            self.issue_result_cache = {}
-            self.project_result_cache = {}
 
-            try:
-                with open(data_dir / "project_result_cache.pkl", "rb") as f:
-                    self.project_result_cache = pickle.load(f)
-                with open(data_dir / "issue_result_cache.pkl", "rb") as f:
-                    self.issue_result_cache = pickle.load(f)
-            except FileNotFoundError:
-                pass
+            # Load project cache using utility function
+            self.project_result_cache = (
+                read_pickle_file(
+                    self.settings.file_paths.project_result_cache_file_path
+                )
+                or {}
+            )
+
+            # Load issue cache using utility function
+            self.issue_result_cache = (
+                read_pickle_file(self.settings.file_paths.issue_result_cache_file_path)
+                or {}
+            )
 
         def init_filtering():
             # Load filtering configuration from JSON files
             # These define which issue types and projects to include/exclude
-            self.filter = config_loader.get_jira_filter()
-            self.filter_out = config_loader.get_jira_filter_out()
+            self.filter = self.config_loader.get_jira_filter()
+            self.filter_out = self.config_loader.get_jira_filter_out()
 
-        data_dir.mkdir(exist_ok=True)
         self.filter_on = filter_on
         self.jira_server = jira_server
         self.jira_username = jira_username
@@ -118,6 +117,7 @@ class JiraScraper:
         self.usernames = usernames or []
         self.issue_ids = issue_ids or []
         self.urls = urls or []
+        self.config_loader = get_config_loader()
 
         init_jira_client()
         init_caches()
@@ -134,7 +134,9 @@ class JiraScraper:
         self.issue_ids = list(set(self.issue_ids))
 
         try:
-            unauth_keys = config_loader.load_json_config("unauthorized_jira_keys.json")
+            unauth_keys = self.config_loader.load_json_config(
+                "unauthorized_jira_keys.json"
+            )
         except (FileNotFoundError, ValueError):
             unauth_keys = []
 
@@ -163,6 +165,7 @@ class JiraScraper:
         if not usernames:
             return []
 
+        usernames = list(set(u for u in usernames if u))
         issue_ids = set()
 
         quoted_usernames = ",".join(f'"{u}"' for u in usernames)
@@ -348,7 +351,7 @@ class JiraScraper:
 
         return issues
 
-    def extract(self):
+    def extract(self) -> None:
         """
         Main extraction method that orchestrates the entire JIRA scraping process.
 
@@ -566,51 +569,20 @@ class JiraScraper:
         if not hierarchy:
             raise_scraper_exception("[!][ERROR] JIRA Hierarchy construction failed")
 
-        save_unauthorized_keys(self.unauthorized_keys)
-        save_project_result_cache(self.project_result_cache)
-        save_issue_result_cache(self.issue_result_cache)
-
-        # Write results in both JSON (for processing) and Markdown (for humans)
-        write_json_file(hierarchy)
-        write_md_file(render_to_markdown(hierarchy))
-
-
-def save_unauthorized_keys(keys):
-    with open(
-        Path(settings.directories.config_dir) / "unauthorized_jira_keys.json", "w"
-    ) as f:
-        json.dump(list(keys), f)
-
-
-def save_issue_result_cache(cache):
-    with open(data_dir / "issue_result_cache.pkl", "wb") as f:
-        pickle.dump(cache, f)
-
-
-def save_project_result_cache(cache):
-    with open(data_dir / "project_result_cache.pkl", "wb") as f:
-        pickle.dump(cache, f)
-
-
-def write_json_file(hierarchy):
-    """Write JIRA hierarchy to JSON file for downstream processing."""
-    json_file = data_dir / "jira.json"
-    with open(json_file, "w") as f:
-        json.dump(hierarchy, f, indent=2)
-
-
-def write_md_file(md):
-    """Write JIRA data to Markdown file for human readability."""
-    if not md:
-        return
-    md_file = data_dir / "jira.md"
-    with open(md_file, "w") as f:
-        f.write(md)
-
-
-def extract_jira_ids(md):
-    """Extract JIRA issue IDs from text using regex pattern matching."""
-    return re.findall(r"\b[A-Z][A-Z0-9]+-\d+\b", md)
+        with open(self.settings.file_paths.unauthorized_jira_keys_file_path, "w") as f:
+            json.dump(list(self.unauthorized_keys), f, indent=2)
+        with open(self.settings.file_paths.jira_json_file_path, "w") as f:
+            json.dump(hierarchy, f, indent=2)
+        with open(self.settings.file_paths.jira_md_file_path, "w") as f:
+            f.write(render_to_markdown(hierarchy))
+        write_pickle_file(
+            self.settings.file_paths.project_result_cache_file_path,
+            self.project_result_cache,
+        )
+        write_pickle_file(
+            self.settings.file_paths.issue_result_cache_file_path,
+            self.issue_result_cache,
+        )
 
 
 def render_to_markdown(hierarchy):
@@ -693,41 +665,7 @@ def render_to_markdown(hierarchy):
     return md
 
 
-"""
-def ask_llm_to_filter_features(md):
-    features = classify_chain.invoke({"correlated_info": md})
-    jira_ids = extract_jira_ids(features)
-    return jira_ids
+def extract_jira_ids(md):
+    import re
 
-    with open(f"config/is_feature_prompt_template.txt") as f:
-        q = f.read()
-    prompt = f"{q}\n{md}"
-    resp = llm.prompt_llm(prompt)
-    feature_jira_ids = extract_jira_ids(resp)
-    return feature_jira_ids
-
-
-def filter_hierarchy_by_jira_id(jira_ids) -> defaultdict:
-    filtered_hierarchy = defaultdict(
-        lambda: {"summary": "", "description": "", "epics": {}, "stories": {}}
-    )
-
-    for project, project_data in hierarchy.items():
-        for epic_key, epic_data in project_data.get("epics", {}).items():
-            if epic_key in jira_ids:
-                filtered_hierarchy[project]["epics"][epic_key] = epic_data
-            else:
-                filtered_stories = {
-                    k: v
-                    for k, v in epic_data.get("stories", {}).items()
-                    if k in jira_ids
-                }
-                if filtered_stories:
-                    filtered_hierarchy[project]["epics"][epic_key] = {
-                        "summary": epic_data.get("summary", ""),
-                        "description": epic_data.get("description", ""),
-                        "stories": filtered_stories,
-                    }
-
-    return filtered_hierarchy
-"""
+    return re.findall(r"\b[A-Z][A-Z0-9]+-\d+\b", md)

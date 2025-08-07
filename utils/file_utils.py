@@ -1,9 +1,10 @@
 import shutil
+import pickle
 from pathlib import Path
-from config.settings import get_settings
+from typing import Any, Optional
+from utils.logging_config import get_logger
 
-settings = get_settings()
-data_dir = settings.directories.data_dir
+logger = get_logger(__name__)
 
 
 def read_file_str(file_path):
@@ -18,27 +19,6 @@ def read_file_str(file_path):
     """
     with open(file_path, "r") as f:
         return f.read()
-
-
-def delete_src_files(src: str):
-    """
-    Delete source-specific output files from previous runs.
-
-    Removes both JSON and Markdown files for a specific source to ensure
-    clean state before processing. This prevents old data from contaminating
-    new results.
-
-    Args:
-        src: Source name (e.g., "github", "jira")
-
-    Files removed:
-    - {src}.json (structured data)
-    - {src}.md (human-readable output)
-    """
-    for filename in [f"{src}.json", f"{src}.md"]:
-        filepath = data_dir / filename
-        if filepath.exists():
-            filepath.unlink()
 
 
 def delete_all_in_directory(dir_path):
@@ -104,3 +84,76 @@ def validate_file_path(file_path: Path, file_type: str) -> None:
         raise ValueError(f"{file_type} is not a regular file: {file_path}")
     if not file_path.stat().st_size < 10 * 1024 * 1024:  # 10MB limit
         raise ValueError(f"{file_type} is too large (>10MB): {file_path}")
+
+
+def read_pickle_file(file_path: Path) -> Optional[Any]:
+    """
+    Safely read a pickle file with comprehensive error handling.
+
+    This function provides robust pickle file loading that handles common
+    failure scenarios gracefully, making it safe to use for cache files
+    that may not exist or be corrupted.
+
+    Args:
+        file_path: Path to the pickle file to read
+
+    Returns:
+        The unpickled object if successful, None if file doesn't exist
+        or is corrupted
+
+    The function handles:
+    - FileNotFoundError: File doesn't exist (returns None)
+    - EOFError: File exists but is empty (returns None)
+    - pickle.PickleError: File is corrupted or invalid (returns None)
+    - Other exceptions: Logged and returns None
+    """
+    try:
+        with open(file_path, "rb") as f:
+            return pickle.load(f)
+    except FileNotFoundError:
+        logger.debug(f"Pickle file not found: {file_path}")
+        return None
+    except EOFError:
+        logger.debug(f"Pickle file is empty: {file_path}")
+        return None
+    except pickle.PickleError as e:
+        logger.debug(f"Pickle file is corrupted: {file_path} - {e}")
+        return None
+    except Exception as e:
+        logger.warning(f"Unexpected error reading pickle file {file_path}: {e}")
+        return None
+
+
+def write_pickle_file(file_path: Path, data: Any) -> bool:
+    """
+    Safely write data to a pickle file with error handling.
+
+    Args:
+        file_path: Path where to write the pickle file
+        data: Data to pickle and save
+
+    Returns:
+        True if successful, False if an error occurred
+
+    The function handles:
+    - Directory creation if needed
+    - Pickle serialization errors
+    - File writing errors
+    """
+    try:
+        # Ensure parent directory exists
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(file_path, "wb") as f:
+            pickle.dump(data, f)
+        logger.debug(f"Successfully wrote pickle file: {file_path}")
+        return True
+    except pickle.PickleError as e:
+        logger.error(f"Failed to pickle data for {file_path}: {e}")
+        return False
+    except OSError as e:
+        logger.error(f"Failed to write pickle file {file_path}: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"Unexpected error writing pickle file {file_path}: {e}")
+        return False

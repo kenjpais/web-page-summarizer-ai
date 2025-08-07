@@ -1,14 +1,21 @@
 import unittest
-from clients.github_client import GithubGraphQLClient, test_github_token
+from clients.github_client import GithubGraphQLClient
+from config.settings import get_settings
+
+settings = get_settings()
 
 
 class TestGithubGraphQLClientIntegration(unittest.TestCase):
     def setUp(self):
-        self.client = GithubGraphQLClient()
+        self.client = GithubGraphQLClient(
+            github_graphql_api_url=settings.api.github_graphql_api_url,
+            github_server=settings.api.github_server,
+            github_token=settings.api.github_token,
+        )
 
     def test_params(self):
-        self.assertIsNotNone(self.client.api_url)
-        self.assertIsNotNone(self.client.token)
+        self.assertIsNotNone(self.client.github_graphql_api_url)
+        self.assertIsNotNone(self.client.github_token)
 
     def test_token_validity(self):
         """Test that the GitHub API token loaded from pydantic settings is valid."""
@@ -33,7 +40,7 @@ class TestGithubGraphQLClientIntegration(unittest.TestCase):
 
     def test_standalone_token_function(self):
         """Test the standalone token validation utility function."""
-        result = test_github_token()
+        result = self.client.test_token_validity()
 
         # Check that result has the expected structure
         self.assertIn("is_valid", result)

@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional, Union
 from utils.logging_config import log_prompt
 from langchain_core.runnables import Runnable
-from config.settings import get_settings
+from config.settings import APISettings
 
 
 class GeminiLLMClient(Runnable):
@@ -33,7 +33,7 @@ class GeminiLLMClient(Runnable):
         return result.content if hasattr(result, "content") else str(result)
 
 
-def _create_gemini_llm():
+def _create_gemini_llm(api_settings: APISettings):
     """Create Gemini LLM client with lazy import to avoid dependency issues."""
     try:
         from langchain_google_genai import ChatGoogleGenerativeAI
@@ -42,12 +42,10 @@ def _create_gemini_llm():
             "langchain-google-genai package is required for Gemini provider. "
             "Install it with: pip install langchain-google-genai"
         )
-
-    settings = get_settings()
     return GeminiLLMClient(
         ChatGoogleGenerativeAI(
-            model=settings.api.gemini_model,
-            google_api_key=settings.api.google_api_key,
+            model=api_settings.gemini_model,
+            google_api_key=api_settings.google_api_key,
             temperature=0.0,
         )
     )
@@ -56,12 +54,13 @@ def _create_gemini_llm():
 class LazyGeminiLLM:
     """Lazy wrapper for Gemini LLM that only initializes when first accessed."""
 
-    def __init__(self):
+    def __init__(self, api_settings: APISettings):
         self._client = None
+        self.api_settings = api_settings
 
     def _get_client(self):
         if self._client is None:
-            self._client = _create_gemini_llm()
+            self._client = _create_gemini_llm(self.api_settings)
         return self._client
 
     def invoke(self, *args, **kwargs):
@@ -72,5 +71,5 @@ class LazyGeminiLLM:
         return getattr(self._get_client(), name)
 
 
-# Create lazy client instance
-gemini_llm = LazyGeminiLLM()
+def create_gemini_llm(api_settings: APISettings):
+    return LazyGeminiLLM(api_settings)

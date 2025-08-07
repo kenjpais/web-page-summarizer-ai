@@ -39,7 +39,7 @@ class TestLLMIntegration(unittest.TestCase):
     def test_llm_factory_returns_client(self):
         """Test that LLM factory returns a valid client."""
         try:
-            llm_client = get_llm()
+            llm_client = get_llm(self.settings.api)
             self.assertIsNotNone(llm_client, "LLM factory should return a client")
             self.assertTrue(
                 hasattr(llm_client, "invoke"), "LLM client should have invoke method"
@@ -71,7 +71,7 @@ class TestLLMIntegration(unittest.TestCase):
 
         # Test that factory can handle local provider
         try:
-            llm_client = get_llm()
+            llm_client = get_llm(self.settings.api)
             # Check that we get a client (don't test actual connection as Ollama may not be running)
             self.assertIsNotNone(llm_client)
         except Exception as e:
@@ -90,7 +90,7 @@ class TestLLMIntegration(unittest.TestCase):
         get_settings.cache_clear()
 
         try:
-            llm_client = get_llm()
+            llm_client = get_llm(self.settings.api)
             self.assertIsNotNone(llm_client)
             # We can't test actual connection without a real API key
         except ValueError as e:
@@ -120,9 +120,11 @@ class TestLLMIntegration(unittest.TestCase):
             from config.settings import get_settings
 
             get_settings.cache_clear()
+            # Get fresh settings after clearing cache
+            fresh_settings = get_settings()
 
             with self.assertRaises(ValueError) as context:
-                get_llm()
+                get_llm(fresh_settings.api)
 
             self.assertIn("GOOGLE_API_KEY", str(context.exception))
 
@@ -133,9 +135,11 @@ class TestLLMIntegration(unittest.TestCase):
             from config.settings import get_settings
 
             get_settings.cache_clear()
+            # Get fresh settings after clearing cache
+            fresh_settings = get_settings()
 
             with self.assertRaises(ValueError) as context:
-                get_llm()
+                get_llm(fresh_settings.api)
 
             self.assertIn("Unsupported LLM provider", str(context.exception))
 

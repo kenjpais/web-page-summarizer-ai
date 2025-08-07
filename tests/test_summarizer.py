@@ -2,13 +2,12 @@ import os
 import json
 import unittest
 
-os.environ["LLM_PROVIDER"] = "local"
-os.environ["LLM_MODEL"] = "mistral"
-
-from summarizers.summarizer import summarize
+from unittest.mock import patch
+from summarizers.summarizer import Summarizer
 from config.settings import get_settings
 from utils.logging_config import get_logger, setup_logging
 from utils.file_utils import delete_all_in_directory, copy_file
+from tests.mocks.mock_llm import create_mock_llm
 
 setup_logging()
 
@@ -54,16 +53,20 @@ class TestSummarizer(unittest.TestCase):
         )
 
     def test_summarize_disabled(self):
-        settings.processing.summarize_enabled = "False"
-        summarize()
+        settings.processing.summarize_enabled = False
+        summarizer = Summarizer(settings)
+        summarizer.summarize()
 
         self.assertFalse(os.path.exists(self.data_dir / "summaries"))
 
-    def test_summarize_enabled(self):
-        settings.processing.summarize_enabled = "True"
+    @patch("clients.local_llm_chain.create_local_llm", side_effect=create_mock_llm)
+    def test_summarize_enabled(self, mock_create_llm):
+        settings.processing.summarize_enabled = True
+        settings.api.llm_provider = "local"
         get_settings.cache_clear()
         setup_dummy_test_data()
-        summarize()
+        summarizer = Summarizer(settings)
+        summarizer.summarize()
 
         # Check that summary.txt was created in data directory
         summary_file_path = self.data_dir / "summary.txt"
@@ -71,13 +74,17 @@ class TestSummarizer(unittest.TestCase):
             os.path.exists(summary_file_path), "summary.txt was not created"
         )
 
-    def test_summarize(self):
+    @patch("clients.local_llm_chain.create_local_llm", side_effect=create_mock_llm)
+    def test_summarize(self, mock_create_llm):
+        # Set LLM provider to local for testing
+        settings.api.llm_provider = "local"
         delete_all_in_directory(data_dir)
 
         # Mock data
         copy_file(src_path=mock_correlated_file, dest_dir=data_dir)
 
-        summarize()
+        summarizer = Summarizer(settings)
+        summarizer.summarize()
 
         # Check that summary.txt was created in data directory
         summary_file_path = self.data_dir / "summary.txt"

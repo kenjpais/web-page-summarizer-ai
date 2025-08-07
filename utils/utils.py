@@ -1,11 +1,12 @@
+from operator import inv
 import re
 import json
+from typing import Callable, Dict, List, Any, Optional
 from urllib.parse import urlparse
-from config.settings import get_settings
+from pathlib import Path
 from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
-settings = get_settings()
 
 ALLOWED_PROTOCOLS = ("http", "https")
 
@@ -46,6 +47,7 @@ def is_valid_url(url):
 
     Ensures URLs use allowed protocols (http/https) and have valid structure.
     This prevents security issues from malformed or malicious URLs.
+    Also accepts local file paths.
 
     Args:
         url: URL string to validate
@@ -53,6 +55,11 @@ def is_valid_url(url):
     Returns:
         Boolean indicating if URL is valid and safe to use
     """
+    # Check if it's a local file
+    if Path(url).is_file():
+        return True
+
+    # Check if it's a valid URL
     try:
         result = urlparse(url)
         return all([result.scheme in ALLOWED_PROTOCOLS, result.netloc])
@@ -60,27 +67,7 @@ def is_valid_url(url):
         return False
 
 
-def get_invalid_keywords():
-    """
-    Load keyword blacklist from configuration file.
-
-    These keywords help filter out irrelevant content during processing.
-    The configuration-based approach allows updating filters without code changes.
-
-    Returns:
-        List of lowercase keywords to exclude from processing
-    """
-    invalid_keywords = []
-    with open(settings.config_files.config_file_path, "r") as f:
-        data = json.load(f)
-        invalid_keywords = data.get("invalid_keywords", [])
-        # Normalize to lowercase for case-insensitive matching
-        invalid_keywords.extend([k.lower() for k in invalid_keywords])
-
-    return invalid_keywords
-
-
-def contains_valid_keywords(fields):
+def contains_valid_keywords(fields, invalid_keywords: List[str]) -> bool:
     """
     Check if content contains any invalid/blacklisted keywords.
 
@@ -94,7 +81,7 @@ def contains_valid_keywords(fields):
     Returns:
         Boolean indicating if content passes keyword validation (True = valid)
     """
-    invalid_keywords = [kw.lower() for kw in get_invalid_keywords()]
+    invalid_keywords = [kw.lower() for kw in invalid_keywords]
     for field in fields:
         if field is None or not isinstance(field, str):
             continue
@@ -105,7 +92,11 @@ def contains_valid_keywords(fields):
     return True
 
 
-def get_urls(src=None):
+def get_urls(
+    urls_file_path: Path,
+    src: Optional[str] = None,
+    get_source_urls_file_path: Optional[Callable] = None,
+) -> List[str]:
     """
     Load URLs for a specific source type from the filtered URL files.
 
@@ -123,15 +114,10 @@ def get_urls(src=None):
     - github_urls.txt (for GitHub URLs)
     - jira_urls.txt (for JIRA URLs)
     """
-    data_dir = settings.directories.data_dir
-    if not data_dir:
-        logger.error(f"[!][ERROR] DATA_DIR not configured")
-        return []
-
-    if src:
-        file_path = data_dir / f"{src}_urls.txt"
+    if src and get_source_urls_file_path:
+        file_path = get_source_urls_file_path(src)
     else:
-        file_path = data_dir / "urls.txt"
+        file_path = urls_file_path
 
     if not file_path.is_file():
         logger.error(f"[!][ERROR] URL file {file_path} not found for source: {src}")

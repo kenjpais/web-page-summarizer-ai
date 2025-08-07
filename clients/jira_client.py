@@ -1,22 +1,20 @@
 import requests
 from typing import Any
 from jira import JIRA, JIRAError
-from config.settings import get_settings
 from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
-settings = get_settings()
 
 
 class JiraClient:
     def __init__(
         self,
-        jira_server: str = None,
+        jira_server: str,
         jira_username: str = None,
         jira_password: str = None,
+        debug_enabled: bool = False,
     ) -> None:
-        # Use provided server or fall back to settings
-        self.server: str = jira_server or settings.api.jira_server
+        self.server = jira_server
         if not self.server:
             raise JIRAError(
                 f"Invalid JIRA_SERVER: {self.server}. Provide jira_server parameter or set JIRA_SERVER environment variable."
@@ -25,6 +23,7 @@ class JiraClient:
         self.base_url = f"{self.server}/rest/api/2"
         self.jira_username = jira_username
         self.jira_password = jira_password
+        self.debug_enabled = debug_enabled
 
         # Create JIRA connection with or without authentication
         jira_options = {"server": self.server}
@@ -38,8 +37,7 @@ class JiraClient:
         except JIRAError as e:
             raise JIRAError(f"Failed to connect to JIRA server {self.server}: {e}")
 
-        debug_enabled = settings.processing.debug
-        if debug_enabled:
+        if self.debug_enabled:
             logger.debug(
                 f"Connected to JIRA Server: {self.jira.server_info()['serverTitle']}"
             )

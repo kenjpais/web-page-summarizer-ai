@@ -6,7 +6,7 @@ Handles token counting and text splitting to stay within API limits.
 import re
 from typing import List
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from config.settings import get_settings
+from config.settings import AppSettings
 
 
 def estimate_token_count(text: str) -> int:
@@ -36,7 +36,9 @@ def estimate_token_count(text: str) -> int:
     return estimated_tokens
 
 
-def chunk_text_for_llm(text: str, prompt_template: str = "") -> List[str]:
+def chunk_text_for_llm(
+    settings: AppSettings, text: str, prompt_template: str = ""
+) -> List[str]:
     """
     Split large text into chunks that fit within LLM token limits.
 
@@ -47,7 +49,6 @@ def chunk_text_for_llm(text: str, prompt_template: str = "") -> List[str]:
     Returns:
         List of text chunks, each small enough to fit within token limits
     """
-    settings = get_settings()
 
     # Estimate tokens in the prompt template (without the {release-notes} placeholder)
     template_tokens = estimate_token_count(
@@ -131,18 +132,19 @@ def combine_chunked_summaries(summaries: List[str]) -> str:
     return combined.strip()
 
 
-def get_chunk_info(text: str, prompt_template: str = "") -> dict:
+def get_chunk_info(settings: AppSettings, text: str, prompt_template: str = "") -> dict:
     """
     Get information about how text would be chunked without actually chunking it.
 
     Args:
+        settings: Application settings
         text: Text to analyze
         prompt_template: Prompt template for context
 
     Returns:
         Dictionary with chunking information
     """
-    chunks = chunk_text_for_llm(text, prompt_template)
+    chunks = chunk_text_for_llm(settings, text, prompt_template)
 
     return {
         "total_tokens": estimate_token_count(text),

@@ -1,9 +1,5 @@
 import argparse
 from typing import Any
-from config.settings import get_settings
-
-settings = get_settings()
-data_dir = settings.directories.data_dir
 
 
 def add_github_cli(parser: argparse.ArgumentParser):

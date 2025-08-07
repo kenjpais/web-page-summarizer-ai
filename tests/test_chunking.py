@@ -12,6 +12,10 @@ from utils.text_chunker import (
 )
 from config.settings import get_settings, get_config_loader
 
+# Clear settings cache to pick up new environment variables
+get_settings.cache_clear()
+settings = get_settings()
+
 
 class TestTextChunking(unittest.TestCase):
     """Test cases for text chunking functionality."""
@@ -93,7 +97,7 @@ The implementation touches several areas:
     def test_small_text_no_chunking(self):
         """Test that small text doesn't get chunked."""
         small_text = "This is a small piece of text that should not need chunking."
-        chunks = chunk_text_for_llm(small_text, self.prompt_template)
+        chunks = chunk_text_for_llm(settings, small_text, self.prompt_template)
 
         self.assertEqual(len(chunks), 1, "Small text should result in single chunk")
         self.assertEqual(
@@ -105,7 +109,7 @@ The implementation touches several areas:
         large_text = self.create_large_test_text(target_tokens=80000)
 
         # Test chunk info
-        chunk_info = get_chunk_info(large_text, self.prompt_template)
+        chunk_info = get_chunk_info(settings, large_text, self.prompt_template)
 
         self.assertGreater(
             chunk_info["total_tokens"], 50000, "Large text should exceed token limit"
@@ -114,7 +118,7 @@ The implementation touches several areas:
         self.assertGreater(chunk_info["num_chunks"], 1, "Should create multiple chunks")
 
         # Test actual chunking
-        chunks = chunk_text_for_llm(large_text, self.prompt_template)
+        chunks = chunk_text_for_llm(settings, large_text, self.prompt_template)
 
         self.assertEqual(
             len(chunks), chunk_info["num_chunks"], "Chunk count should match prediction"
@@ -155,7 +159,7 @@ The implementation touches several areas:
     def test_empty_input_handling(self):
         """Test handling of empty or invalid inputs."""
         # Test empty text
-        chunks = chunk_text_for_llm("", self.prompt_template)
+        chunks = chunk_text_for_llm(settings, "", self.prompt_template)
         self.assertEqual(len(chunks), 1, "Empty text should result in single chunk")
 
         # Test empty summaries list

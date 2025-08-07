@@ -2,15 +2,13 @@ import os
 import json
 import unittest
 
-# Set LLM provider to local BEFORE any imports that would trigger LLM instantiation
-os.environ["LLM_PROVIDER"] = "local"
-os.environ["LLM_MODEL"] = "mistral"
-
-from correlators.correlator import correlate_summarized_features
-from summarizers.summarizer import summarize_feature_gates
+from unittest.mock import patch
+from correlators.correlator import Correlator
+from summarizers.summarizer import Summarizer
 from utils.file_utils import copy_file, delete_all_in_directory
 from config.settings import get_settings
 from utils.logging_config import get_logger, setup_logging
+from tests.mocks.mock_llm import create_mock_llm
 
 setup_logging()
 
@@ -69,9 +67,12 @@ class TestCorrelateTable(unittest.TestCase):
         copy_file(src_path=summarized_features_file, dest_dir=data_dir)
         copy_file(src_path=feature_gate_project_map_file, dest_dir=data_dir)
 
-        def run_pipeline():
-            summarize_feature_gates()
-            correlate_summarized_features()
+        @patch("clients.local_llm_chain.create_local_llm", side_effect=create_mock_llm)
+        def run_pipeline(mock_create_llm):
+            summarizer = Summarizer(settings)
+            summarizer.summarize_feature_gates()
+            correlator = Correlator(settings)
+            correlator.correlate_summarized_features(settings.file_paths)
 
         run_pipeline()
 

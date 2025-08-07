@@ -2,7 +2,10 @@ import pandas as pd
 
 
 def filter_enabled_feature_gates(df: pd.DataFrame) -> list:
-    df = df[0]
+    if isinstance(df, list):
+        df = df[0]
+    elif isinstance(df, pd.Series):
+        df = df.to_frame()
     feature_gates = df.loc[
         (
             df.drop(columns="FeatureGate")

@@ -1,5 +1,5 @@
 """
-Release Page Summarizer - Main Entry Point
+AI Summarizer - Main Entry Point
 
 This application processes OpenShift release pages to extract, correlate, and summarize
 development activity including JIRA issues, GitHub PRs/commits, and feature gate information.
@@ -13,11 +13,17 @@ The pipeline performs the following steps:
 
 
 Examples:
-    # Process a live release page
-    python main.py https://amd64.origin.releases.ci.openshift.org/releasestream/4-stable/release/4.19.0
+    # Scrape a live release page
+    python main.py scrape --url https://amd64.origin.releases.ci.openshift.org/releasestream/4-stable/release/4.19.0
 
-    # Process a local HTML file
-    python main.py /path/to/saved/release_page.html
+    # Scrape a local HTML file
+    python main.py scrape --url /path/to/saved/release_page.html
+
+    # Correlate scraped data
+    python main.py correlate
+
+    # Generate summaries
+    python main.py summarize --url https://example.com
 
 Requirements:
     - GitHub API token (GH_API_TOKEN environment variable)
@@ -29,7 +35,7 @@ including JSON data files, Markdown reports, and final summaries.
 """
 
 from utils.logging_config import setup_logging, get_logger
-from cli.cli import main_cli
+from cli.cli import CLI
 
 
 if __name__ == "__main__":
@@ -37,4 +43,5 @@ if __name__ == "__main__":
     setup_logging()
     logger = get_logger(__name__)
 
-    main_cli()
+    cli = CLI()
+    cli.run()

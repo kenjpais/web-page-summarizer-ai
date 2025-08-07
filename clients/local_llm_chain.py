@@ -2,7 +2,7 @@ from typing import Any, Dict, Optional, Union
 from utils.logging_config import log_prompt
 from langchain_ollama import OllamaLLM
 from langchain_core.runnables import Runnable
-from config.settings import get_settings
+from config.settings import APISettings
 
 
 class LLMClient(Runnable):
@@ -35,22 +35,22 @@ class LLMClient(Runnable):
         return result
 
 
-def _create_local_llm():
+def _create_local_llm(api_settings: APISettings):
     """Create local LLM client with current settings."""
-    settings = get_settings()
-    llm_base_url = settings.api.llm_api_url.replace("/api/generate", "")
-    return LLMClient(OllamaLLM(model=settings.api.llm_model, base_url=llm_base_url))
+    llm_base_url = api_settings.llm_api_url.replace("/api/generate", "")
+    return LLMClient(OllamaLLM(model=api_settings.llm_model, base_url=llm_base_url))
 
 
 class LazyLocalLLM:
     """Lazy wrapper for local LLM that only initializes when first accessed."""
 
-    def __init__(self):
+    def __init__(self, api_settings: APISettings):
         self._client = None
+        self.api_settings = api_settings
 
     def _get_client(self):
         if self._client is None:
-            self._client = _create_local_llm()
+            self._client = _create_local_llm(self.api_settings)
         return self._client
 
     def invoke(self, *args, **kwargs):
@@ -61,5 +61,5 @@ class LazyLocalLLM:
         return getattr(self._get_client(), name)
 
 
-# Create lazy client instance
-local_llm = LazyLocalLLM()
+def create_local_llm(api_settings: APISettings):
+    return LazyLocalLLM(api_settings)

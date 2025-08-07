@@ -5,13 +5,10 @@ from bs4 import BeautifulSoup, Tag
 from utils.parser_utils import parse_tables
 from utils.utils import is_valid_url, contains_valid_keywords
 from utils.parser_utils import parse_html
-from config.settings import get_settings
 from utils.logging_config import get_logger
+from config.settings import AppSettings, ConfigFileSettings, ConfigLoader
 
 logger = get_logger(__name__)
-settings = get_settings()
-data_dir = settings.directories.data_dir
-feature_gate_table_file = data_dir / "feature_gate_table.pkl"
 
 
 class HtmlScraper:
@@ -22,7 +19,7 @@ class HtmlScraper:
     preserves tabular data for downstream correlation analysis.
     """
 
-    def __init__(self, url: str) -> None:
+    def __init__(self, url: str, settings: AppSettings) -> None:
         """
         Initialize scraper with target URL.
 
@@ -30,24 +27,30 @@ class HtmlScraper:
             url: URL of the release page to scrape (can be local file or web URL)
         """
         self.url: str = url
+        self.settings: AppSettings = settings
+        self.file_settings: ConfigFileSettings = settings.config_files
 
-    def scrape(self) -> None:
+    def extract(self) -> None:
         """
         Execute the complete scraping process for the release page.
 
         This orchestrates both URL extraction and table parsing in the
         correct order, ensuring all relevant data is captured from the page.
         """
+        logger.info(f"Scraping {self.url}...")
+        logger.info(f"Parsing HTML...")
         # Parse the HTML content (handles both local files and web URLs)
         html: BeautifulSoup = parse_html(self.url)
 
         # Extract and filter relevant URLs for downstream processing
-        self.scrape_valid_urls(html)
+        self.scrape_valid_urls(html, self.settings.file_paths.urls_file_path)
 
         # Extract structured data from tables (primarily feature gates)
-        self.scrape_table_info(html)
+        self.scrape_table_info(
+            html, self.settings.file_paths.feature_gate_table_file_path
+        )
 
-    def scrape_valid_urls(self, soup: BeautifulSoup) -> None:
+    def scrape_valid_urls(self, soup: BeautifulSoup, urls_file_path: Path) -> None:
         """
         Extract and filter URLs from the HTML content.
 
@@ -66,31 +69,32 @@ class HtmlScraper:
         Output: Creates urls.txt with all validated and filtered URLs
         """
         logger.info("Extracting URLs...")
-        seen: Set[str] = set()  # Track URLs to prevent duplicates
+        seen: Set[str] = set()
 
-        with open(data_dir / "urls.txt", "w") as file:
-            # Process all anchor tags with href attributes
+        config_loader = ConfigLoader(self.settings)
+        invalid_keywords = config_loader.get_filter_file()
+
+        with open(urls_file_path, "w") as file:
             for a_tag in soup.find_all("a", href=True):
                 tag = cast(Tag, a_tag)
 
                 # Extract text content and URL, handling potential None values
                 text, url = tag.get_text(strip=True), str(tag.get("href", "")).strip()
 
-                # Apply comprehensive filtering criteria
                 if (
-                    url  # URL must not be empty
-                    and url not in seen  # Must be unique
-                    and is_valid_url(url)  # Must be valid HTTP/HTTPS URL
-                    and contains_valid_keywords(
-                        [text, url]
-                    )  # Must pass keyword filters
+                    url
+                    and url not in seen
+                    and is_valid_url(url)
+                    and contains_valid_keywords([text, url], invalid_keywords)
                 ):
                     file.write(url + "\n")
                     seen.add(url)
 
-        logger.debug(f"Extracted {len(seen)} unique URLs")
+        logger.debug(f"Extracted {len(seen)} URL(s).")
 
-    def scrape_table_info(self, html: BeautifulSoup) -> None:
+    def scrape_table_info(
+        self, html: BeautifulSoup, feature_gate_table_file_path
+    ) -> None:
         """
         Extract structured data from HTML tables.
 
@@ -103,24 +107,13 @@ class HtmlScraper:
 
         Output: Creates feature_gate_table.pkl with extracted table data
         """
+        logger.info("Extracting table data...")
+
         # Parse all tables found in the HTML
         dataframes: List[pd.DataFrame] = parse_tables(html)
 
         # Store as pickle for efficient loading by correlation components
         # Pickle preserves DataFrame structure and data types
-        pd.to_pickle(dataframes, feature_gate_table_file)
+        pd.to_pickle(dataframes, feature_gate_table_file_path)
 
-
-def scrape_html(url: str) -> None:
-    """
-    Entry point for HTML scraping operations.
-
-    Args:
-        url: URL or file path to scrape
-
-    The function supports both:
-    - Web URLs (http/https) for live scraping
-    - Local file paths for processing saved HTML files
-    """
-    logger.info("Parsing HTML...")
-    HtmlScraper(url).scrape()
+        logger.debug(f"Extracted {len(dataframes)} table(s).")

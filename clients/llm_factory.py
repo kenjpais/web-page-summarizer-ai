@@ -3,10 +3,10 @@ LLM Factory to choose between different LLM providers based on configuration.
 """
 
 from langchain_core.runnables import Runnable
-from config.settings import get_settings
+from config.settings import APISettings
 
 
-def get_llm() -> Runnable:
+def get_llm(api_settings: APISettings) -> Runnable:
     """
     Factory function to get the appropriate LLM client based on configuration.
 
@@ -16,24 +16,23 @@ def get_llm() -> Runnable:
     Raises:
         ValueError: If the LLM provider is not supported or if required environment variables are missing
     """
-    settings = get_settings()
-    provider = settings.api.llm_provider.lower()
+    provider = api_settings.llm_provider.lower()
 
     if provider == "local":
-        from clients.local_llm_chain import local_llm
+        from clients.local_llm_chain import create_local_llm
 
-        return local_llm
+        return create_local_llm(api_settings)
     elif provider == "gemini":
-        if not settings.api.google_api_key:
+        if not api_settings.google_api_key:
             raise ValueError(
                 "GOOGLE_API_KEY environment variable is required when using Gemini provider. "
                 "Get your API key from: https://makersuite.google.com/app/apikey"
             )
 
         try:
-            from clients.gemini_llm_chain import gemini_llm
+            from clients.gemini_llm_chain import create_gemini_llm
 
-            return gemini_llm
+            return create_gemini_llm(api_settings)
         except ImportError as e:
             if "langchain_google_genai" in str(e):
                 raise ValueError(
@@ -49,16 +48,17 @@ def get_llm() -> Runnable:
         )
 
 
-class LazyLLMClient(Runnable):
+class LLMClient(Runnable):
     """Lazy wrapper for LLM client that initializes only when first accessed."""
 
-    def __init__(self):
+    def __init__(self, api_settings: APISettings):
         super().__init__()
         self._client = None
+        self.api_settings = api_settings
 
     def _get_client(self) -> Runnable:
         if self._client is None:
-            self._client = get_llm()
+            self._client = get_llm(self.api_settings)
         return self._client
 
     def invoke(self, *args, **kwargs):
@@ -67,7 +67,3 @@ class LazyLLMClient(Runnable):
     def __getattr__(self, name):
         # Delegate all other attributes to the actual client
         return getattr(self._get_client(), name)
-
-
-# Create lazy client instance
-llm_client = LazyLLMClient()

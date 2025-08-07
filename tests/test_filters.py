@@ -2,7 +2,7 @@ import unittest
 import pandas as pd
 from scrapers.html_scraper import HtmlScraper
 from filters.filter_enabled_feature_gates import filter_enabled_feature_gates
-from filters.filter_urls import filter_urls
+from scrapers.scrapers import Scraper
 from config.settings import get_settings
 from utils.file_utils import delete_all_in_directory, copy_file
 from utils.logging_config import setup_logging
@@ -14,7 +14,7 @@ settings = get_settings()
 data_dir = settings.directories.data_dir
 
 url = "https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-stable/release/4.19.0-okd-scos.0"
-scraper = HtmlScraper(url)
+scraper = HtmlScraper(url, settings)
 
 table_file = data_dir / "feature_gate_table.pkl"
 test_data_dir = settings.directories.test_data_dir
@@ -22,7 +22,15 @@ test_data_dir = settings.directories.test_data_dir
 
 class TestFilters(unittest.TestCase):
     def test_df_filter_enabled_feature_gates(self):
-        scraper.scrape()
+        # Ensure data directory exists
+        settings.directories.data_dir.mkdir(parents=True, exist_ok=True)
+
+        # Copy feature_gate_table.pkl from test mocks
+        mock_table_file = test_data_dir / "feature_gate_table.pkl"
+        if mock_table_file.exists():
+            copy_file(src_path=mock_table_file, dest_dir=data_dir)
+
+        scraper.extract()
         df = pd.read_pickle(table_file)
         if isinstance(df, pd.Series):
             df = df.to_frame()
@@ -46,7 +54,7 @@ class TestFilters(unittest.TestCase):
         self.assertListEqual(expected, result)
 
     def test_filter_urls_basic_functionality(self):
-        """Test that filter_urls correctly filters URLs based on sources_dict"""
+        """Test that filter_urls correctly filters URLs based on source_server_map"""
         urls_file = data_dir / "urls.txt"
         github_urls_file = data_dir / "github_urls.txt"
         jira_urls_file = data_dir / "jira_urls.txt"
@@ -67,8 +75,10 @@ class TestFilters(unittest.TestCase):
             for url in test_urls:
                 f.write(url + "\n")
 
-        # Run the actual filter_urls function
-        filter_urls()
+        # Run the actual filter_urls function (now part of Scraper class)
+        # Pass valid URL to satisfy validation, but we only need the filtering functionality
+        scraper = Scraper({"url": "https://example.com", "filter_on": True}, settings)
+        scraper.filter_urls_by_source()
 
         # Verify output files were created
         self.assertTrue(github_urls_file.exists())
@@ -110,10 +120,11 @@ class TestFilters(unittest.TestCase):
             for url in test_urls:
                 f.write(url + "\n")
 
-        filter_urls()
+        scraper = Scraper({"url": "https://example.com", "filter_on": True}, settings)
+        scraper.filter_urls_by_source()
         # Both GitHub and JIRA files should exist (based on current sources)
-        sources_dict = settings.processing.get_sources_dict()
-        if "GITHUB" in sources_dict:
+        source_server_map = settings.api.source_server_map
+        if "GITHUB" in source_server_map:
             self.assertTrue(github_urls_file.exists())
             with open(github_urls_file, "r") as f:
                 github_urls = f.read().strip().split("\n")
@@ -124,30 +135,30 @@ class TestFilters(unittest.TestCase):
                 self.assertIn(
                     "https://github.com/openshift/repo2/pull/456", github_urls
                 )
-        if "JIRA" in sources_dict:
+        if "JIRA" in source_server_map:
             self.assertTrue(jira_urls_file.exists())
             with open(jira_urls_file, "r") as f:
                 jira_urls = f.read().strip().split("\n")
                 # Should contain JIRA URLs only
                 self.assertIn("https://issues.redhat.com/browse/JIRA-789", jira_urls)
 
-    def test_sources_dict_functionality(self):
-        """Test that get_sources_dict returns the expected mapping"""
-        sources_dict = settings.processing.get_sources_dict()
+    def test_source_server_map_functionality(self):
+        """Test that source_server_map returns the expected mapping"""
+        source_server_map = settings.api.source_server_map
 
         # Verify the function returns a dictionary
-        self.assertIsInstance(sources_dict, dict)
+        self.assertIsInstance(source_server_map, dict)
 
         # Verify expected sources are present (based on current configuration)
-        expected_sources = settings.processing.sources
+        expected_sources = settings.api.sources
         for source in expected_sources:
-            self.assertIn(source, sources_dict)
+            self.assertIn(source, source_server_map)
             # Verify each source maps to a non-empty string
-            self.assertIsInstance(sources_dict[source], str)
-            self.assertGreater(len(sources_dict[source]), 0)
+            self.assertIsInstance(source_server_map[source], str)
+            self.assertGreater(len(source_server_map[source]), 0)
 
         # Verify that the URLs look like actual server URLs
-        for source, url in sources_dict.items():
+        for source, url in source_server_map.items():
             self.assertTrue(
                 url.startswith("http"),
                 f"Source {source} URL {url} should start with http",

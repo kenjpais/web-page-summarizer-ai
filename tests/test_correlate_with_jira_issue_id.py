@@ -4,9 +4,10 @@ import unittest
 
 os.environ["LLM_PROVIDER"] = "local"
 os.environ["LLM_MODEL"] = "mistral"
-from correlators.correlator import correlate_with_jira_issue_id
+from correlators.correlator import Correlator
 from config.settings import get_settings
 from utils.logging_config import get_logger, setup_logging
+from utils.file_utils import copy_file
 
 setup_logging()
 
@@ -22,15 +23,31 @@ class TestCorrelateWithJiraIssueId(unittest.TestCase):
     def setUpClass(cls):
         os.environ["FILTER_ON"] = "False"
 
+        # Ensure data directory exists
+        settings.directories.data_dir.mkdir(parents=True, exist_ok=True)
+
+        # Copy required files from test mocks to data directory
+        required_files = [
+            "jira.json",
+            "github.json",
+            "correlated.json",
+            "non_correlated.json",
+        ]
+        for file in required_files:
+            mock_file = test_data_dir / file
+            if mock_file.exists():
+                copy_file(src_path=mock_file, dest_dir=settings.directories.data_dir)
+
         cls.correlated_file = test_data_dir / "correlated.json"
 
         with open(settings.config_files.required_github_fields_file, "w") as f:
             json.dump(["title", "body"], f)
 
-        correlate_with_jira_issue_id(data_directory=test_data_dir)
+        correlator = Correlator(settings)
+        correlator.correlate_with_jira_issue_id()
 
     def test_correlate_with_jira_issue_id(self):
-        sources = settings.processing.sources
+        sources = settings.api.sources
 
         with open(self.correlated_file) as f:
             result = json.load(f)
