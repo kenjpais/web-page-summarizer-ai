@@ -24,7 +24,7 @@ dummy_correlated_file = data_dir / "correlated.json"
 class TestSummarizer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Clear settings cache to pick up new environment variables
+
         get_settings.cache_clear()
         cls.data_dir = data_dir
         cls.url = "https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-stable/release/4.19.0-okd-scos.0"

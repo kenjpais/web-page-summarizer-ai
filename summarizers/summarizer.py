@@ -37,8 +37,6 @@ class Summarizer:
         # Get the project summary prompt template for chunking
         config_loader = get_config_loader(self.settings)
         prompt_template = config_loader.get_project_summary_template()
-
-        # Check if chunking is needed
         chunk_info = get_chunk_info(self.settings, release_notes, prompt_template)
 
         logger.info(

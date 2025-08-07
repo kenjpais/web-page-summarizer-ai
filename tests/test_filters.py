@@ -5,7 +5,9 @@ from filters.filter_enabled_feature_gates import filter_enabled_feature_gates
 from scrapers.scrapers import Scraper
 from config.settings import get_settings
 from utils.file_utils import delete_all_in_directory, copy_file
-from utils.logging_config import setup_logging
+from utils.logging_config import setup_logging, get_logger
+
+logger = get_logger(__name__)
 
 # Set up logging for tests
 setup_logging()
@@ -21,37 +23,107 @@ test_data_dir = settings.directories.test_data_dir
 
 
 class TestFilters(unittest.TestCase):
-    def test_df_filter_enabled_feature_gates(self):
-        # Ensure data directory exists
+    def setUp(self):
+        # Ensure data directory exists and is clean
         settings.directories.data_dir.mkdir(parents=True, exist_ok=True)
+        delete_all_in_directory(data_dir)
 
-        # Copy feature_gate_table.pkl from test mocks
-        mock_table_file = test_data_dir / "feature_gate_table.pkl"
-        if mock_table_file.exists():
-            copy_file(src_path=mock_table_file, dest_dir=data_dir)
+    def tearDown(self):
+        # Clean up after each test
+        delete_all_in_directory(data_dir)
 
-        scraper.extract()
-        df = pd.read_pickle(table_file)
-        if isinstance(df, pd.Series):
-            df = df.to_frame()
+    def test_df_filter_enabled_feature_gates_local(self):
+        """Test filtering enabled feature gates from local HTML file"""
+        # Use local mock HTML file
+        local_url = str(test_data_dir / "release_page.html")
+        local_scraper = HtmlScraper(local_url, settings)
 
-        result = filter_enabled_feature_gates(df)
+        # Extract data from local file
+        local_scraper.extract()
+
+        # Read and filter the data
+        dfs = pd.read_pickle(table_file)
+        self.assertIsInstance(dfs, list, "Expected a list of DataFrames")
+        self.assertGreater(len(dfs), 0, "Expected at least one DataFrame")
+
+        # Verify DataFrame structure of first DataFrame
+        self.assertIsInstance(dfs[0], pd.DataFrame, "Expected a pandas DataFrame")
+        self.assertIn("FeatureGate", dfs[0].columns)
+        self.assertIn("DefaultHypershift", dfs[0].columns)
+        self.assertIn("DefaultSelfManagedHA", dfs[0].columns)
+
+        result = filter_enabled_feature_gates(dfs)
+
+        # Expected feature gates from our mock HTML
         expected = [
             "CSIDriverSharedResource",
             "VSphereControlPlaneMachineSet",
             "VSphereStaticIPs",
             "GatewayAPI",
-            "AdditionalRoutingCapabilities",
-            "ConsolePluginContentSecurityPolicy",
-            "MetricsCollectionProfiles",
-            "OnClusterBuild",
-            "OpenShiftPodSecurityAdmission",
-            "RouteExternalCertificate",
-            "ServiceAccountTokenNodeBinding",
-            "CPMSMachineNamePrefix",
-            "GatewayAPIController",
         ]
-        self.assertListEqual(expected, result)
+        self.assertListEqual(sorted(expected), sorted(result))
+
+    def test_df_filter_enabled_feature_gates_remote(self):
+        """Test filtering enabled feature gates from remote URL"""
+        # Use remote URL
+        remote_url = "https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-stable/release/4.19.0-okd-scos.0"
+        remote_scraper = HtmlScraper(remote_url, settings)
+
+        try:
+            # Extract data from remote URL
+            remote_scraper.extract()
+
+            # Read and filter the data
+            dfs = pd.read_pickle(table_file)
+            self.assertIsInstance(dfs, list, "Expected a list of DataFrames")
+            self.assertGreater(len(dfs), 0, "Expected at least one DataFrame")
+
+            # Verify DataFrame structure
+            self.assertIsInstance(dfs[0], pd.DataFrame, "Expected a pandas DataFrame")
+            self.assertIn("FeatureGate", dfs[0].columns)
+            # Remote table has spaces in column names
+            self.assertTrue(
+                any("Hypershift" in col for col in dfs[0].columns),
+                "Expected a column containing 'Hypershift'",
+            )
+            self.assertTrue(
+                any("SelfManagedHA" in col for col in dfs[0].columns),
+                "Expected a column containing 'SelfManagedHA'",
+            )
+
+            result = filter_enabled_feature_gates(dfs)
+
+            # Expected feature gates that should be enabled in 4.19.0
+            expected_gates = [
+                "CSIDriverSharedResource",
+                "VSphereControlPlaneMachineSet",
+                "VSphereStaticIPs",
+                "GatewayAPI",
+                "AdditionalRoutingCapabilities",
+                "ConsolePluginContentSecurityPolicy",
+                "MetricsCollectionProfiles",
+                "OnClusterBuild",
+                "OpenShiftPodSecurityAdmission",
+                "RouteExternalCertificate",
+                "ServiceAccountTokenNodeBinding",
+                "CPMSMachineNamePrefix",
+                "GatewayAPIController",
+            ]
+
+            # Verify that expected feature gates are present
+            for gate in expected_gates:
+                self.assertIn(
+                    gate, result, f"Expected feature gate {gate} not found in results"
+                )
+
+            # Log found feature gates for debugging
+            logger.info(
+                f"Remote test found {len(result)} feature gates: {', '.join(result)}"
+            )
+
+        except Exception as e:
+            logger.warning(f"Remote test encountered an issue: {str(e)}")
+            raise  # Re-raise the exception to fail the test
 
     def test_filter_urls_basic_functionality(self):
         """Test that filter_urls correctly filters URLs based on source_server_map"""

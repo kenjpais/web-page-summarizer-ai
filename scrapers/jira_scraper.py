@@ -14,9 +14,8 @@ from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 
-# Feature flags for different processing modes
-FEATURE_FILTER_ON = False  # Feature-specific filtering (currently disabled)
-KEYWORD_MATCHING_ON = False  # Content-based keyword filtering (currently disabled)
+FEATURE_FILTER_ON = False
+KEYWORD_MATCHING_ON = False
 
 
 class JiraScraper:
