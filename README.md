@@ -6,7 +6,7 @@ A Python-based web scraper designed to extract, filter, and summarize data from 
 
 ## Key Features
 
-- **Automated Web Scraping**: Extracts metadata and release information from OpenShift release pages and correlates related release data under matching projects.
+- **Automated Web Scraping**: Extracts metadata and release information from OpenShift release pages, scrapes JIRA and GITHUB links and correlates related information under matching JIRA projects. Configurable filtering to include only feature related information and exclude data related to chores, bugs, tests etc.
 - **Summary Generation**: Creates structured summaries of release data using LLM (Local Mistral or Google Gemini).
 - **Configurable Data Sources**: Supports multiple backends including GitHub (PRs, Commits) and JIRA (summary and description fields of all JIRA Artifacts). Fetches publicly available data only.
 - **Secure Environment Management**: Credentials and configuration managed via `.env`.
@@ -33,6 +33,12 @@ export GH_API_TOKEN=your_github_api_token_here
 # Required only if using Gemini as LLM
 export GOOGLE_API_KEY=your_gemini_token_here
 ```
+
+Get your github API key here:
+https://docs.github.com/en/rest/authentication/authenticating-to-the-rest-api
+
+Get your gemini API key here:
+https://ai.google.dev/gemini-api/docs/api-key
 
 2. Install dependencies and set up the environment:
 ```bash
