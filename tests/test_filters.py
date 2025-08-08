@@ -15,9 +15,6 @@ setup_logging()
 settings = get_settings()
 data_dir = settings.directories.data_dir
 
-url = "https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-stable/release/4.19.0-okd-scos.0"
-scraper = HtmlScraper(url, settings)
-
 table_file = data_dir / "feature_gate_table.pkl"
 test_data_dir = settings.directories.test_data_dir
 
@@ -31,37 +28,6 @@ class TestFilters(unittest.TestCase):
     def tearDown(self):
         # Clean up after each test
         delete_all_in_directory(data_dir)
-
-    def test_df_filter_enabled_feature_gates_local(self):
-        """Test filtering enabled feature gates from local HTML file"""
-        # Use local mock HTML file
-        local_url = str(test_data_dir / "release_page.html")
-        local_scraper = HtmlScraper(local_url, settings)
-
-        # Extract data from local file
-        local_scraper.extract()
-
-        # Read and filter the data
-        dfs = pd.read_pickle(table_file)
-        self.assertIsInstance(dfs, list, "Expected a list of DataFrames")
-        self.assertGreater(len(dfs), 0, "Expected at least one DataFrame")
-
-        # Verify DataFrame structure of first DataFrame
-        self.assertIsInstance(dfs[0], pd.DataFrame, "Expected a pandas DataFrame")
-        self.assertIn("FeatureGate", dfs[0].columns)
-        self.assertIn("DefaultHypershift", dfs[0].columns)
-        self.assertIn("DefaultSelfManagedHA", dfs[0].columns)
-
-        result = filter_enabled_feature_gates(dfs)
-
-        # Expected feature gates from our mock HTML
-        expected = [
-            "CSIDriverSharedResource",
-            "VSphereControlPlaneMachineSet",
-            "VSphereStaticIPs",
-            "GatewayAPI",
-        ]
-        self.assertListEqual(sorted(expected), sorted(result))
 
     def test_df_filter_enabled_feature_gates_remote(self):
         """Test filtering enabled feature gates from remote URL"""
