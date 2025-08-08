@@ -1,4 +1,5 @@
 import re
+import json
 import requests
 import markdown
 import pandas as pd
@@ -156,3 +157,34 @@ def convert_json_to_markdown(data: dict) -> str:
         lines.append("\n---\n")  # Feature gate separator
 
     return "\n".join(lines)
+
+
+def convert_json_text_to_dict(text: str) -> dict:
+    """
+    Extracts JSON from a string and converts it into a Python dictionary.
+
+    Args:
+        text (str): A string that includes JSON content enclosed in triple backticks.
+
+    Returns:
+        dict: Parsed dictionary from the JSON content.
+
+    Raises:
+        ValueError: If the input text is empty or cannot be parsed as JSON.
+    """
+    if not text or not text.strip():
+        raise ValueError("Input text is empty or contains only whitespace")
+
+    # Remove code block markers (```json and ```)
+    cleaned_text = text.strip().removeprefix("```json").removesuffix("```").strip()
+
+    if not cleaned_text:
+        raise ValueError("No content found after removing code block markers")
+
+    try:
+        # Parse JSON into dictionary
+        return json.loads(cleaned_text)
+    except json.JSONDecodeError as e:
+        raise ValueError(
+            f"Failed to parse JSON: {e}. Input text: '{cleaned_text[:100]}...'"
+        ) from e

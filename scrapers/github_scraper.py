@@ -1,18 +1,13 @@
 import re
 import json
-from pathlib import Path
 from typing import List, Dict, Any, Optional
 from clients.github_client import GithubGraphQLClient
 from models.github_model import GithubModel
 from scrapers.exceptions import raise_scraper_exception
-from config.settings import get_settings
+from config.settings import AppSettings, get_config_loader
 from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
-settings = get_settings()
-
-data_dir = Path(settings.directories.data_dir)
-BATCH_SCRAPE_SIZE = settings.processing.github_batch_size
 
 
 class GithubScraper:
@@ -37,7 +32,16 @@ class GithubScraper:
         r"https://github\.com/([^/]+)/([^/]+)/commit/([a-fA-F0-9]+)"
     )
 
-    def __init__(self, batch_size: int = BATCH_SCRAPE_SIZE) -> None:
+    def __init__(
+        self,
+        settings: AppSettings,
+        urls: List[str] = [],
+        batch_size: int = 300,
+        github_server: str = None,
+        github_username: str = None,
+        github_password: str = None,
+        github_token: str = None,
+    ) -> None:
         """
         Initialize GitHub scraper with GraphQL client and batching configuration.
 
@@ -45,8 +49,32 @@ class GithubScraper:
             batch_size: Number of items to include in each GraphQL batch request.
                        Larger batches are more efficient but may hit query complexity limits.
         """
-        self.client: GithubGraphQLClient = GithubGraphQLClient()
-        self.batch_size: int = batch_size
+
+        self.settings = settings
+        self.urls = urls or []
+        self.batch_size = batch_size or self.settings.api.github_batch_size
+        self.github_server = github_server
+        self.github_username = github_username
+        self.github_password = github_password
+        self.github_token = github_token
+        self.config_loader = get_config_loader()
+
+        self.client: GithubGraphQLClient = GithubGraphQLClient(
+            github_graphql_api_url=self.settings.api.github_graphql_api_url,
+            github_server=self.github_server or self.settings.api.github_server,
+            github_token=self.github_token or self.settings.api.github_token,
+            github_username=self.github_username or "",
+            github_password=self.github_password or "",
+            github_timeout=self.settings.api.github_timeout,
+        )
+
+    def get_config(self) -> dict[str, Any]:
+        """
+        Get the configuration for the GitHub scraper.
+        """
+        return {
+            "github_server": self.client.get_config(),
+        }
 
     def parse_github_url(self, url: str) -> Optional[Dict[str, str]]:
         """
@@ -74,7 +102,7 @@ class GithubScraper:
             return {"type": "commit", "owner": owner, "repo": repo, "id": sha}
         return None
 
-    def extract(self, urls: List[str]) -> None:
+    def extract(self) -> None:
         """
         Extract GitHub data from multiple URLs using batched GraphQL queries.
 
@@ -96,6 +124,10 @@ class GithubScraper:
             ScraperException: If no valid URLs found or API errors occur
         """
         results = []
+
+        urls = self.urls
+        if not urls:
+            raise_scraper_exception(f"""[!][ERROR] No GITHUB URLs provided.""")
 
         # Parse and validate all URLs first
         parsed_items = [
@@ -158,18 +190,5 @@ class GithubScraper:
                         ).to_dict()
                     )
 
-        write_json_file(results)
-
-
-def write_json_file(results: List[Dict[str, Any]]) -> None:
-    """
-    Write GitHub extraction results to JSON file.
-
-    Creates a structured JSON file that can be consumed by the correlation
-    and summarization steps in the pipeline.
-
-    Args:
-        results: List of dictionaries containing GitHub data
-    """
-    with open(data_dir / "github.json", "w") as f:
-        json.dump(results, f, indent=2)
+        with open(self.settings.file_paths.github_json_file_path, "w") as f:
+            json.dump(results, f, indent=2)

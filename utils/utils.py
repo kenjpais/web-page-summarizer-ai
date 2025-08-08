@@ -1,11 +1,12 @@
+from operator import inv
 import re
 import json
+from typing import Callable, Dict, List, Any, Optional
 from urllib.parse import urlparse
-from config.settings import get_settings
+from pathlib import Path
 from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
-settings = get_settings()
 
 ALLOWED_PROTOCOLS = ("http", "https")
 
@@ -46,6 +47,7 @@ def is_valid_url(url):
 
     Ensures URLs use allowed protocols (http/https) and have valid structure.
     This prevents security issues from malformed or malicious URLs.
+    Also accepts local file paths.
 
     Args:
         url: URL string to validate
@@ -53,6 +55,11 @@ def is_valid_url(url):
     Returns:
         Boolean indicating if URL is valid and safe to use
     """
+    # Check if it's a local file
+    if Path(url).is_file():
+        return True
+
+    # Check if it's a valid URL
     try:
         result = urlparse(url)
         return all([result.scheme in ALLOWED_PROTOCOLS, result.netloc])
@@ -60,27 +67,7 @@ def is_valid_url(url):
         return False
 
 
-def get_invalid_keywords():
-    """
-    Load keyword blacklist from configuration file.
-
-    These keywords help filter out irrelevant content during processing.
-    The configuration-based approach allows updating filters without code changes.
-
-    Returns:
-        List of lowercase keywords to exclude from processing
-    """
-    invalid_keywords = []
-    with open(settings.config_files.config_file_path, "r") as f:
-        data = json.load(f)
-        invalid_keywords = data.get("invalid_keywords", [])
-        # Normalize to lowercase for case-insensitive matching
-        invalid_keywords.extend([k.lower() for k in invalid_keywords])
-
-    return invalid_keywords
-
-
-def contains_valid_keywords(fields):
+def contains_valid_keywords(fields, invalid_keywords: List[str]) -> bool:
     """
     Check if content contains any invalid/blacklisted keywords.
 
@@ -94,7 +81,7 @@ def contains_valid_keywords(fields):
     Returns:
         Boolean indicating if content passes keyword validation (True = valid)
     """
-    invalid_keywords = [kw.lower() for kw in get_invalid_keywords()]
+    invalid_keywords = [kw.lower() for kw in invalid_keywords]
     for field in fields:
         if field is None or not isinstance(field, str):
             continue
@@ -105,7 +92,11 @@ def contains_valid_keywords(fields):
     return True
 
 
-def get_urls(src):
+def get_urls(
+    urls_file_path: Path,
+    src: Optional[str] = None,
+    get_source_urls_file_path: Optional[Callable] = None,
+) -> List[str]:
     """
     Load URLs for a specific source type from the filtered URL files.
 
@@ -123,12 +114,11 @@ def get_urls(src):
     - github_urls.txt (for GitHub URLs)
     - jira_urls.txt (for JIRA URLs)
     """
-    data_dir = settings.directories.data_dir
-    if not data_dir:
-        logger.error(f"[!][ERROR] DATA_DIR not configured")
-        return []
+    if src and get_source_urls_file_path:
+        file_path = get_source_urls_file_path(src)
+    else:
+        file_path = urls_file_path
 
-    file_path = data_dir / f"{src}_urls.txt"
     if not file_path.is_file():
         logger.error(f"[!][ERROR] URL file {file_path} not found for source: {src}")
         return []
@@ -140,6 +130,12 @@ def get_urls(src):
     except IOError as e:
         logger.error(f"[!][ERROR] Failed to read URL file: {e}")
         return []
+
+
+def add_urls_to_file(urls: list[str], file_path: str, mode: str = "a"):
+    with open(file_path, mode) as f:
+        for url in urls:
+            f.write(url + "\n")
 
 
 def json_to_markdown(data, heading_level=1):
@@ -191,3 +187,41 @@ def remove_urls(text):
     # Regex pattern to match URLs (http, https, www)
     url_pattern = r"(https?://\S+|www\.\S+)"
     return re.sub(url_pattern, "", text)
+
+
+def strings_to_list(s: str) -> list:
+    # Convert single issue_ids string to list (split by comma if multiple)
+    return [item.strip() for item in s.split(",")]
+
+
+def validate_cs_input_str(input_str: str, field_name: str) -> list[str]:
+    """Validate and parse comma-separated input string.
+
+    Args:
+        input_str: Comma-separated string to parse
+        field_name: Name of field for error messages
+
+    Returns:
+        List of parsed and validated strings
+
+    Raises:
+        ValueError: If input contains invalid characters
+    """
+    if not input_str or not input_str.strip():
+        return []
+
+    items = strings_to_list(input_str)
+    validated_items = []
+
+    for item in items:
+        item = item.strip()
+        if not item:
+            continue
+        # Basic validation - no control characters
+        if any(ord(c) < 32 for c in item if c not in "\t\n\r"):
+            raise ValueError(
+                f"Invalid {field_name} contains control characters: {item}"
+            )
+        validated_items.append(item)
+
+    return validated_items

@@ -1,7 +1,7 @@
 import requests
 from typing import List, Dict, Any
-from config.settings import get_settings
 from utils.logging_config import get_logger
+from utils.http_session import get_http_session
 
 logger = get_logger(__name__)
 
@@ -30,33 +30,64 @@ class GithubGraphQLClient:
     ```
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        github_graphql_api_url: str,
+        github_server: str,
+        github_token: str,
+        github_username: str = None,
+        github_password: str = None,
+        github_timeout: int = 30,
+    ) -> None:
         """
         Initialize GitHub client with API configuration and authentication.
 
         Validates that required environment variables are set and configures
-        the client for API access.
+        the client for API access with connection pooling.
 
         Raises:
             ValueError: If required environment variables are missing
         """
-        settings = get_settings()
-        self.api_url: str = settings.api.github_api_url
+        self.github_graphql_api_url = github_graphql_api_url
+        self.github_server = github_server
+        self.github_token = github_token
+        self.github_username = github_username
+        self.github_password = github_password
+        self.github_timeout = github_timeout
+        if not self.github_graphql_api_url:
+            raise ValueError("GITHUB GRAPHQL API URL not set")
 
-        if not self.api_url:
-            raise ValueError("GITHUB_API_URL environment variable not set")
+        self.github_token = github_token
+        if not self.github_token:
+            raise ValueError("GITHUB API TOKEN not set")
 
-        self.token: str = settings.api.github_token
-        if not self.token:
-            raise ValueError("GH_API_TOKEN environment variable not set")
+        # Initialize HTTP session with connection pooling
+        self.session = get_http_session(
+            base_url=self.github_graphql_api_url,
+            pool_connections=5,
+            pool_maxsize=15,
+            max_retries=3,
+            timeout=self.github_timeout,
+        )
+
+    def get_config(self) -> dict[str, Any]:
+        """
+        Get the configuration for the GitHub client.
+        """
+        return {
+            "github_api_url": self.github_graphql_api_url,
+            "github_username": self.github_username,
+            "github_password": self.github_password,
+            "github_token": self.github_token,
+        }
 
     def test_token_validity(self) -> Dict[str, Any]:
         """
-        Test if the GitHub API token loaded from pydantic settings is valid.
+        Test if the GitHub API token loaded is valid.
 
         This method performs a simple authenticated GraphQL query to fetch the
         current user's information, which validates that:
-        1. The token is correctly loaded from pydantic settings
+        1. The token is correctly loaded from settings
         2. The token has valid authentication with GitHub
         3. The API endpoint is accessible
 
@@ -243,14 +274,23 @@ class GithubGraphQLClient:
         - GraphQL errors (invalid queries, permission issues)
         - Rate limiting and API quota issues
         """
-        # Set up authentication headers for GitHub API access
-        headers = {"Authorization": f"Bearer {self.token}"}
-
         try:
-            # Execute the GraphQL query via HTTP POST
-            response: requests.Response = requests.post(
-                self.api_url, json={"query": query}, headers=headers
+
+            # Set up authentication headers for GitHub API access
+            headers = {
+                "Authorization": f"Bearer {self.github_token}",
+                "User-Agent": "release-page-summarizer/1.0",
+                "Accept": "application/vnd.github.v4+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+            }
+
+            # Execute the GraphQL query via HTTP POST using connection pool
+            response: requests.Response = self.session.post(
+                self.github_graphql_api_url,
+                json={"query": query},
+                headers=headers,
             )
+
             # Raise exception for HTTP error status codes
             response.raise_for_status()
 
@@ -263,42 +303,12 @@ class GithubGraphQLClient:
                 logger.error(error_msg)
                 raise ValueError(error_msg)
 
+            # Log successful API call for monitoring
+            logger.debug(f"GitHub API call successful: {len(query)} chars query")
+
             return data
 
         except requests.RequestException as e:
             error_msg = f"[!][ERROR] Request failed: {e}"
             logger.error(error_msg)
             raise requests.RequestException(error_msg)
-
-
-def test_github_token() -> Dict[str, Any]:
-    """
-    Standalone utility function to test GitHub API token validity.
-
-    This is a convenience function that creates a GithubGraphQLClient instance
-    and tests the token validity using the pydantic settings system.
-
-    Returns:
-        Dictionary containing test results with the same structure as
-        GithubGraphQLClient.test_token_validity()
-
-    Example usage:
-        ```python
-        from clients.github_client import test_github_token
-
-        result = test_github_token()
-        if result['is_valid']:
-            print(f"Token is valid for user: {result['user_login']}")
-        else:
-            print(f"Token validation failed: {result['error']}")
-        ```
-    """
-    try:
-        client = GithubGraphQLClient()
-        return client.test_token_validity()
-    except Exception as e:
-        return {
-            "is_valid": False,
-            "message": "Failed to initialize GitHub client",
-            "error": str(e),
-        }

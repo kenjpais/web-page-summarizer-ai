@@ -1,9 +1,11 @@
 import os
 import json
 import unittest
-from correlators.correlator import (
-    correlate_table,
-)
+
+os.environ["LLM_PROVIDER"] = "local"
+os.environ["LLM_MODEL"] = "mistral"
+
+from correlators.correlator import Correlator
 from utils.file_utils import copy_file, delete_all_in_directory
 from config.settings import get_settings
 from utils.logging_config import get_logger, setup_logging
@@ -12,6 +14,8 @@ setup_logging()
 
 logger = get_logger(__name__)
 
+# Clear settings cache to pick up new environment variables
+get_settings.cache_clear()
 settings = get_settings()
 
 data_dir = settings.directories.data_dir
@@ -57,7 +61,9 @@ class TestCorrelateTable(unittest.TestCase):
         copy_file(src_path=table_file, dest_dir=data_dir)
         copy_file(src_path=github_file, dest_dir=data_dir)
 
-        correlate_table()
+        # Use Correlator class method instead of standalone function
+        correlator = Correlator(settings)
+        correlator.correlate_table()
 
         with open(cls.correlated_table_file, "r") as f:
             cls.correlated_table = json.load(f)

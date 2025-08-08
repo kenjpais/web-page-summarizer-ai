@@ -2,27 +2,22 @@ import re
 import json
 import unittest
 from urllib.parse import urlparse
-from pathlib import Path
-from scrapers.html_scraper import scrape_html
-from filters.filter_urls import filter_urls
+from scrapers.scrapers import Scraper
 from scrapers.github_scraper import GithubScraper
 from scrapers.exceptions import ScraperException
 from utils.utils import get_urls
 from config.settings import get_settings
+from utils.file_utils import copy_file, delete_all_in_directory
 from utils.logging_config import setup_logging
 
 setup_logging()
 settings = get_settings()
 data_dir = settings.directories.data_dir
+test_data_dir = settings.directories.test_data_dir
 github_file_path = data_dir / "github.json"
 
 
 class TestGithubScraper(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        cls.gf = GithubScraper()
-
     def test_parse_github_url_pr(self):
         url = "https://github.com/octocat/Hello-World/pull/1347"
         expected = {
@@ -31,7 +26,8 @@ class TestGithubScraper(unittest.TestCase):
             "repo": "Hello-World",
             "id": "1347",
         }
-        self.assertEqual(self.gf.parse_github_url(url), expected)
+        gf = GithubScraper(settings)
+        self.assertEqual(gf.parse_github_url(url), expected)
 
     def test_parse_github_url_commit(self):
         url = "https://github.com/octocat/Hello-World/commit/7fd1a60b01f91b314f59951d5e0c6b2b2fefaa99"
@@ -41,7 +37,8 @@ class TestGithubScraper(unittest.TestCase):
             "repo": "Hello-World",
             "id": "7fd1a60b01f91b314f59951d5e0c6b2b2fefaa99",
         }
-        self.assertEqual(self.gf.parse_github_url(url), expected)
+        gf = GithubScraper(settings)
+        self.assertEqual(gf.parse_github_url(url), expected)
 
     def test_parse_github_url_invalid(self):
         invalid_urls = [
@@ -49,12 +46,14 @@ class TestGithubScraper(unittest.TestCase):
             "https://github.com/octocat/Hello-World/issues/1347",
             "https://github.com/octocat/Hello-World/blame/main/file.txt",
         ]
+        gf = GithubScraper(settings)
         for url in invalid_urls:
-            self.assertIsNone(self.gf.parse_github_url(url), msg=f"Failed on: {url}")
+            self.assertIsNone(gf.parse_github_url(url), msg=f"Failed on: {url}")
 
     def test_extract_relevant_info_from_urls_valid(self):
         urls = ["https://github.com/octocat/Hello-World/pull/1"]
-        self.gf.extract(urls)
+        gf = GithubScraper(settings, urls=urls)
+        gf.extract()
         result = load_github_file()
         self.assertGreater(len(result), 0)
         self.assertIn("id", result[0])
@@ -65,7 +64,8 @@ class TestGithubScraper(unittest.TestCase):
             "https://github.com/octocat/Hello-World/tree/main",
         ]
         with self.assertRaises(ScraperException) as cm:
-            self.gf.extract(urls)
+            gf = GithubScraper(settings, urls=urls)
+            gf.extract()
             self.assertIn("Unsupported or invalid GitHub URL", str(cm.exception))
 
     def test_multiple_valid_urls(self):
@@ -73,7 +73,8 @@ class TestGithubScraper(unittest.TestCase):
             "https://github.com/openshift/vmware-vsphere-csi-driver-operator/pull/276",
             "https://github.com/openshift/cloud-provider-kubevirt/commit/3f4542ecd17fb0e47da4c6d9bceb076b98fb314b",
         ]
-        self.gf.extract(urls)
+        gf = GithubScraper(settings, urls=urls)
+        gf.extract()
 
         result = load_github_file()
 
@@ -85,17 +86,22 @@ class TestGithubScraper(unittest.TestCase):
         url = "https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-stable/release/4.19.0-okd-scos.0"
 
         # Run the pipeline
-        scrape_html(url)
-        filter_urls()
+        delete_all_in_directory(data_dir)
+        copy_file(src_path=test_data_dir / "urls.txt", dest_dir=data_dir)
+
+        # Create scraper instance to access filter functionality
+        scraper = Scraper({"url": "https://example.com", "filter_on": True}, settings)
+        scraper.filter_urls_by_source()
 
         src = "github"
-        urls = get_urls(src)
+        urls = get_urls(settings.file_paths.get_urls_file_path(src))
         if not urls:
             self.fail(f"[!] No URLs found for {src}.")
 
         expected_ids = sorted(id for url in urls if (id := extract_github_id(url)))
 
-        self.gf.extract(urls)
+        gf = GithubScraper(settings, urls=urls)
+        gf.extract()
 
         result = load_github_file()
 

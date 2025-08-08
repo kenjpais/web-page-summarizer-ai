@@ -23,13 +23,14 @@ class APISettings(BaseSettings):
     """External API configuration settings."""
 
     # GitHub API
-    github_api_url: str = Field(
+    github_graphql_api_url: str = Field(
         default="https://api.github.com/graphql", alias="GITHUB_GRAPHQL_API_URL"
     )
     github_server: str = Field(default="https://github.com", alias="GITHUB_SERVER")
     github_token: str = Field(..., alias="GH_API_TOKEN")
     github_timeout: int = Field(default=30, alias="GITHUB_TIMEOUT")
     github_rate_limit: int = Field(default=100, alias="GITHUB_RATE_LIMIT")
+    github_batch_size: int = Field(default=300, alias="GITHUB_BATCH_SIZE")
 
     # JIRA API
     jira_server: str = Field(alias="JIRA_SERVER")
@@ -37,14 +38,76 @@ class APISettings(BaseSettings):
     jira_batch_size: int = Field(default=500, alias="JIRA_BATCH_SIZE")
     # jira_max_results: int = Field(default=200, alias="JIRA_MAX_RESULTS")
 
-    # LLM API
+    # LLM Configuration
+    llm_provider: str = Field(
+        default="local", alias="LLM_PROVIDER"
+    )  # "local" or "gemini"
+
+    # Local LLM API (Ollama)
     llm_api_url: str = Field(
         default="http://localhost:11434/api/generate", alias="LLM_API_URL"
     )
     llm_model: str = Field(default="mistral", alias="LLM_MODEL")
     # llm_timeout: int = Field(default=120, alias="LLM_TIMEOUT")
 
-    @field_validator("github_api_url", "jira_server", "llm_api_url")
+    # Google Gemini API
+    google_api_key: str = Field(default="", alias="GOOGLE_API_KEY")
+    gemini_model: str = Field(default="gemini-1.5-flash", alias="GEMINI_MODEL")
+
+    # LLM Input Limits
+    max_input_tokens: int = Field(
+        default=50000, alias="MAX_INPUT_TOKENS"
+    )  # Conservative limit for chunking
+    chunk_overlap: int = Field(
+        default=1000, alias="CHUNK_OVERLAP"
+    )  # Overlap between chunks
+    chunk_size: int = Field(
+        default=40000, alias="CHUNK_SIZE"
+    )  # Target chunk size in tokens
+
+    # Data Sources Configuration
+    sources: List[str] = Field(default=["JIRA", "GITHUB"], alias="SOURCES")
+
+    @field_validator("sources", mode="before")
+    @classmethod
+    def parse_sources(cls, v: Any) -> List[str]:
+        """Parse sources from JSON string or list."""
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                raise ValueError(f"Invalid JSON format for SOURCES: {v}")
+        return v
+
+    @field_validator("sources")
+    @classmethod
+    def validate_sources(cls, v: List[str]) -> List[str]:
+        """Validate that sources are supported."""
+        supported_sources = {"JIRA", "GITHUB"}
+        invalid_sources = set(v) - supported_sources
+        if invalid_sources:
+            raise ValueError(f"Unsupported sources: {invalid_sources}")
+        return v
+
+    @property
+    def source_server_map(self) -> Dict[str, str]:
+        """Get a dictionary mapping source names to their server URLs."""
+        result = {}
+        for src in self.sources:
+            src_lower = src.lower()
+            server_attr = f"{src_lower}_server"
+            if hasattr(self, server_attr):
+                server_url = getattr(self, server_attr)
+                result[src] = server_url
+            else:
+                import logging
+
+                logging.warning(
+                    f"No server URL found for source '{src}' (looking for '{server_attr}')"
+                )
+        return result
+
+    @field_validator("github_graphql_api_url", "jira_server", "llm_api_url")
     @classmethod
     def validate_urls(cls, v: str) -> str:
         """Validate that URLs are properly formatted."""
@@ -113,13 +176,10 @@ class DirectorySettings(BaseSettings):
 class ProcessingSettings(BaseSettings):
     """Data processing configuration."""
 
-    sources: List[str] = Field(default=["JIRA", "GITHUB"], alias="SOURCES")
     summarize_enabled: bool = Field(default=True, alias="SUMMARIZE_ENABLED")
     filter_on: bool = Field(default=True, alias="FILTER_ON")
     debug: bool = Field(default=False, alias="DEBUG")
 
-    # Batch processing settings
-    github_batch_size: int = Field(default=300, alias="GITHUB_BATCH_SIZE")
     parallel_processing: bool = Field(default=False, alias="PARALLEL_PROCESSING")
     max_workers: int = Field(default=4, alias="MAX_WORKERS")
 
@@ -128,74 +188,9 @@ class ProcessingSettings(BaseSettings):
         default=["http", "https"], alias="ALLOWED_PROTOCOLS"
     )
 
-    @field_validator("sources", mode="before")
-    @classmethod
-    def parse_sources(cls, v: Any) -> List[str]:
-        """Parse sources from JSON string or list."""
-        if isinstance(v, str):
-            try:
-                return json.loads(v)
-            except json.JSONDecodeError:
-                raise ValueError(f"Invalid JSON format for SOURCES: {v}")
-        return v
-
-    @field_validator("sources")
-    @classmethod
-    def validate_sources(cls, v: List[str]) -> List[str]:
-        """Validate that sources are supported."""
-        supported_sources = {"JIRA", "GITHUB"}
-        invalid_sources = set(v) - supported_sources
-        if invalid_sources:
-            raise ValueError(f"Unsupported sources: {invalid_sources}")
-        return v
-
-    def get_sources_dict(self) -> Dict[str, str]:
-        """
-        Get a dictionary mapping source names to their server URLs.
-
-        Returns:
-            Dictionary with source names as keys and server URLs as values
-        """
-        # We need to access the parent AppSettings to get the API settings
-        from config.settings import get_settings
-
-        settings = get_settings()
-        result = {}
-
-        for src in self.sources:
-            # Convert source name to lowercase for attribute lookup
-            src_lower = src.lower()
-            server_attr = f"{src_lower}_server"
-
-            # Try to get the server URL from the API settings
-            if hasattr(settings.api, server_attr):
-                server_url = getattr(settings.api, server_attr)
-                result[src] = server_url
-            else:
-                # Log warning if server not found
-                import logging
-
-                logging.warning(
-                    f"No server URL found for source '{src}' (looking for '{server_attr}')"
-                )
-
-        return result
-
 
 class SecuritySettings(BaseSettings):
     """Security-related configuration."""
-
-    # Request timeouts
-    default_timeout: int = Field(default=30, alias="DEFAULT_TIMEOUT")
-    max_timeout: int = Field(default=300, alias="MAX_TIMEOUT")
-
-    # Rate limiting
-    enable_rate_limiting: bool = Field(default=True, alias="ENABLE_RATE_LIMITING")
-    requests_per_minute: int = Field(default=60, alias="REQUESTS_PER_MINUTE")
-
-    # Input validation
-    max_url_length: int = Field(default=2048, alias="MAX_URL_LENGTH")
-    max_file_size_mb: int = Field(default=100, alias="MAX_FILE_SIZE_MB")
 
     # Allowed domains for external requests
     allowed_domains: List[str] = Field(
@@ -219,11 +214,10 @@ class SecuritySettings(BaseSettings):
 class ConfigFileSettings(BaseSettings):
     """Configuration for loading JSON/text config files."""
 
-    config_file_path: Path = Field(
-        default=Path("config/filter.json"), alias="CONFIG_FILE_PATH"
-    )
-
     # File paths
+    filter_file: str = "filter.json"
+
+    # JSON files
     jira_filter_file: str = "jira_filter.json"
     jira_filter_out_file: str = "jira_filter_out.json"
     github_filter_file: str = "github_filter.json"
@@ -238,6 +232,168 @@ class ConfigFileSettings(BaseSettings):
     summarize_enabled_feature_gate_prompt_template: str = (
         "summarize_enabled_feature_gate_prompt_template.txt"
     )
+    summarize_single_feature_gate_prompt_template: str = (
+        "summarize_single_feature_gate_prompt_template.txt"
+    )
+
+
+class FilePathSettings:
+    """Computed file paths that combine directory + filename settings."""
+
+    def __init__(
+        self, data_dir: Path, config_dir: Path, config_files: ConfigFileSettings
+    ):
+        self._data_dir = data_dir
+        self._config_dir = config_dir
+        self._config_files = config_files
+
+    @property
+    def data_dir(self) -> Path:
+        """Get full path to data directory."""
+        return self._data_dir
+
+    # Data directory file paths
+    @property
+    def urls_file_path(self) -> Path:
+        """Get full path to urls.txt file."""
+        return self._data_dir / "urls.txt"
+
+    @property
+    def feature_gate_table_file_path(self) -> Path:
+        """Get full path to feature gate table file."""
+        return self._data_dir / "feature_gate_table.pkl"
+
+    @property
+    def jira_json_file_path(self) -> Path:
+        """Get full path to jira.json file."""
+        return self._data_dir / "jira.json"
+
+    @property
+    def jira_md_file_path(self) -> Path:
+        """Get full path to jira.md file."""
+        return self._data_dir / "jira.md"
+
+    @property
+    def github_json_file_path(self) -> Path:
+        """Get full path to github.json file."""
+        return self._data_dir / "github.json"
+
+    @property
+    def unauthorized_jira_keys_file_path(self) -> Path:
+        """Get full path to unauthorized_jira_keys.json file."""
+        return self._data_dir / "unauthorized_jira_keys.json"
+
+    @property
+    def correlated_file_path(self) -> Path:
+        """Get full path to correlated.json file."""
+        return self._data_dir / "correlated.json"
+
+    @property
+    def non_correlated_file_path(self) -> Path:
+        """Get full path to non_correlated.json file."""
+        return self._data_dir / "non_correlated.json"
+
+    @property
+    def feature_gate_project_map_file_path(self) -> Path:
+        """Get full path to feature_gate_project_map.pkl file."""
+        return self._data_dir / "feature_gate_project_map.pkl"
+
+    @property
+    def correlated_feature_gate_table_file_path(self) -> Path:
+        """Get full path to correlated_feature_gate_table.json file."""
+        return self._data_dir / "correlated_feature_gate_table.json"
+
+    @property
+    def issue_result_cache_file_path(self) -> Path:
+        """Get full path to issue_result_cache.pkl file."""
+        return self._data_dir / "issue_result_cache.pkl"
+
+    @property
+    def project_result_cache_file_path(self) -> Path:
+        """Get full path to project_result_cache.pkl file."""
+        return self._data_dir / "project_result_cache.pkl"
+
+    @property
+    def summarized_features_file_path(self) -> Path:
+        """Get full path to summarized_features.json file."""
+        return self._data_dir / "summarized_features.json"
+
+    @property
+    def release_notes_payload_file_path(self) -> Path:
+        """Get full path to release_notes_payload.txt file."""
+        return self._data_dir / "release_notes_payload.txt"
+
+    @property
+    def summary_file_path(self) -> Path:
+        """Get full path to summary.txt file."""
+        return self._data_dir / "summary.txt"
+
+    # Config directory file paths
+    @property
+    def jira_filter_file_path(self) -> Path:
+        """Get full path to JIRA filter file."""
+        return self._config_dir / self._config_files.jira_filter_file
+
+    @property
+    def jira_filter_out_file_path(self) -> Path:
+        """Get full path to JIRA filter out file."""
+        return self._config_dir / self._config_files.jira_filter_out_file
+
+    @property
+    def github_filter_file_path(self) -> Path:
+        """Get full path to GitHub filter file."""
+        return self._config_dir / self._config_files.github_filter_file
+
+    @property
+    def required_jira_fields_file_path(self) -> Path:
+        """Get full path to required JIRA fields file."""
+        return self._config_dir / self._config_files.required_jira_fields_file
+
+    @property
+    def required_github_fields_file_path(self) -> Path:
+        """Get full path to required GitHub fields file."""
+        return self._config_dir / self._config_files.required_github_fields_file
+
+    # Template file paths
+    @property
+    def summarize_prompt_template_path(self) -> Path:
+        """Get full path to summarize prompt template."""
+        return self._config_dir / self._config_files.summarize_prompt_template
+
+    @property
+    def example_summary_file_path(self) -> Path:
+        """Get full path to example summary file."""
+        return self._config_dir / self._config_files.example_summary_file
+
+    @property
+    def classify_prompt_template_path(self) -> Path:
+        """Get full path to classify prompt template."""
+        return self._config_dir / self._config_files.classify_prompt_template
+
+    @property
+    def project_summary_template_path(self) -> Path:
+        """Get full path to project summary template."""
+        return self._config_dir / self._config_files.project_summary_template
+
+    @property
+    def summarize_enabled_feature_gate_prompt_template_path(self) -> Path:
+        """Get full path to enabled feature gate prompt template."""
+        return (
+            self._config_dir
+            / self._config_files.summarize_enabled_feature_gate_prompt_template
+        )
+
+    @property
+    def summarize_single_feature_gate_prompt_template_path(self) -> Path:
+        """Get full path to single feature gate prompt template."""
+        return (
+            self._config_dir
+            / self._config_files.summarize_single_feature_gate_prompt_template
+        )
+
+    def get_urls_file_path(self, source: str) -> Path:
+        """Get full path to source-specific URLs file (e.g., github_urls.txt)."""
+        return self._data_dir / f"{source.lower()}_urls.txt"
 
 
 class AppSettings(BaseSettings):
@@ -259,6 +415,20 @@ class AppSettings(BaseSettings):
     security: SecuritySettings = Field(default_factory=SecuritySettings)
     config_files: ConfigFileSettings = Field(default_factory=ConfigFileSettings)
 
+    @property
+    def file_paths(self) -> FilePathSettings:
+        """Get computed file paths."""
+        return FilePathSettings(
+            data_dir=self.directories.data_dir,
+            config_dir=self.directories.config_dir,
+            config_files=self.config_files,
+        )
+
+    @property
+    def source_server_map(self) -> Dict[str, str]:
+        """Get sources dictionary (alias for api.source_server_map)."""
+        return self.api.source_server_map
+
     @field_validator("environment")
     @classmethod
     def validate_environment(cls, v: str) -> str:
@@ -267,12 +437,6 @@ class AppSettings(BaseSettings):
         if v not in valid_envs:
             raise ValueError(f"Invalid environment. Must be one of: {valid_envs}")
         return v
-
-    def is_production(self) -> bool:
-        return self.environment == "production"
-
-    def is_development(self) -> bool:
-        return self.environment == "development"
 
 
 # Configuration file loaders
@@ -311,6 +475,10 @@ class ConfigLoader:
         except UnicodeDecodeError as e:
             raise ValueError(f"Cannot decode {file_path}: {e}")
 
+    def get_filter_file(self) -> Dict[str, Any]:
+        """Get filter file."""
+        return self.load_json_config(self.settings.config_files.filter_file)
+
     def get_jira_filter(self) -> Dict[str, Any]:
         """Get JIRA filter configuration."""
         return self.load_json_config(self.settings.config_files.jira_filter_file)
@@ -345,6 +513,12 @@ class ConfigLoader:
             self.settings.config_files.summarize_enabled_feature_gate_prompt_template
         )
 
+    def get_single_feature_gate_summarize_prompt_template(self) -> str:
+        """Get single feature gate summarization prompt template."""
+        return self.load_text_config(
+            self.settings.config_files.summarize_single_feature_gate_prompt_template
+        )
+
     def get_project_summary_template(self) -> str:
         """Get project summarization prompt template."""
         return self.load_text_config(
@@ -363,10 +537,9 @@ def get_settings() -> AppSettings:
     return AppSettings()
 
 
-@lru_cache()
-def get_config_loader() -> ConfigLoader:
-    """Get cached configuration loader."""
-    return ConfigLoader(get_settings())
+def get_config_loader(settings: AppSettings = None) -> ConfigLoader:
+    """Get configuration loader."""
+    return ConfigLoader(settings or get_settings())
 
 
 # Export commonly used functions
