@@ -104,7 +104,7 @@ python main.py summarize --url <url> --issue-ids "ISSUE-1,ISSUE-2" --github-toke
 
 Generated summaries and data will be stored in the following locations:
 - Scraped data: `data/`
-- Summaries: `data/summaries/release-version/`
+- Summaries: `data/summaries/`
 
 ## Running Tests
 
