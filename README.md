@@ -75,9 +75,6 @@ python main.py scrape --url <url> --filter-on
 ```bash
 # Correlate previously scraped data
 python main.py correlate
-
-# Correlate with filtering
-python main.py correlate --filter-on
 ```
 
 ### 3. Generate Summaries
