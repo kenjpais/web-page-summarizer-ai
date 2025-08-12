@@ -34,6 +34,12 @@ export GH_API_TOKEN=your_github_api_token_here
 export GOOGLE_API_KEY=your_gemini_token_here
 ```
 
+Get your github API key here:
+https://docs.github.com/en/rest/authentication/authenticating-to-the-rest-api
+
+Get your gemini API key here:
+https://ai.google.dev/gemini-api/docs/api-key
+
 2. Install dependencies and set up the environment:
 ```bash
 sh setup.sh
@@ -69,9 +75,6 @@ python main.py scrape --url <url> --filter-on
 ```bash
 # Correlate previously scraped data
 python main.py correlate
-
-# Correlate with filtering
-python main.py correlate --filter-on
 ```
 
 ### 3. Generate Summaries
@@ -101,7 +104,7 @@ python main.py summarize --url <url> --issue-ids "ISSUE-1,ISSUE-2" --github-toke
 
 Generated summaries and data will be stored in the following locations:
 - Scraped data: `data/`
-- Summaries: `data/summaries/release-version/`
+- Summaries: `data/summaries/`
 
 ## Running Tests
 
