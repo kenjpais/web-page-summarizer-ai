@@ -7,7 +7,7 @@ A Python-based web scraper designed to extract, filter, and summarize data from 
 ## Key Features
 
 - **Automated Web Scraping**: Extracts metadata and release information from OpenShift release pages, scrapes JIRA and GITHUB links and correlates related information under matching JIRA projects. Configurable filtering to include only feature related information and exclude data related to chores, bugs, tests etc.
-- **Summary Generation**: Creates structured summaries of release data using LLM (Local Mistral or Google Gemini).
+- **Summary Generation**: Creates structured summaries of release data using LLMs (Local Mistral or Google Gemini).
 - **Configurable Data Sources**: Supports multiple backends including GitHub (PRs, Commits) and JIRA (summary and description fields of all JIRA Artifacts). Fetches publicly available data only.
 - **Secure Environment Management**: Credentials and configuration managed via `.env`.
 - **Test Coverage**: Includes unit tests for core logic and controllers.
