@@ -1,6 +1,9 @@
 import argparse
 from typing import Any
 from utils.utils import validate_cs_input_str
+from utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def add_jira_cli(parser: argparse.ArgumentParser):
@@ -32,10 +35,17 @@ def parse_jira_cli_args(args: argparse.Namespace) -> dict[str, Any]:
         FileNotFoundError: If specified files don't exist
         ValueError: If file contents are invalid
     """
+    # Parse and validate inputs
+    issue_ids = validate_cs_input_str(args.issue_ids, "issue_ids") or []
+    usernames = validate_cs_input_str(args.usernames, "usernames") or []
+
+    logger.debug(f"Parsed issue_ids: {issue_ids}")
+    logger.debug(f"Parsed usernames: {usernames}")
+
     return {
         "jira": {
-            "issue_ids": validate_cs_input_str(args.issue_ids, "issue_ids") or [],
-            "usernames": validate_cs_input_str(args.usernames, "usernames") or [],
+            "issue_ids": issue_ids,
+            "usernames": usernames,
             "jira_server": args.jira_server or "",
             "jira_username": args.jira_username or "",
             "jira_password": args.jira_password or "",
