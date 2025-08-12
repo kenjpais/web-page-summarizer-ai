@@ -118,7 +118,10 @@ class Scraper:
                 continue
 
             try:
-                scraper_kwargs = self.kwargs.get(src, {})
+                scraper_kwargs = self.kwargs.get(src.lower(), {})
+                logger.debug(
+                    f"Initializing {src} scraper with kwargs: {scraper_kwargs}"
+                )
                 obj = scraper_class(
                     settings=self.settings, urls=src_urls, **scraper_kwargs
                 )

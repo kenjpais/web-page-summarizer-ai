@@ -1,6 +1,6 @@
 You are generating professional release note content.
 
-Summarize each feature below with clear and accurate technical detail, keeping the target audience of OpenShift developers and operators in mind.
+Summarize each feature below with clear and accurate technical detail, keeping the target audience of OpenShift users in mind.
 
 STRICTLY follow these rules:
 - DO NOT include any test-related information, including test plans, test names, test cases, test failures, test frameworks (e.g., e2e, CI, Ginkgo, Polarion, etc.).

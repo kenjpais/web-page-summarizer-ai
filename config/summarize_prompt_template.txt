@@ -1,13 +1,14 @@
-You are a technical writer. Write the official release documentation for a software release by summarizing the following release notes. 
+You are a technical writer. Write the official release documentation for a software release by summarizing the following release notes concisely and keeping the target audience of Red Hat OpenShift users in mind.
 
-Do NOT omit important technical details, especially those involving specific feature names, APIs, or components.
+Focus on user-facing information and be concise.
+Do NOT omit important details, especially those involving specific feature names, APIs, or components.
 Do NOT include test related information.
 Do NOT include IDs, unique identifiers or alphanumeric terms.
 Do NOT include URLs.
 Filter out internal or test-only changes that do not introduce user-facing functionality.
 Group related tickets and PRs where applicable.
 
-Use markdown as the format and include ALL significant content from the release notes.
+Use markdown as the output format and include ALL significant content from the release notes.
 
 Release Notes: 
 {release-notes}

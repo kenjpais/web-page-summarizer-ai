@@ -83,11 +83,18 @@ class TestRunner(unittest.TestCase):
     def test_run_handles_summarizer_error(self, mock_get_settings):
         """Test that run handles summarizer errors gracefully."""
         mock_settings = MagicMock()
+        mock_settings.directories.data_dir = "test_data_dir"  # Use a test directory
         mock_get_settings.return_value = mock_settings
 
-        with patch("runner.Scraper") as mock_scraper, patch(
-            "runner.Correlator"
-        ) as mock_correlator, patch("runner.Summarizer") as mock_summarizer:
+        with patch("runner.makedirs") as mock_makedirs, patch(
+            "runner.Scraper"
+        ) as mock_scraper, patch("runner.Correlator") as mock_correlator, patch(
+            "runner.Summarizer"
+        ) as mock_summarizer:
+
+            # Mock makedirs to do nothing
+            mock_makedirs.return_value = None
+
             mock_scraper_instance = MagicMock()
             mock_scraper.return_value = mock_scraper_instance
 

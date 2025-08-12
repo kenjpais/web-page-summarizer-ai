@@ -59,7 +59,7 @@ class JiraScraper:
         def init_jira_client():
             try:
                 self.jira_client: JiraClient = JiraClient(
-                    jira_server=self.jira_server or self.settings.api.jira_server,
+                    jira_server=jira_server or self.settings.api.jira_server,
                     jira_username=self.jira_username or "",
                     jira_password=self.jira_password or "",
                     debug_enabled=self.settings.processing.debug,
@@ -122,16 +122,6 @@ class JiraScraper:
         init_caches()
         init_filtering()
 
-        if self.urls:
-            logger.info(f"Extracting issue IDs from {len(self.urls)} URLs")
-            self.issue_ids.extend(self.get_issue_ids_from_urls(self.urls))
-
-        if self.usernames:
-            logger.info(f"Extracting issue IDs from {len(self.usernames)} usernames")
-            self.issue_ids.extend(self.get_issues_assigned_to_usernames(self.usernames))
-
-        self.issue_ids = list(set(self.issue_ids))
-
         try:
             unauth_keys = self.config_loader.load_json_config(
                 "unauthorized_jira_keys.json"
@@ -140,6 +130,20 @@ class JiraScraper:
             unauth_keys = []
 
         self.unauthorized_keys = set(unauth_keys)
+
+        if self.usernames:
+            logger.info(f"Extracting issue IDs from {len(self.usernames)} usernames")
+            logger.debug(f"Usernames: {self.usernames}")
+            found_ids = self.get_issues_assigned_to_usernames(self.usernames)
+            logger.debug(f"Found {len(found_ids)} issues for usernames")
+            self.issue_ids.extend(found_ids)
+
+        if self.urls:
+            logger.info(f"Extracting issue IDs from {len(self.urls)} URLs")
+            self.issue_ids.extend(self.get_issue_ids_from_urls(self.urls))
+
+        self.issue_ids = list(set(self.issue_ids))
+        logger.debug(f"Total unique issue IDs found: {len(self.issue_ids)}")
 
     def get_config(self) -> dict[str, Any]:
         """
@@ -162,26 +166,60 @@ class JiraScraper:
         Fetch JIRA issues assigned to a list of usernames.
         """
         if not usernames:
+            logger.error("[!][ERROR] No usernames provided")
             return []
 
         usernames = list(set(u for u in usernames if u))
         issue_ids = set()
 
-        quoted_usernames = ",".join(f'"{u}"' for u in usernames)
-        jql_query = f"assignee IN ({quoted_usernames})"
+        # For Red Hat Jira, we need to search in both assignee and reporter fields
+        # Using single quotes for JQL values
+        quoted_usernames = ",".join(f"'{u}'" for u in usernames)
+        jql_query = (
+            f"assignee IN ({quoted_usernames}) OR reporter IN ({quoted_usernames})"
+        )
 
         start_at = 0
         max_results = 50
 
         while True:
-            issues = self.jira.search_issues(
-                jql_str=jql_query,
-                startAt=start_at,
-                maxResults=max_results,
-                fields="key",
-            )
+            try:
+                logger.debug(
+                    f"Searching with startAt={start_at}, maxResults={max_results}"
+                )
+                logger.debug(f"JQL Query: {jql_query}")
+                issues = self.jira.search_issues(
+                    jql_str=jql_query,
+                    startAt=start_at,
+                    maxResults=max_results,
+                    fields="key,issuetype",
+                )
+                logger.debug(f"Found {len(issues)} issues at offset {start_at}")
+                for issue in issues:
+                    logger.debug(
+                        f"Found issue {issue.key} of type {issue.fields.issuetype.name}"
+                    )
+                    issue_ids.add(issue.key)
 
-            if not issues:
+                if not issues:
+                    logger.debug("No more issues found")
+                    break
+
+                if len(issues) < max_results:
+                    logger.debug("Got less results than max, stopping pagination")
+                    break
+
+                start_at += max_results
+            except JIRAError as e:
+                logger.error(f"JIRA Error searching issues: {e}")
+                logger.error(f"Status code: {getattr(e, 'status_code', 'N/A')}")
+                logger.error(f"Error text: {getattr(e, 'text', str(e))}")
+                logger.error(f"JQL Query that failed: {jql_query}")
+                break
+            except Exception as e:
+                logger.error(f"Error searching issues: {e}")
+                logger.error(f"Full error details: {str(e)}")
+                logger.error(f"JQL Query that failed: {jql_query}")
                 break
 
             issue_ids.update(issue.key for issue in issues)
@@ -501,7 +539,7 @@ class JiraScraper:
 
                 # Apply keyword matching if enabled (currently disabled)
                 if KEYWORD_MATCHING_ON and not contains_valid_keywords(
-                    vars(fields).values()
+                    vars(fields).values(), invalid_keywords=self.invalid_keywords
                 ):
                     logger.debug(f"Issue [{issue.key}] failed keyword match")
                     return
@@ -544,8 +582,21 @@ class JiraScraper:
         logger.debug(f"FILTER IS {'ON' if self.filter_on else 'OFF'}")
 
         issue_ids = self.issue_ids
-        if not issue_ids:
+        if not issue_ids and not self.usernames and not self.urls:
+            logger.debug("No issue IDs, usernames, or URLs provided")
+            raise_scraper_exception(
+                "[!][ERROR] No input provided - please specify issue IDs, usernames, or URLs"
+            )
+        elif not issue_ids and self.urls:
+            logger.debug("No issues found for the provided URLs")
+            logger.debug(f"URLs that returned no results: {self.urls}")
             raise_scraper_exception("[!][ERROR] Invalid JIRA issue IDs")
+        elif not issue_ids and self.usernames:
+            logger.debug("No issues found for the provided usernames")
+            logger.debug(f"Usernames that returned no results: {self.usernames}")
+            raise_scraper_exception(
+                "[!][ERROR] No issues found for the provided usernames"
+            )
 
         project_ids = [id.split("-")[0] for id in issue_ids]
         self.populate_project_result_cache(project_ids)

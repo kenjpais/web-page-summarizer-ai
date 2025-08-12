@@ -10,7 +10,8 @@
             "Epic",
             "Story",
             "Feature",
-            "Enhancement"
+            "Enhancement",
+            "Task"
         ],
         "id": []
     },

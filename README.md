@@ -1,13 +1,13 @@
-# Release Page Summarizer
+# Release Page Summarizer AI
 
-A Python-based web scraper designed to extract, filter, and summarize data from OpenShift release stream pages. The tool integrates with third-party systems like JIRA and GitHub, supports environment-based configuration, and includes automated testing and CI workflows.
+A Python-based web scraper and summarization tool designed to extract, filter, and analyze data from OpenShift release stream pages. The tool offers integration with JIRA and GitHub, supporting both issue-id based and username based data retrieval and summarization. Supports environment-based configuration, and includes automated testing and CI workflows.
 
 ---
 
 ## Key Features
 
-- **Automated Web Scraping**: Extracts metadata and release information from OpenShift release pages, scrapes JIRA and GITHUB links and correlates related information under matching JIRA projects. Configurable filtering to include only feature related information and exclude data related to chores, bugs, tests etc.
-- **Summary Generation**: Creates structured summaries of release data using LLMs (Local Mistral or Google Gemini).
+- **Automated Web Scraping**: Extracts metadata and release information from OpenShift release page urls and/or JIRA and/or GITHUB urls and correlates related release data under matching projects.
+- **Summary Generation**: Creates structured summaries of release data using LLM (Local Mistral or Google Gemini).
 - **Configurable Data Sources**: Supports multiple backends including GitHub (PRs, Commits) and JIRA (summary and description fields of all JIRA Artifacts). Fetches publicly available data only.
 - **Secure Environment Management**: Credentials and configuration managed via `.env`.
 - **Test Coverage**: Includes unit tests for core logic and controllers.

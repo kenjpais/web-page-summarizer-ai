@@ -290,18 +290,55 @@ class TestJiraScraper(unittest.TestCase):
             "Expected accessible issues should be returned",
         )
 
-    def test_extract_usernames(self):
-        jf = JiraScraper(
-            settings=settings,
-            usernames=[
-                "rhn-support-ngirard",
-                "jcallen@redhat.com",
-            ],
+    def test_extract_empty_usernames(self):
+        """Test that empty username list returns empty results without error"""
+        jf = JiraScraper(filter_on=False, settings=settings, usernames=[])
+        found_ids = jf.get_issues_assigned_to_usernames([])
+        self.assertEqual(
+            len(found_ids), 0, "Empty username list should return no issues"
         )
-        jf.extract()
 
+    def test_extract_invalid_username(self):
+        """Test that invalid usernames return empty results without error"""
+        invalid_username = "this-user-does-not-exist"
+        jf = JiraScraper(settings=settings, usernames=[invalid_username])
+        found_ids = jf.get_issues_assigned_to_usernames([invalid_username])
+        self.assertEqual(len(found_ids), 0, "Invalid username should return no issues")
+
+    def test_extract_usernames(self):
+        """Test fetching issues by username"""
+        test_username = "rhn-support-ngirard"
+        expected_issue_ids = {
+            "SPLAT-2418",
+            "SPLAT-2405",
+            "SPLAT-2404",  # Sample issue IDs we expect
+            "SPLAT-2403",
+            "SPLAT-2398",
+            "SPLAT-2396",
+        }
+
+        # Test with username - disable filtering since we want all issues
+        jf = JiraScraper(settings=settings, usernames=[test_username], filter_on=False)
+        found_ids = jf.get_issues_assigned_to_usernames([test_username])
+        self.assertGreater(len(found_ids), 0, "Should find issues for username")
+        self.assertTrue(
+            expected_issue_ids.issubset(set(found_ids)),
+            f"Expected issues {expected_issue_ids} not found in {found_ids}",
+        )
+
+        # Test full extraction - disable filtering since we want all issues
+        jf = JiraScraper(settings=settings, usernames=[test_username], filter_on=False)
+        jf.extract()
         result, result_md = load_jira_files()
+
+        # Verify the hierarchy is valid
         self.assert_hierarchy_valid(result)
+
+        # Verify issues are in the output
+        result_json_str = json.dumps(result)
+        for issue_id in expected_issue_ids:
+            self.assertIn(issue_id, result_json_str)
+            self.assertIn(issue_id, result_md)
 
     def test_extract_issue_ids(self):
         jf = JiraScraper(
