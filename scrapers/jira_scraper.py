@@ -36,9 +36,7 @@ class JiraScraper:
         settings: AppSettings,
         filter_on: bool = True,
         jira_server: str = None,
-        jira_username: str = None,
-        jira_password: str = None,
-        usernames: List[str] = None,
+        jira_usernames: List[str] = None,
         issue_ids: List[str] = None,
         urls: List[str] = None,
     ) -> None:
@@ -48,9 +46,7 @@ class JiraScraper:
         Args:
             filter_on: Whether to apply issue filtering based on configuration
             jira_server: JIRA server URL (overrides default from settings)
-            jira_username: JIRA username for authentication
-            jira_password: JIRA password for authentication
-            usernames: List of usernames to filter by
+            jira_usernames: List of JIRA usernames to filter by
             issue_ids: List of specific issue IDs to scrape
             urls: List of URLs to scrape from
         """
@@ -60,8 +56,6 @@ class JiraScraper:
             try:
                 self.jira_client: JiraClient = JiraClient(
                     jira_server=jira_server or self.settings.api.jira_server,
-                    jira_username=self.jira_username or "",
-                    jira_password=self.jira_password or "",
                     debug_enabled=self.settings.processing.debug,
                 )
                 if not self.jira_client:
@@ -111,9 +105,7 @@ class JiraScraper:
 
         self.filter_on = filter_on
         self.jira_server = jira_server
-        self.jira_username = jira_username
-        self.jira_password = jira_password
-        self.usernames = usernames or []
+        self.jira_usernames = jira_usernames
         self.issue_ids = issue_ids or []
         self.urls = urls or []
         self.config_loader = get_config_loader()
@@ -131,10 +123,12 @@ class JiraScraper:
 
         self.unauthorized_keys = set(unauth_keys)
 
-        if self.usernames:
-            logger.info(f"Extracting issue IDs from {len(self.usernames)} usernames")
-            logger.debug(f"Usernames: {self.usernames}")
-            found_ids = self.get_issues_assigned_to_usernames(self.usernames)
+        if self.jira_usernames:
+            logger.info(
+                f"Extracting issue IDs from {len(self.jira_usernames)} usernames"
+            )
+            logger.debug(f"Usernames: {self.jira_usernames}")
+            found_ids = self.get_issues_assigned_to_usernames(self.jira_usernames)
             logger.debug(f"Found {len(found_ids)} issues for usernames")
             self.issue_ids.extend(found_ids)
 
@@ -152,7 +146,7 @@ class JiraScraper:
         return {
             "filter_on": self.filter_on,
             "jira_client": self.jira_client.get_config(),
-            "usernames": self.usernames,
+            "jira_usernames": self.jira_usernames,
             "issue_ids": self.issue_ids,
             "urls": self.urls,
         }
@@ -161,23 +155,21 @@ class JiraScraper:
         """Validate that URL is a proper JIRA issue browse URL."""
         return "browse/" in url
 
-    def get_issues_assigned_to_usernames(self, usernames: List[str]) -> List[str]:
+    def get_issues_assigned_to_usernames(self, jira_usernames: List[str]) -> List[str]:
         """
         Fetch JIRA issues assigned to a list of usernames.
         """
-        if not usernames:
-            logger.error("[!][ERROR] No usernames provided")
+        if not jira_usernames:
+            logger.error("[!][ERROR] No JIRA usernames provided")
             return []
 
-        usernames = list(set(u for u in usernames if u))
+        jira_usernames = list(set(u for u in jira_usernames if u))
         issue_ids = set()
 
         # For Red Hat Jira, we need to search in both assignee and reporter fields
         # Using single quotes for JQL values
-        quoted_usernames = ",".join(f"'{u}'" for u in usernames)
-        jql_query = (
-            f"assignee IN ({quoted_usernames}) OR reporter IN ({quoted_usernames})"
-        )
+        quoted_jira_usernames = ",".join(f"'{u}'" for u in jira_usernames)
+        jql_query = f"assignee IN ({quoted_jira_usernames}) OR reporter IN ({quoted_jira_usernames})"
 
         start_at = 0
         max_results = 50
@@ -582,7 +574,7 @@ class JiraScraper:
         logger.debug(f"FILTER IS {'ON' if self.filter_on else 'OFF'}")
 
         issue_ids = self.issue_ids
-        if not issue_ids and not self.usernames and not self.urls:
+        if not issue_ids and not self.jira_usernames and not self.urls:
             logger.debug("No issue IDs, usernames, or URLs provided")
             raise_scraper_exception(
                 "[!][ERROR] No input provided - please specify issue IDs, usernames, or URLs"
@@ -591,9 +583,9 @@ class JiraScraper:
             logger.debug("No issues found for the provided URLs")
             logger.debug(f"URLs that returned no results: {self.urls}")
             raise_scraper_exception("[!][ERROR] Invalid JIRA issue IDs")
-        elif not issue_ids and self.usernames:
+        elif not issue_ids and self.jira_usernames:
             logger.debug("No issues found for the provided usernames")
-            logger.debug(f"Usernames that returned no results: {self.usernames}")
+            logger.debug(f"Usernames that returned no results: {self.jira_usernames}")
             raise_scraper_exception(
                 "[!][ERROR] No issues found for the provided usernames"
             )

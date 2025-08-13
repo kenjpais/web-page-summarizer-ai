@@ -54,13 +54,23 @@ class JiraClient:
             "jira_base_url": self.base_url,
         }
 
-    def get_epic_link_field_id(self):
-        headers = {"Accept": "application/json"}
-        url = f"{self.base_url}/field"
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        fields = response.json()
-        for field in fields:
-            if field.get("name", "").lower() == "epic link":
-                return field["id"]
-        raise JIRAError("Epic Link field not found")
+    def get_epic_link_field_id(self, timeout=30):
+        """Get the field ID for Epic Link.
+
+        Args:
+            timeout (int): Timeout in seconds for the request. Defaults to 30.
+
+        Returns:
+            str: The field ID for Epic Link (e.g. 'customfield_10014')
+
+        Raises:
+            JIRAError: If Epic Link field is not found or request fails
+        """
+        try:
+            fields = self.jira.fields()
+            for field in fields:
+                if field.get("name", "").lower() == "epic link":
+                    return field["id"]
+            raise JIRAError("Epic Link field not found")
+        except Exception as e:
+            raise JIRAError(f"Failed to get Epic Link field ID: {str(e)}")

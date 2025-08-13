@@ -91,7 +91,7 @@ python main.py summarize --url <url> --issue-ids "ISSUE-1,ISSUE-2" --github-toke
 - `--filter-on`: Enable filtering of data based on configured rules
 - `--url`: URL to scrape data from
 - `--issue-ids`: Comma-separated list of JIRA issue IDs
-- `--usernames`: Comma-separated list of JIRA usernames to fetch data for
+- `--jira-usernames`: Comma-separated list of JIRA usernames to fetch data for
 - `--jira-server`: JIRA server URL
 - `--jira-username`: JIRA username (optional)
 - `--jira-password`: JIRA password (optional)

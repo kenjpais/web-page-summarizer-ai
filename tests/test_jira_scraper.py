@@ -292,7 +292,7 @@ class TestJiraScraper(unittest.TestCase):
 
     def test_extract_empty_usernames(self):
         """Test that empty username list returns empty results without error"""
-        jf = JiraScraper(filter_on=False, settings=settings, usernames=[])
+        jf = JiraScraper(filter_on=False, settings=settings, jira_usernames=[])
         found_ids = jf.get_issues_assigned_to_usernames([])
         self.assertEqual(
             len(found_ids), 0, "Empty username list should return no issues"
@@ -301,7 +301,7 @@ class TestJiraScraper(unittest.TestCase):
     def test_extract_invalid_username(self):
         """Test that invalid usernames return empty results without error"""
         invalid_username = "this-user-does-not-exist"
-        jf = JiraScraper(settings=settings, usernames=[invalid_username])
+        jf = JiraScraper(settings=settings, jira_usernames=[invalid_username])
         found_ids = jf.get_issues_assigned_to_usernames([invalid_username])
         self.assertEqual(len(found_ids), 0, "Invalid username should return no issues")
 
@@ -318,7 +318,9 @@ class TestJiraScraper(unittest.TestCase):
         }
 
         # Test with username - disable filtering since we want all issues
-        jf = JiraScraper(settings=settings, usernames=[test_username], filter_on=False)
+        jf = JiraScraper(
+            settings=settings, jira_usernames=[test_username], filter_on=False
+        )
         found_ids = jf.get_issues_assigned_to_usernames([test_username])
         self.assertGreater(len(found_ids), 0, "Should find issues for username")
         self.assertTrue(
@@ -327,7 +329,9 @@ class TestJiraScraper(unittest.TestCase):
         )
 
         # Test full extraction - disable filtering since we want all issues
-        jf = JiraScraper(settings=settings, usernames=[test_username], filter_on=False)
+        jf = JiraScraper(
+            settings=settings, jira_usernames=[test_username], filter_on=False
+        )
         jf.extract()
         result, result_md = load_jira_files()
 
