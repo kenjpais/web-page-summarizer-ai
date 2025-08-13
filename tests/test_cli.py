@@ -119,13 +119,9 @@ class TestJiraCLIArgs(unittest.TestCase):
             [
                 "--jira-server",
                 "jira-server",
-                "--jira-username",
-                "jira-user",
-                "--jira-password",
-                "jira-pass",
                 "--issue-ids",
                 "JIRA-1,JIRA-2",
-                "--usernames",
+                "--jira-usernames",
                 "alice,bob",
             ]
         )
@@ -137,16 +133,14 @@ class TestJiraCLIArgs(unittest.TestCase):
             {
                 "jira": {
                     "issue_ids": ["JIRA-1", "JIRA-2"],
-                    "usernames": ["alice", "bob"],
+                    "jira_usernames": ["alice", "bob"],
                     "jira_server": "jira-server",
-                    "jira_username": "jira-user",
-                    "jira_password": "jira-pass",
                 }
             },
         )
 
         mock_validate.assert_any_call("JIRA-1,JIRA-2", "issue_ids")
-        mock_validate.assert_any_call("alice,bob", "usernames")
+        mock_validate.assert_any_call("alice,bob", "jira_usernames")
 
     @patch("cli.jira_cli.validate_cs_input_str")
     def test_parse_jira_args_with_defaults(self, mock_validate):
@@ -163,10 +157,8 @@ class TestJiraCLIArgs(unittest.TestCase):
             {
                 "jira": {
                     "issue_ids": [],
-                    "usernames": [],
+                    "jira_usernames": [],
                     "jira_server": "",
-                    "jira_username": "",
-                    "jira_password": "",
                 }
             },
         )
