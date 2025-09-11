@@ -268,6 +268,8 @@ class Summarizer:
         """
         Check if text is smaller than chunk size
         """
+        if self.settings.api.llm_provider == "local":
+            return True
         return self.tokenizer.count_tokens(text) < self.chunk_size
 
     def summarize(self) -> str:
