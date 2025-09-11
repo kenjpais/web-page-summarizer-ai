@@ -3,7 +3,11 @@ LLM Factory to choose between different LLM providers based on configuration.
 """
 
 from langchain_core.runnables import Runnable
-from config.settings import APISettings
+from config.settings import APISettings, AppSettings
+from utils.rate_limiter import RateLimiter
+from utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def get_llm(api_settings: APISettings) -> Runnable:
@@ -19,7 +23,7 @@ def get_llm(api_settings: APISettings) -> Runnable:
     provider = api_settings.llm_provider.lower()
 
     if provider == "local":
-        from clients.local_llm_chain import create_local_llm
+        from clients.local_llm_client import create_local_llm
 
         return create_local_llm(api_settings)
     elif provider == "gemini":
@@ -30,7 +34,7 @@ def get_llm(api_settings: APISettings) -> Runnable:
             )
 
         try:
-            from clients.gemini_llm_chain import create_gemini_llm
+            from clients.gemini_llm_client import create_gemini_llm
 
             return create_gemini_llm(api_settings)
         except ImportError as e:
@@ -55,6 +59,10 @@ class LLMClient(Runnable):
         super().__init__()
         self._client = None
         self.api_settings = api_settings
+        # Create settings instance for rate limiter
+        settings = AppSettings()
+        settings.api = api_settings
+        self.rate_limiter = RateLimiter(settings)
 
     def _get_client(self) -> Runnable:
         if self._client is None:
@@ -62,7 +70,11 @@ class LLMClient(Runnable):
         return self._client
 
     def invoke(self, *args, **kwargs):
-        return self._get_client().invoke(*args, **kwargs)
+        # Apply rate limiting to the invoke method
+        rate_limited_invoke = self.rate_limiter.check_rate_limit(
+            self._get_client().invoke
+        )
+        return rate_limited_invoke(*args, **kwargs)
 
     def __getattr__(self, name):
         # Delegate all other attributes to the actual client

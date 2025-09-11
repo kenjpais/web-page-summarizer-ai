@@ -9,6 +9,7 @@ from utils.file_utils import copy_file, delete_all_in_directory
 from config.settings import get_settings
 from utils.logging_config import get_logger, setup_logging
 from tests.mocks.mock_llm import create_mock_llm
+from tests.mocks.mock_gemini_tokenizer import MockGeminiTokenizer
 
 setup_logging()
 
@@ -29,7 +30,10 @@ feature_gate_project_map_file = test_data_dir / "feature_gate_project_map.pkl"
 
 class TestCorrelateTable(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):
+    @patch("clients.local_llm_client.create_local_llm", side_effect=create_mock_llm)
+    @patch("utils.gemini_tokenizer.GeminiTokenizer", side_effect=MockGeminiTokenizer)
+    @patch("utils.gemini_tokenizer.ChatGoogleGenerativeAI")
+    def setUpClass(cls, mock_chat_google_ai, mock_create_llm, mock_tokenizer):
         # Ensure FILTER_ON is True for this test (restore original .env value)
         # This is needed because other tests may have modified os.environ["FILTER_ON"]
         os.environ["FILTER_ON"] = "True"
@@ -67,14 +71,13 @@ class TestCorrelateTable(unittest.TestCase):
         copy_file(src_path=summarized_features_file, dest_dir=data_dir)
         copy_file(src_path=feature_gate_project_map_file, dest_dir=data_dir)
 
-        @patch("clients.local_llm_chain.create_local_llm", side_effect=create_mock_llm)
-        def run_pipeline(mock_create_llm):
-            summarizer = Summarizer(settings)
-            summarizer.summarize_feature_gates()
-            correlator = Correlator(settings)
-            correlator.correlate_summarized_features(settings.file_paths)
+        # Configure mock ChatGoogleGenerativeAI
+        mock_chat_google_ai.return_value.get_num_tokens.return_value = 100
 
-        run_pipeline()
+        summarizer = Summarizer(settings)
+        summarizer.summarize_feature_gates()
+        correlator = Correlator(settings)
+        correlator.correlate_summarized_features()
 
         with open(cls.correlated_table_file, "r") as f:
             cls.correlated_table = json.load(f)

@@ -1,9 +1,0 @@
-You are generating a professional release note. Summarize each project below with as much detail as possible. 
-
-Do NOT invent or create new story IDs or content. Do NOT include test related information. Use ONLY the exact story data provided in the input.
-Filter out internal or test-only changes that do not introduce user-facing functionality.
-Group related tickets and PRs where applicable.
-
-{projects}
-
-Return each summarized project in markdown format.

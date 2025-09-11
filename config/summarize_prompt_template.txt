@@ -1,14 +1,21 @@
-You are a technical writer. Write the official release documentation for a software release by summarizing the following release notes concisely and keeping the target audience of Red Hat OpenShift users in mind.
+You are a technical writer. 
+Summarize the following {key} information into a concise, easy-to-read summary suitable for end users or internal stakeholders. 
+Focus on the most important changes, improvements, new features, and bug fixes. 
+Avoid unnecessary technical jargon unless it's essential to understand the update. 
+Group similar items together where appropriate.
 
 Focus on user-facing information and be concise.
 Do NOT omit important details, especially those involving specific feature names, APIs, or components.
 Do NOT include test related information.
-Do NOT include IDs, unique identifiers or alphanumeric terms.
-Do NOT include URLs.
+Do NOT include e2e test information.
+Do NOT include chores, bugs and fixes.
+Ignore anything that looks like a unit test.
+Only provide the summary of the feature. Do not include peripheral information such as hashtags, additional notes, etc.
 Filter out internal or test-only changes that do not introduce user-facing functionality.
 Group related tickets and PRs where applicable.
+Include ALL significant content.
 
-Use markdown as the output format and include ALL significant content from the release notes.
+Use markdown as the output format.
 
-Release Notes: 
-{release-notes}
+Below are the JIRA and GITHUB information for {key}:
+{value}

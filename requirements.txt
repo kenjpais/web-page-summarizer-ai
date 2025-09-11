@@ -20,6 +20,8 @@ google-ai-generativelanguage==0.6.6
 langchain-google-genai==2.0.0
 langchain-ollama>=0.3.6,<1.0
 ollama>=0.5.1,<1.0
+transformers>=4.38.2,<5.0
+tokenizers>=0.15.2,<1.0
 
 # Development dependencies
 black>=25.1,<26.0

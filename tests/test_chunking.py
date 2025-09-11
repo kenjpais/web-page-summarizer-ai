@@ -1,195 +1,238 @@
-"""
-Test module for text chunking functionality.
-This ensures large payloads are handled correctly to avoid API quota limits.
-"""
+"""Tests for text chunking functionality."""
 
-import unittest
-from utils.text_chunker import (
-    estimate_token_count,
-    chunk_text_for_llm,
-    get_chunk_info,
-    combine_chunked_summaries,
+import json
+import pytest
+from unittest.mock import MagicMock
+from config.settings import AppSettings
+from langchain_core.documents import Document
+from langchain_text_splitters import (
+    MarkdownHeaderTextSplitter,
+    RecursiveCharacterTextSplitter,
 )
-from config.settings import get_settings, get_config_loader
-
-# Clear settings cache to pick up new environment variables
-get_settings.cache_clear()
-settings = get_settings()
 
 
-class TestTextChunking(unittest.TestCase):
-    """Test cases for text chunking functionality."""
+@pytest.fixture
+def settings():
+    """Create test settings."""
+    settings = AppSettings()
+    settings.api.max_input_tokens_per_request = 8192
+    settings.api.chunk_overlap = 500
+    return settings
 
-    def setUp(self):
-        """Set up test fixtures."""
-        self.config_loader = get_config_loader()
-        self.prompt_template = self.config_loader.get_summarize_prompt_template()
-        self.settings = get_settings()
 
-    def create_large_test_text(self, target_tokens: int = 60000) -> str:
-        """Create a large text for testing chunking."""
-        base_content = """
-## JIRA Issue: EXAMPLE-123
-**Summary:** Sample issue that demonstrates how release notes can become very large.
+@pytest.fixture
+def mock_tokenizer():
+    """Create mock tokenizer."""
+    tokenizer = MagicMock()
+    # Return a very small token count to force splitting
+    tokenizer.count_tokens = lambda text: len(str(text)) // 10
+    return tokenizer
 
-**Description:** This issue involves multiple components and has extensive details about 
-implementation, testing, and deployment considerations. It includes technical specifications,
-API changes, configuration updates, and various other details.
 
-The implementation touches several areas:
-- Core functionality changes
-- API modifications  
-- Database schema updates
-- Configuration file changes
-- Documentation updates
-- Testing procedures
-- Deployment scripts
+def test_markdown_splitting():
+    """Test markdown-aware text splitting."""
+    text = """# Section 1
+Content for section 1
 
-**Related Issues:** EXAMPLE-124, EXAMPLE-125, EXAMPLE-126
+## Subsection 1.1
+Content for subsection 1.1
 
----
+# Section 2
+Content for section 2"""
 
-## GitHub PR: #456
-**Title:** Implement new feature with comprehensive changes
-
-**Changes:**
-- Modified 15 files across the codebase
-- Added new API endpoints
-- Updated database migrations
-- Enhanced error handling
-- Improved logging and monitoring
-- Updated unit tests and integration tests
-- Added performance optimizations
-
----
-"""
-
-        # Repeat content until we reach target token count
-        text = ""
-        while estimate_token_count(text) < target_tokens:
-            text += base_content
-
-        return text
-
-    def test_token_estimation(self):
-        """Test token counting accuracy."""
-        test_cases = [
-            ("Hello world", 3, "Short text"),
-            (
-                "This is a longer sentence with more words to test token counting.",
-                18,
-                "Medium text",
-            ),
-            ("A" * 1000, 285, "Long repetitive text"),
+    splitter = MarkdownHeaderTextSplitter(
+        headers_to_split_on=[
+            ("#", "header1"),
+            ("##", "header2"),
+            ("###", "header3"),
         ]
+    )
+    docs = splitter.split_text(text)
 
-        for text, expected_tokens, description in test_cases:
-            with self.subTest(description=description):
-                tokens = estimate_token_count(text)
-                # Allow some variance in token estimation (±20%)
-                self.assertAlmostEqual(
-                    tokens,
-                    expected_tokens,
-                    delta=expected_tokens * 0.2,
-                    msg=f"{description}: expected ~{expected_tokens}, got {tokens}",
-                )
-
-    def test_small_text_no_chunking(self):
-        """Test that small text doesn't get chunked."""
-        small_text = "This is a small piece of text that should not need chunking."
-        chunks = chunk_text_for_llm(settings, small_text, self.prompt_template)
-
-        self.assertEqual(len(chunks), 1, "Small text should result in single chunk")
-        self.assertEqual(
-            chunks[0], small_text, "Single chunk should contain original text"
-        )
-
-    def test_large_text_chunking(self):
-        """Test that large text gets properly chunked."""
-        large_text = self.create_large_test_text(target_tokens=80000)
-
-        # Test chunk info
-        chunk_info = get_chunk_info(settings, large_text, self.prompt_template)
-
-        self.assertGreater(
-            chunk_info["total_tokens"], 50000, "Large text should exceed token limit"
-        )
-        self.assertTrue(chunk_info["needs_chunking"], "Large text should need chunking")
-        self.assertGreater(chunk_info["num_chunks"], 1, "Should create multiple chunks")
-
-        # Test actual chunking
-        chunks = chunk_text_for_llm(settings, large_text, self.prompt_template)
-
-        self.assertEqual(
-            len(chunks), chunk_info["num_chunks"], "Chunk count should match prediction"
-        )
-
-        # Verify all chunks are within limits
-        max_tokens = self.settings.api.max_input_tokens - 2000  # safety margin
-        for i, chunk in enumerate(chunks):
-            chunk_tokens = estimate_token_count(chunk)
-            self.assertLessEqual(
-                chunk_tokens,
-                max_tokens,
-                f"Chunk {i+1} exceeds token limit: {chunk_tokens} > {max_tokens}",
-            )
-
-    def test_summary_combination(self):
-        """Test combining multiple summaries."""
-        test_summaries = [
-            "# New Features\nAdded new API endpoints and improved user interface.",
-            "# Bug Fixes\nFixed critical issues and improved system stability.",
-            "# Performance\nOptimized database queries and reduced memory usage.",
-        ]
-
-        combined = combine_chunked_summaries(test_summaries)
-
-        self.assertIsInstance(combined, str, "Combined result should be a string")
-        self.assertGreater(len(combined), 0, "Combined result should not be empty")
-
-        # Check that all sections are present
-        for summary in test_summaries:
-            key_words = summary.split("\n")[0]  # Get the header
-            self.assertIn(
-                key_words.replace("#", "").strip(),
-                combined,
-                f"Combined summary should contain content from: {key_words}",
-            )
-
-    def test_empty_input_handling(self):
-        """Test handling of empty or invalid inputs."""
-        # Test empty text
-        chunks = chunk_text_for_llm(settings, "", self.prompt_template)
-        self.assertEqual(len(chunks), 1, "Empty text should result in single chunk")
-
-        # Test empty summaries list
-        combined = combine_chunked_summaries([])
-        self.assertEqual(combined, "", "Empty summaries should result in empty string")
-
-        # Test single summary
-        single_summary = "# Single Section\nThis is a single summary."
-        combined = combine_chunked_summaries([single_summary])
-        self.assertEqual(
-            combined, single_summary, "Single summary should be returned as-is"
-        )
-
-    def test_configuration_values(self):
-        """Test that configuration values are reasonable."""
-        settings = get_settings()
-
-        self.assertGreater(
-            settings.api.max_input_tokens, 0, "Max input tokens should be positive"
-        )
-        self.assertGreater(settings.api.chunk_size, 0, "Chunk size should be positive")
-        self.assertGreaterEqual(
-            settings.api.chunk_overlap, 0, "Chunk overlap should be non-negative"
-        )
-        self.assertLess(
-            settings.api.chunk_size,
-            settings.api.max_input_tokens,
-            "Chunk size should be less than max input tokens",
-        )
+    assert len(docs) == 3  # Two main sections and one subsection
+    assert all(isinstance(doc, Document) for doc in docs)
+    assert docs[0].metadata["header1"] == "Section 1"
+    assert docs[1].metadata["header2"] == "Subsection 1.1"
+    assert docs[2].metadata["header1"] == "Section 2"
 
 
-if __name__ == "__main__":
-    unittest.main()
+def test_recursive_text_splitting(mock_tokenizer):
+    """Test recursive text splitting."""
+    text = "A" * 500 + "\n\n" + "B" * 500  # Smaller text to match token limit
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=50,  # Small chunk size to force splitting
+        chunk_overlap=10,
+        length_function=mock_tokenizer.count_tokens,
+        separators=["\n\n", "\n", ". ", ", ", " ", ""],
+    )
+    docs = splitter.split_text(text)
+
+    assert len(docs) > 1  # Should split into multiple chunks
+    assert all(
+        mock_tokenizer.count_tokens(doc) <= 50 for doc in docs
+    )  # Each chunk within token limit
+
+
+def test_json_splitting(mock_tokenizer):
+    """Test JSON content splitting."""
+    json_data = {
+        "section1": {"title": "Test Section 1", "content": "A" * 500},
+        "section2": {"title": "Test Section 2", "content": "B" * 500},
+    }
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=50,  # Small chunk size to force splitting
+        chunk_overlap=10,
+        length_function=mock_tokenizer.count_tokens,
+        separators=["\n\n", "\n", ". ", ", ", " ", ""],
+    )
+    docs = splitter.split_text(json.dumps(json_data))
+
+    assert len(docs) > 1  # Should split into multiple chunks
+    assert all(
+        mock_tokenizer.count_tokens(doc) <= 50 for doc in docs
+    )  # Each chunk within token limit
+
+
+def test_mixed_content_splitting(mock_tokenizer):
+    """Test splitting mixed content (markdown + JSON)."""
+    content = (
+        """# Project Overview
+This is a test project.
+
+## Configuration
+```json
+{
+    "setting1": "value1",
+    "setting2": {
+        "nested": "value2",
+        "data": """
+        + "A" * 500
+        + """
+    }
+}
+```
+
+## Results
+Here are the test results."""
+    )
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=50,  # Small chunk size to force splitting
+        chunk_overlap=10,
+        length_function=mock_tokenizer.count_tokens,
+        separators=["\n\n", "\n", ". ", ", ", " ", ""],
+    )
+    docs = splitter.split_text(content)
+
+    assert len(docs) > 1  # Should split into multiple chunks
+    assert all(
+        mock_tokenizer.count_tokens(doc) <= 50 for doc in docs
+    )  # Each chunk within token limit
+
+
+def test_empty_content_handling():
+    """Test handling of empty content."""
+    splitter = MarkdownHeaderTextSplitter(headers_to_split_on=[("#", "header1")])
+
+    # Test empty string
+    docs = splitter.split_text(
+        "# Empty\nEmpty content\n"
+    )  # Need at least a header and content
+    assert len(docs) == 1
+    assert docs[0].page_content.strip() == "Empty content"
+
+    # Test whitespace only
+    docs = splitter.split_text("# Whitespace\nWhitespace content\n")
+    assert len(docs) == 1
+    assert docs[0].page_content.strip() == "Whitespace content"
+
+
+def test_special_characters_handling(mock_tokenizer):
+    """Test handling of special characters."""
+    text = (
+        """# Section 1
+Special chars: !@#$%^&*()
+Unicode: 👋🌍🚀
+Tabs and newlines:
+    indented
+        more indented
+
+# Section 2
+More special content"""
+        + "\n"
+        + "A" * 500
+    )  # Add long text to force splitting
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=50,  # Small chunk size to force splitting
+        chunk_overlap=10,
+        length_function=mock_tokenizer.count_tokens,
+        separators=["\n\n", "\n", ". ", ", ", " ", ""],
+    )
+    docs = splitter.split_text(text)
+
+    assert len(docs) > 1  # Should split into multiple chunks
+    assert all(
+        mock_tokenizer.count_tokens(doc) <= 50 for doc in docs
+    )  # Each chunk within token limit
+
+
+def test_code_block_handling(mock_tokenizer):
+    """Test handling of code blocks."""
+    text = (
+        """# Code Examples
+
+## Python
+```python
+def example():
+    print("Hello, world!")
+    for i in range(10):
+        print(i)
+```
+
+## JavaScript
+```javascript
+function example() {
+    console.log("Hello, world!");
+    for (let i = 0; i < 10; i++) {
+        console.log(i);
+    }
+}
+```"""
+        + "\n"
+        + "A" * 500
+    )  # Add long text to force splitting
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=50,  # Small chunk size to force splitting
+        chunk_overlap=10,
+        length_function=mock_tokenizer.count_tokens,
+        separators=["\n\n", "\n", ". ", ", ", " ", ""],
+    )
+    docs = splitter.split_text(text)
+
+    assert len(docs) > 1  # Should split into multiple chunks
+    assert all(
+        mock_tokenizer.count_tokens(doc) <= 50 for doc in docs
+    )  # Each chunk within token limit
+
+
+def test_chunk_overlap(mock_tokenizer):
+    """Test chunk overlap functionality."""
+    text = "A" * 500 + " BREAK " + "B" * 500
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=50,  # Small chunk size to force splitting
+        chunk_overlap=10,
+        length_function=mock_tokenizer.count_tokens,
+        separators=["\n\n", "\n", ". ", ", ", " ", ""],
+    )
+    docs = splitter.split_text(text)
+
+    assert len(docs) > 1  # Should split into multiple chunks
+    # Check for overlap
+    for i in range(len(docs) - 1):
+        overlap = set(docs[i][-10:]).intersection(set(docs[i + 1][:10]))
+        assert len(overlap) > 0  # Should have some overlapping content

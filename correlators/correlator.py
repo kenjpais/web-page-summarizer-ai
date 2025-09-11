@@ -267,14 +267,40 @@ class Correlator:
         with open(file_path_settings.correlated_feature_gate_table_file_path, "w") as f:
             json.dump(feature_gate_artifacts, f, indent=4)
 
-    def correlate_summarized_features(self, file_path_settings: FilePathSettings):
-        logger.info("[*] Correlating summarized features with JIRA/GitHub data")
-        with open(file_path_settings.summarized_features_file_path, "r") as f:
-            summarized_features = json.load(f)
-        with open(file_path_settings.correlated_file_path, "r") as f:
+    def correlate_features(self):
+        logger.info("[*] Correlating features with JIRA/GitHub data")
+        with open(
+            self.file_path_settings.correlated_feature_gate_table_file_path, "r"
+        ) as f:
+            correlated_feature_gate_table = json.load(f)
+        with open(self.file_path_settings.correlated_file_path, "r") as f:
             correlated = json.load(f)
         feature_gate_project_map = read_pickle_file(
-            file_path_settings.feature_gate_project_map_file_path
+            self.file_path_settings.feature_gate_project_map_file_path
+        )
+
+        def add_enabled_feature(correlated, project_name, feature_name, artifacts):
+            if project_name not in correlated:
+                correlated[project_name] = {}
+            if "enabledFeatures" not in correlated[project_name]:
+                correlated[project_name]["enabledFeatures"] = {}
+            correlated[project_name]["enabledFeatures"][feature_name] = artifacts
+
+        for feature_name, artifacts in correlated_feature_gate_table.items():
+            if project_name := feature_gate_project_map.get(feature_name, ""):
+                add_enabled_feature(correlated, project_name, feature_name, artifacts)
+
+        with open(self.file_path_settings.correlated_file_path, "w") as f:
+            json.dump(correlated, f)
+
+    def correlate_summarized_features(self):
+        logger.info("[*] Correlating summarized features with JIRA/GitHub data")
+        with open(self.file_path_settings.summarized_features_file_path, "r") as f:
+            summarized_features = json.load(f)
+        with open(self.file_path_settings.correlated_file_path, "r") as f:
+            correlated = json.load(f)
+        feature_gate_project_map = read_pickle_file(
+            self.file_path_settings.feature_gate_project_map_file_path
         )
 
         def add_enabled_feature(correlated, project_name, feature_name, summary):
@@ -288,7 +314,7 @@ class Correlator:
             if project_name := feature_gate_project_map.get(feature_name, ""):
                 add_enabled_feature(correlated, project_name, feature_name, summary)
 
-        with open(file_path_settings.correlated_file_path, "w") as f:
+        with open(self.file_path_settings.correlated_file_path, "w") as f:
             json.dump(correlated, f)
 
     def correlate(self):
@@ -312,10 +338,5 @@ class Correlator:
         # Step 2: Correlate with feature gate information
         self.correlate_table()
 
-        # Step 3: Summarize feature gates
-        # Use Summarizer class with dependency injection
-        summarizer = Summarizer(self.settings)
-        summarizer.summarize_feature_gates()
-
-        # Step 4: Match summarized features with JIRA issues
-        self.correlate_summarized_features(self.file_path_settings)
+        # Step 3: Match enabled feature gates with JIRA issues
+        self.correlate_features()

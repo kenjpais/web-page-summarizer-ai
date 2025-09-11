@@ -36,8 +36,6 @@ class APISettings(BaseSettings):
     jira_server: str = Field(alias="JIRA_SERVER")
     jira_timeout: int = Field(default=30, alias="JIRA_TIMEOUT")
     jira_batch_size: int = Field(default=500, alias="JIRA_BATCH_SIZE")
-    # jira_max_results: int = Field(default=200, alias="JIRA_MAX_RESULTS")
-
     # LLM Configuration
     llm_provider: str = Field(
         default="local", alias="LLM_PROVIDER"
@@ -48,16 +46,20 @@ class APISettings(BaseSettings):
         default="http://localhost:11434/api/generate", alias="LLM_API_URL"
     )
     llm_model: str = Field(default="mistral", alias="LLM_MODEL")
-    # llm_timeout: int = Field(default=120, alias="LLM_TIMEOUT")
-
     # Google Gemini API
     google_api_key: str = Field(default="", alias="GOOGLE_API_KEY")
-    gemini_model: str = Field(default="gemini-1.5-flash", alias="GEMINI_MODEL")
+    gemini_model: str = Field(default="gemini-1.5-pro", alias="GEMINI_MODEL")
 
     # LLM Input Limits
-    max_input_tokens: int = Field(
-        default=50000, alias="MAX_INPUT_TOKENS"
+    max_input_tokens_per_request: int = Field(
+        default=50000, alias="MAX_INPUT_TOKENS_PER_REQUEST"
     )  # Conservative limit for chunking
+    max_requests_per_day: int = Field(
+        default=10000, alias="MAX_REQUESTS_PER_DAY"
+    )  # Max requests per day
+    max_requests_per_minute: int = Field(
+        default=1000, alias="MAX_REQUESTS_PER_MINUTE"
+    )  # Max requests per minute
     chunk_overlap: int = Field(
         default=1000, alias="CHUNK_OVERLAP"
     )  # Overlap between chunks
@@ -183,6 +185,11 @@ class ProcessingSettings(BaseSettings):
     parallel_processing: bool = Field(default=False, alias="PARALLEL_PROCESSING")
     max_workers: int = Field(default=4, alias="MAX_WORKERS")
 
+    # Summarization strategy
+    reduce_enabled: bool = Field(
+        default=True, alias="REDUCE_ENABLED"
+    )  # If False, only use Map chain
+
     # URL validation
     allowed_protocols: List[str] = Field(
         default=["http", "https"], alias="ALLOWED_PROTOCOLS"
@@ -226,9 +233,7 @@ class ConfigFileSettings(BaseSettings):
 
     # Template files
     summarize_prompt_template: str = "summarize_prompt_template.txt"
-    example_summary_file: str = "example_summary.txt"
-    classify_prompt_template: str = "classify_prompt_template.txt"
-    project_summary_template: str = "summarize_project_prompt_template.txt"
+    summarize_reduce_prompt_template: str = "summarize_reduce_prompt_template.txt"
     summarize_enabled_feature_gate_prompt_template: str = (
         "summarize_enabled_feature_gate_prompt_template.txt"
     )
@@ -326,7 +331,7 @@ class FilePathSettings:
     @property
     def summary_file_path(self) -> Path:
         """Get full path to summary.txt file."""
-        return self._data_dir / "summary.txt"
+        return self._data_dir / "summary.md"
 
     # Config directory file paths
     @property
@@ -361,19 +366,9 @@ class FilePathSettings:
         return self._config_dir / self._config_files.summarize_prompt_template
 
     @property
-    def example_summary_file_path(self) -> Path:
-        """Get full path to example summary file."""
-        return self._config_dir / self._config_files.example_summary_file
-
-    @property
-    def classify_prompt_template_path(self) -> Path:
-        """Get full path to classify prompt template."""
-        return self._config_dir / self._config_files.classify_prompt_template
-
-    @property
-    def project_summary_template_path(self) -> Path:
-        """Get full path to project summary template."""
-        return self._config_dir / self._config_files.project_summary_template
+    def summarize_reduce_prompt_template_path(self) -> Path:
+        """Get full path to enabled feature gate prompt template."""
+        return self._config_dir / self._config_files.summarize_reduce_prompt_template
 
     @property
     def summarize_enabled_feature_gate_prompt_template_path(self) -> Path:
@@ -507,6 +502,12 @@ class ConfigLoader:
             self.settings.config_files.summarize_prompt_template
         )
 
+    def get_reduce_prompt_template(self) -> str:
+        """Get reduce prompt template."""
+        return self.load_text_config(
+            self.settings.config_files.summarize_reduce_prompt_template
+        )
+
     def get_feature_gate_summarize_prompt_template(self) -> str:
         """Get feature gate summarization prompt template."""
         return self.load_text_config(
@@ -518,16 +519,6 @@ class ConfigLoader:
         return self.load_text_config(
             self.settings.config_files.summarize_single_feature_gate_prompt_template
         )
-
-    def get_project_summary_template(self) -> str:
-        """Get project summarization prompt template."""
-        return self.load_text_config(
-            self.settings.config_files.project_summary_template
-        )
-
-    def get_example_summary(self) -> str:
-        """Get example summary text."""
-        return self.load_text_config(self.settings.config_files.example_summary_file)
 
 
 # Global settings instance

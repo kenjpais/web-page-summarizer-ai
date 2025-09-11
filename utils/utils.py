@@ -1,4 +1,3 @@
-from operator import inv
 import re
 import json
 from typing import Callable, Dict, List, Any, Optional
@@ -138,7 +137,7 @@ def add_urls_to_file(urls: list[str], file_path: str, mode: str = "a"):
             f.write(url + "\n")
 
 
-def json_to_markdown(data, heading_level=1):
+def json_to_markdown(data, heading_level=1, jira_server=None):
     """
     Convert JSON data to human-readable Markdown format.
 
@@ -149,6 +148,7 @@ def json_to_markdown(data, heading_level=1):
     Args:
         data: JSON data (dict, list, or JSON string) to convert
         heading_level: Starting heading level for hierarchical structure
+        jira_server: Optional JIRA server URL for creating issue links
 
     Returns:
         Formatted Markdown string
@@ -158,9 +158,20 @@ def json_to_markdown(data, heading_level=1):
     - Automatic heading level management
     - Clean formatting for different data types
     - Handles both objects and arrays appropriately
+    - Creates clickable JIRA links when jira_server is provided
     """
     if isinstance(data, str):
         data = json.loads(data)
+
+    def create_jira_link(text):
+        """Create a clickable JIRA link if the text matches a JIRA issue pattern."""
+        if not jira_server:
+            return text
+        match = re.match(r"\b([A-Z][A-Z0-9]+-\d+)\b", text)
+        if match:
+            issue_key = match.group(1)
+            return f"[{issue_key}]({jira_server}/browse/{issue_key})"
+        return text
 
     markdown = ""
     if isinstance(data, dict):
@@ -168,18 +179,28 @@ def json_to_markdown(data, heading_level=1):
             if isinstance(value, (dict, list)):
                 # Create heading for complex nested structures
                 markdown += f"{'#' * heading_level} {key.capitalize()}\n\n"
-                markdown += json_to_markdown(value, heading_level + 1)
+                markdown += json_to_markdown(value, heading_level + 1, jira_server)
             else:
                 # Format simple key-value pairs as bold key with value
-                markdown += f"**{key.capitalize()}:** {value}\n\n"
+                if key == "epic_key" and jira_server:
+                    # Special handling for epic_key to create a link
+                    markdown += (
+                        f"**{key.capitalize()}:** {create_jira_link(str(value))}\n\n"
+                    )
+                else:
+                    # For other fields, check if the value contains a JIRA key
+                    value_str = str(value)
+                    markdown += (
+                        f"**{key.capitalize()}:** {create_jira_link(value_str)}\n\n"
+                    )
     elif isinstance(data, list):
         for idx, item in enumerate(data, 1):
             if isinstance(item, (dict, list)):
                 # Recursively process complex list items
-                markdown += json_to_markdown(item, heading_level)
+                markdown += json_to_markdown(item, heading_level, jira_server)
             else:
-                # Format simple list items as numbered list
-                markdown += f"{idx}. {item}\n"
+                # Format simple list items as numbered list and check for JIRA keys
+                markdown += f"{idx}. {create_jira_link(str(item))}\n"
     return markdown
 
 
@@ -225,3 +246,36 @@ def validate_cs_input_str(input_str: str, field_name: str) -> list[str]:
         validated_items.append(item)
 
     return validated_items
+
+
+def split_dict(dictionary: dict) -> tuple[dict, dict]:
+    """
+    Split a dictionary into two halves.
+    """
+    items = list(dictionary.items())
+    mid = len(items) // 2
+    first_half = dict(items[:mid])
+    second_half = dict(items[mid:])
+    return first_half, second_half
+
+
+def convert_jira_ids_to_links(content: str, jira_server: str) -> str:
+    """
+    Convert JIRA IDs to hyperlinks in a markdown file.
+
+    Args:
+        content (str): The content to convert
+        jira_server (str): The JIRA server URL
+
+    Returns:
+        str: The content with JIRA IDs converted to hyperlinks
+    """
+    # Pattern matches: UPPERCASE-NUMBERS (e.g., CONSOLE-4661, AGENT-1262)
+    pattern = r"[A-Z]+-\d+"
+
+    def replace_match(match: re.Match) -> str:
+        """Convert a single JIRA ID match to a hyperlink."""
+        jira_id = match.group()
+        return f"[{jira_id}]({jira_server}/browse/{jira_id})"
+
+    return re.sub(pattern, replace_match, content)
