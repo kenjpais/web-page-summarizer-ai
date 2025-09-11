@@ -31,7 +31,8 @@ class TestSummarizeFeatureGates(unittest.TestCase):
     @classmethod
     @patch("clients.local_llm_client.create_local_llm", side_effect=create_mock_llm)
     @patch("utils.gemini_tokenizer.GeminiTokenizer", side_effect=MockGeminiTokenizer)
-    def setUpClass(cls, mock_create_llm, mock_tokenizer):
+    @patch("utils.gemini_tokenizer.ChatGoogleGenerativeAI")
+    def setUpClass(cls, mock_chat_google_ai, mock_create_llm, mock_tokenizer):
         url = (
             "https://amd64.origin.releases.ci.openshift.org/releasestream/"
             "4-scos-stable/release/4.19.0-okd-scos.0"
@@ -63,6 +64,9 @@ class TestSummarizeFeatureGates(unittest.TestCase):
         # Mock data
         copy_file(src_path=correlated_feature_gate_table_file, dest_dir=data_dir)
         copy_file(src_path=correlated_file, dest_dir=data_dir)
+
+        # Configure mock ChatGoogleGenerativeAI
+        mock_chat_google_ai.return_value.get_num_tokens.return_value = 100
 
         summarizer = Summarizer(settings)
         summarizer.summarize_feature_gates()
