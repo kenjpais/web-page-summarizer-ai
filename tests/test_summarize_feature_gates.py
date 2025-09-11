@@ -7,6 +7,7 @@ from utils.file_utils import copy_file, delete_all_in_directory
 from config.settings import get_settings
 from utils.logging_config import get_logger, setup_logging
 from tests.mocks.mock_llm import create_mock_llm
+from tests.mocks.mock_gemini_tokenizer import MockGeminiTokenizer
 
 setup_logging()
 
@@ -29,7 +30,8 @@ summarized_features_file = data_dir / "summarized_features.json"
 class TestSummarizeFeatureGates(unittest.TestCase):
     @classmethod
     @patch("clients.local_llm_client.create_local_llm", side_effect=create_mock_llm)
-    def setUpClass(cls, mock_create_llm):
+    @patch("utils.gemini_tokenizer.GeminiTokenizer", side_effect=MockGeminiTokenizer)
+    def setUpClass(cls, mock_create_llm, mock_tokenizer):
         url = (
             "https://amd64.origin.releases.ci.openshift.org/releasestream/"
             "4-scos-stable/release/4.19.0-okd-scos.0"

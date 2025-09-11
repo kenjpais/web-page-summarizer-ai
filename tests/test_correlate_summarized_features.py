@@ -9,6 +9,7 @@ from utils.file_utils import copy_file, delete_all_in_directory
 from config.settings import get_settings
 from utils.logging_config import get_logger, setup_logging
 from tests.mocks.mock_llm import create_mock_llm
+from tests.mocks.mock_gemini_tokenizer import MockGeminiTokenizer
 
 setup_logging()
 
@@ -68,7 +69,10 @@ class TestCorrelateTable(unittest.TestCase):
         copy_file(src_path=feature_gate_project_map_file, dest_dir=data_dir)
 
         @patch("clients.local_llm_client.create_local_llm", side_effect=create_mock_llm)
-        def run_pipeline(mock_create_llm):
+        @patch(
+            "utils.gemini_tokenizer.GeminiTokenizer", side_effect=MockGeminiTokenizer
+        )
+        def run_pipeline(mock_create_llm, mock_tokenizer):
             summarizer = Summarizer(settings)
             summarizer.summarize_feature_gates()
             correlator = Correlator(settings)
