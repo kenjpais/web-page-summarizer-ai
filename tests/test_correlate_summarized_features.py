@@ -32,7 +32,8 @@ class TestCorrelateTable(unittest.TestCase):
     @classmethod
     @patch("clients.local_llm_client.create_local_llm", side_effect=create_mock_llm)
     @patch("utils.gemini_tokenizer.GeminiTokenizer", side_effect=MockGeminiTokenizer)
-    def setUpClass(cls, mock_create_llm, mock_tokenizer):
+    @patch("utils.gemini_tokenizer.ChatGoogleGenerativeAI")
+    def setUpClass(cls, mock_chat_google_ai, mock_create_llm, mock_tokenizer):
         # Ensure FILTER_ON is True for this test (restore original .env value)
         # This is needed because other tests may have modified os.environ["FILTER_ON"]
         os.environ["FILTER_ON"] = "True"
@@ -69,6 +70,9 @@ class TestCorrelateTable(unittest.TestCase):
         copy_file(src_path=correlated_feature_gate_table, dest_dir=data_dir)
         copy_file(src_path=summarized_features_file, dest_dir=data_dir)
         copy_file(src_path=feature_gate_project_map_file, dest_dir=data_dir)
+
+        # Configure mock ChatGoogleGenerativeAI
+        mock_chat_google_ai.return_value.get_num_tokens.return_value = 100
 
         summarizer = Summarizer(settings)
         summarizer.summarize_feature_gates()
