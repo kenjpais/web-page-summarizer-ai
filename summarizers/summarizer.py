@@ -1,295 +1,527 @@
-import re
 import json
-import time
-from utils.utils import json_to_markdown
-from utils.parser_utils import convert_json_text_to_dict
+from dataclasses import dataclass
+from typing import Any, List, Dict
+from langchain_core.documents import Document
+from langchain_text_splitters import (
+    MarkdownHeaderTextSplitter,
+    RecursiveCharacterTextSplitter,
+    RecursiveJsonSplitter,
+)
+from utils.utils import convert_jira_ids_to_links, json_to_markdown
 from chains.chains import Chains
 from config.settings import get_config_loader, AppSettings
-from utils.logging_config import get_logger
-from utils.text_chunker import (
-    chunk_text_for_llm,
-    combine_chunked_summaries,
-    get_chunk_info,
-)
+from utils.logging_config import get_logger, setup_logging
+from utils.gemini_tokenizer import GeminiTokenizer
 
 logger = get_logger(__name__)
+
+
+@dataclass
+class ChunkMetadata:
+    """Metadata for a text chunk"""
+
+    token_count: int
+    chunk_index: int
+    total_chunks: int
+    semantic_section: str
+
+
+class MapReduceSummarizer:
+    """
+    Manages text chunking and summarization using MapReduce pattern.
+    """
+
+    def __init__(self, map_chain, reduce_chain, tokenizer, settings):
+        """Initialize the manager with settings."""
+        self.map_chain = map_chain
+        self.reduce_chain = reduce_chain
+        self.tokenizer = tokenizer
+        self.settings = settings
+        self.chunk_size = int(self.settings.api.max_input_tokens_per_request * 0.1)
+        self.chunk_overlap = int(self.settings.api.chunk_overlap)
+        self.reduce_enabled = self.settings.processing.reduce_enabled
+
+    def split_content(self, content: Any) -> List[Document]:
+        """
+        Split content into chunks using appropriate splitters based on content type.
+
+        Args:
+            content: Content to split (can be JSON object or text)
+
+        Returns:
+            List of Document objects with content and metadata
+        """
+        if isinstance(content, (dict, list)):
+            # Handle JSON content
+            json_splitter = RecursiveJsonSplitter(
+                max_chunk_size=self.chunk_size,
+                chunk_overlap=self.chunk_overlap,
+                length_function=self.tokenizer.count_tokens,
+                separators=["\n\n", "\n", ". ", ", ", " ", ""],
+            )
+            return json_splitter.split_documents(
+                [
+                    Document(
+                        page_content=json.dumps(content),
+                        metadata={"content_type": "json"},
+                    )
+                ]
+            )
+        else:
+            # Handle text content
+            text = content if isinstance(content, str) else str(content)
+
+            # First try markdown-aware splitting
+            md_splitter = MarkdownHeaderTextSplitter(
+                headers_to_split_on=[
+                    ("#", "header1"),
+                    ("##", "header2"),
+                    ("###", "header3"),
+                ]
+            )
+            md_docs = md_splitter.split_text(text)
+
+            # Then apply semantic splitting to large sections
+            semantic_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=self.chunk_size,
+                chunk_overlap=self.chunk_overlap,
+                length_function=self.tokenizer.count_tokens,
+                separators=["\n\n", "\n", ". ", ", ", " ", ""],
+            )
+
+            final_docs = []
+            for doc in md_docs:
+                if self.tokenizer.count_tokens(doc.page_content) > self.chunk_size:
+                    # Split large sections further
+                    sub_chunks = semantic_splitter.split_text(doc.page_content)
+                    for i, chunk in enumerate(sub_chunks):
+                        final_docs.append(
+                            Document(
+                                page_content=chunk,
+                                metadata={
+                                    **doc.metadata,
+                                    "content_type": "text",
+                                    "chunk_index": i,
+                                    "total_chunks": len(sub_chunks),
+                                    "token_count": self.tokenizer.count_tokens(chunk),
+                                },
+                            )
+                        )
+                else:
+                    doc.metadata.update(
+                        {
+                            "content_type": "text",
+                            "chunk_index": len(final_docs),
+                            "total_chunks": len(md_docs),
+                            "token_count": self.tokenizer.count_tokens(
+                                doc.page_content
+                            ),
+                        }
+                    )
+                    final_docs.append(doc)
+
+            return final_docs
+
+    def combine_summaries_simple(
+        self, summaries: List[str], sections: List[str]
+    ) -> str:
+        """
+        Combine summaries without using reduce chain.
+
+        Args:
+            summaries: List of summaries to combine
+            sections: List of section names
+
+        Returns:
+            Combined summary with proper structure
+        """
+        combined = ""
+        for section, summary in zip(sections, summaries):
+            combined += f"## {section}\n{summary}\n\n"
+        return combined.strip()
+
+    def process_text(self, key: str, content: Any) -> Dict[str, Any]:
+        """
+        Process content using either full MapReduce or Map-only pattern.
+
+        Args:
+            key: The key/identifier for this content
+            content: Content to process (can be JSON object or text)
+
+        Returns:
+            Dictionary containing:
+            - final_summary: The combined summary
+            - chunk_summaries: Individual chunk summaries
+            - metadata: Processing metadata
+        """
+        if not key or content is None:
+            return {
+                "final_summary": "",
+                "section_summaries": {},
+                "chunk_summaries": [],
+                "metadata": {},
+            }
+
+        # Split content into chunks using appropriate splitter
+        docs = self.split_content(content)
+
+        # Create map chain
+        map_chain = self.map_chain
+
+        # Map phase - process each chunk
+        chunk_summaries = []
+        for doc in docs:
+            logger.info(
+                f"Processing chunk {doc.metadata['chunk_index'] + 1}/{doc.metadata['total_chunks']} "
+                f"({doc.metadata['token_count']} tokens)"
+            )
+
+            try:
+                summary = map_chain.invoke({"key": key, "value": doc.page_content})
+                chunk_summaries.append({"content": summary, "metadata": doc.metadata})
+            except Exception as e:
+                logger.error(f"Failed to process chunk: {e}")
+                chunk_summaries.append(
+                    {
+                        "content": f"[Error processing chunk: {str(e)}]",
+                        "metadata": doc.metadata,
+                    }
+                )
+
+        # Group summaries by section
+        sections = {}
+        for summary in chunk_summaries:
+            section = summary["metadata"].get("header1", "General")
+            if section not in sections:
+                sections[section] = []
+            sections[section].append(summary["content"])
+
+        # Process summaries based on reduce_enabled setting
+        if self.reduce_enabled:
+            # Create reduce chain
+            reduce_chain = self.reduce_chain
+
+            # Reduce phase - combine summaries
+            section_summaries = {}
+            for section, summaries in sections.items():
+                try:
+                    section_summary = reduce_chain.invoke(
+                        {"value": "\n\n".join(summaries)}
+                    )
+                    section_summaries[section] = section_summary
+                except Exception as e:
+                    logger.error(f"Failed to combine section {section}: {e}")
+                    section_summaries[section] = f"[Error combining section: {str(e)}]"
+
+            # Final reduce - combine sections
+            try:
+                final_summary = reduce_chain.invoke(
+                    {"value": "\n\n".join(section_summaries.values())}
+                )
+            except Exception as e:
+                logger.error(f"Failed to create final summary: {e}")
+                final_summary = "[Error creating final summary]"
+        else:
+            # Simple combination without reduce chain
+            section_summaries = {}
+            for section, summaries in sections.items():
+                section_summaries[section] = "\n\n".join(summaries)
+
+            final_summary = self.combine_summaries_simple(
+                list(section_summaries.values()), list(sections.keys())
+            )
+
+        return {
+            "final_summary": final_summary,
+            "section_summaries": section_summaries,
+            "chunk_summaries": chunk_summaries,
+            "metadata": {
+                "total_chunks": len(docs),
+                "total_tokens": sum(doc.metadata["token_count"] for doc in docs),
+                "sections": list(sections.keys()),
+                "reduce_enabled": self.reduce_enabled,
+            },
+        }
 
 
 class Summarizer:
     def __init__(self, settings: AppSettings, chains=None):
         self.settings = settings
-        if chains is None:
-            self.chains = Chains(settings)
-        else:
-            self.chains = chains
+        self.chains = chains or Chains(settings)
+        self.tokenizer = GeminiTokenizer(settings)
+        self.max_request_tokens = self.settings.api.max_input_tokens_per_request
+        self.chunk_size = int(self.max_request_tokens * 0.3)
+        self.map_reducer = MapReduceSummarizer(
+            map_chain=self.chains.map_chain,
+            reduce_chain=self.chains.reduce_chain,
+            tokenizer=self.tokenizer,
+            settings=self.settings,
+        )
+        jira_filter = get_config_loader(self.settings).get_jira_filter()
+        self.valid_issue_types = [
+            t.lower()[:-1] + "ies" if t.lower().endswith("y") else t.lower() + "s"
+            for t in jira_filter.get("issuetype", {}).get("name", [])
+            if t
+        ]
 
-    def summarize_projects(self):
-        logger.info("\n[*] Generating summary for projects...")
+    def is_chunk_size_valid(self, text: str) -> bool:
+        """
+        Check if text is smaller than chunk size
+        """
+        return self.tokenizer.count_tokens(text) < self.chunk_size
 
-        data_dir = self.settings.file_paths.data_dir
-        llm_provider = self.settings.api.llm_provider
-        llm_model = self.settings.api.llm_model
-        projects_summary_file = data_dir / "projects_summary.txt"
+    def summarize(self) -> str:
+        """
+        Summarize correlated information using MapReduce pattern.
 
-        with open(self.settings.file_paths.correlated_file_path, "r") as cor_file:
-            release_notes = json_to_markdown(cor_file.read())
+        This function handles release notes by:
+        1. Implementing hierarchical chunking based on document structure
+        2. Processing chunks with appropriate rate limiting
+        3. Combining results into a semantically structured summary
 
-        # Get the project summary prompt template for chunking
-        config_loader = get_config_loader(self.settings)
-        prompt_template = config_loader.get_project_summary_template()
-        chunk_info = get_chunk_info(self.settings, release_notes, prompt_template)
+        Raises:
+            FileNotFoundError: If correlated file doesn't exist
+            json.JSONDecodeError: If correlated file contains invalid JSON
+            ValueError: If correlated data is empty or invalid
+        """
+        try:
+            with open(self.settings.file_paths.correlated_file_path, "r") as cor_file:
+                correlated_data = json.load(cor_file)
 
+            if not correlated_data:
+                raise ValueError("Correlated data file is empty")
+
+            if not isinstance(correlated_data, dict):
+                raise ValueError(
+                    "Invalid correlated data structure: expected dictionary"
+                )
+
+            summary = self.summarize_projects(correlated_data)
+            summary = convert_jira_ids_to_links(summary, self.settings.api.jira_server)
+            with open(self.settings.file_paths.summary_file_path, "w") as f:
+                f.write(summary)
+            return summary
+
+        except FileNotFoundError as e:
+            logger.error(f"Correlated file not found: {e}")
+            raise
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in correlated file: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error during summarization: {e}")
+            raise
+
+    def summarize_projects(self, correlated_data: dict) -> str:
+        """
+        Summarize projects using the map-reduce pattern.
+
+        Args:
+            correlated_data: Dictionary of project data to summarize
+
+        Returns:
+            Formatted string containing all project summaries
+
+        Raises:
+            ValueError: If project data is invalid
+            RuntimeError: If API rate limit is exceeded
+        """
+        logger.info(f"\n[*] Summarizing {len(correlated_data)} projects...")
         logger.info(
-            f"Project summary analysis: {chunk_info['total_tokens']} tokens, "
-            f"needs chunking: {chunk_info['needs_chunking']}"
+            f"Using LLM Provider: {self.settings.api.llm_provider} and Model: {self.settings.api.llm_model}"
         )
 
-        if (
-            not chunk_info["needs_chunking"]
-            or llm_provider == "local"
-            or llm_model == "mistral"
-        ):
-            # Small payload - process normally
-            logger.info("Processing project summary as single payload")
-            result = self.chains.project_summary_chain.invoke(
-                {"correlated_info": release_notes}
-            )
-        else:
-            # Large payload - use chunking
-            logger.info(
-                f"Chunking project summary into {chunk_info['num_chunks']} parts"
-            )
-            chunks = chunk_text_for_llm(release_notes, prompt_template)
+        all_summaries = []
+        for i, (project_name, project_data) in enumerate(correlated_data.items()):
+            try:
+                if not isinstance(project_data, dict):
+                    raise ValueError(f"Invalid project data for {project_name}")
 
-            summaries = []
-            current_provider = self.settings.api.llm_provider
-
-            for i, chunk in enumerate(chunks, 1):
-                logger.info(
-                    f"Processing project chunk {i}/{len(chunks)} "
-                    f"({get_chunk_info(self.settings, chunk)['total_tokens']} tokens)"
+                # Normalize project name
+                display_name = (
+                    "MISCELLANEOUS" if project_name == "NO-PROJECT" else project_name
                 )
 
-                # Add rate limiting for Gemini API
-                if current_provider == "gemini" and i > 1:
-                    logger.info(
-                        "Rate limiting: waiting 2 seconds between Gemini requests..."
-                    )
-                    time.sleep(2)
+                # Process project data based on size and type
+                if self.is_chunk_size_valid(json.dumps(project_data)):
+                    logger.debug(f"Summarizing project: {display_name}")
+                    project_summary = self._summarize(display_name, project_data)
+                else:
+                    logger.debug(f"Chunking project: {display_name}")
+                    project_summary = self.chunk_summarize_project(project_data)
 
-                try:
-                    chunk_summary = self.chains.project_summary_chain.invoke(
-                        {"correlated_info": chunk}
-                    )
-                    summaries.append(chunk_summary)
+                all_summaries.append(f"## {display_name}\n{project_summary}\n")
+                logger.info(
+                    f"Summarized {i+1}/{len(correlated_data)} projects: {display_name}"
+                )
 
-                    # Save individual chunk summaries for debugging
-                    chunk_file = data_dir / f"project_chunk_summary_{i}.txt"
-                    with open(chunk_file, "w") as f:
-                        f.write(chunk_summary)
+            except Exception as e:
+                logger.error(f"Failed to summarize project {project_name}: {e}")
 
-                except Exception as e:
-                    logger.error(f"Failed to process project chunk {i}: {e}")
-                    summaries.append(f"[Error processing chunk {i}: {str(e)}]")
+        if not all_summaries:
+            raise ValueError("No projects were successfully summarized")
 
-            # Combine all chunk summaries
-            result = combine_chunked_summaries(summaries)
-            logger.info(
-                f"Combined {len(summaries)} project chunk summaries into final result"
-            )
-
-        with open(projects_summary_file, "w") as summary:
-            summary.write(result)
-        return result
+        return "\n".join(all_summaries)
 
     def summarize_feature_gates(self):
+        """Summarize feature gates."""
         logger.info("[*] Summarizing feature gates...")
-        llm_provider = self.settings.api.llm_provider
-        llm_model = self.settings.api.llm_model
-        if llm_model == "mistral" or llm_provider == "local":
-            self.summarize_feature_gates_individually()
-            return
 
         with open(
             self.settings.file_paths.correlated_feature_gate_table_file_path, "r"
         ) as f:
             feature_gate_artifacts = json.load(f)
 
-        try:
-            summarized_feature_gates = convert_json_text_to_dict(
-                self.chains.feature_gate_summary_chain.invoke(
-                    {"feature-gates": f"""Feature Gates:\n{feature_gate_artifacts}"""}
-                )
-            )
-
-            assert isinstance(summarized_feature_gates, dict)
-            assert len(summarized_feature_gates) > 0
-            assert all(isinstance(k, str) for k in summarized_feature_gates.keys())
-            assert all(isinstance(v, str) for v in summarized_feature_gates.values())
-
-            with open(self.settings.file_paths.summarized_features_file_path, "w") as f:
-                json.dump(summarized_feature_gates, f)
-        except Exception as e:
-            logger.error(
-                f"Failed to summarize feature gates: Invalid JSON format received from LLM: {e}"
-            )
-
-    def summarize_feature_gates_individually(self):
-        with open(
-            self.settings.file_paths.correlated_feature_gate_table_file_path, "r"
-        ) as f:
-            feature_gate_artifacts = json.load(f)
         feature_gate_summaries = {}
-        for feature_gate, artifacts in feature_gate_artifacts.items():
-            feature = {feature_gate: artifacts}
-            if feature_gate not in feature_gate_summaries:
-                summary = self.chains.single_feature_gate_summary_chain.invoke(
-                    {"feature-gate": f"""{feature}"""}
-                )
-                if isinstance(summary, str):
-                    feature_gate_summaries[feature_gate] = summary
-            else:
-                logger.error(
-                    f"Feature gate {feature_gate} already exists in feature_gate_summaries"
-                )
-                continue
 
-        if len(feature_gate_summaries) == 0:
-            logger.error("No feature gate summaries found")
+        for feature_gate, artifacts in feature_gate_artifacts.items():
+            if feature_gate not in feature_gate_summaries:
+                try:
+                    summary = self.chains.single_feature_gate_summary_chain.invoke(
+                        {"feature-gate": json_to_markdown({feature_gate: artifacts})}
+                    )
+                    feature_gate_summaries[feature_gate] = (
+                        summary if isinstance(summary, str) else None
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Failed to summarize feature gate {feature_gate}: {e}"
+                    )
+                    feature_gate_summaries[feature_gate] = None
+
+        if not feature_gate_summaries:
+            logger.error("No feature gate summaries generated")
             return
 
         with open(self.settings.file_paths.summarized_features_file_path, "w") as f:
             json.dump(feature_gate_summaries, f)
 
-    def summarize(self):
-        """Main summarize method for the Summarizer class."""
-        if not self.settings.processing.summarize_enabled:
-            logger.info("Summarize is disabled, skipping...")
-            return
-        logger.info("\n[*] Summarizing...")
-        logger.info(
-            f"Using {self.settings.api.llm_provider} {self.settings.api.llm_model} model"
-        )
-        if self.settings.processing.summarize_enabled:
-            self.summarize_correlated_info()
-        self.clean_summary(self.settings.file_paths.summary_file_path)
-
-    def summarize_correlated_info(self):
+    def chunk_summarize_project(self, project_data: dict) -> str:
         """
-        Summarize correlated information with intelligent chunking for large payloads.
+        Chunk and summarize the project data.
 
-        This function handles large release notes by:
-        1. Checking payload size against LLM limits
-        2. Splitting into chunks if necessary
-        3. Processing chunks with rate limiting
-        4. Combining results into final summary
+        Args:
+            project_data: Dictionary containing issue type data eg.(epics, stories, features)
+
+        Returns:
+            Combined summary of all valid issue types
+
+        Raises:
+            ValueError: If project data is invalid or empty
         """
-        with open(self.settings.file_paths.correlated_file_path, "r") as cor_file:
-            correlated_info_md = json_to_markdown(cor_file.read())
+        if not isinstance(project_data, dict):
+            raise ValueError("Project data must be a dictionary")
 
-        release_notes = f"""Release information:\n{correlated_info_md}"""
+        if not project_data:
+            raise ValueError("Project data is empty")
 
-        # Save the full payload for debugging
-        with open(self.settings.file_paths.release_notes_payload_file_path, "w") as f:
-            f.write(release_notes)
-
-        # Get the prompt template for proper chunking
-        config_loader = get_config_loader(self.settings)
-        prompt_template = config_loader.get_summarize_prompt_template()
-
-        # Check if chunking is needed
-        chunk_info = get_chunk_info(self.settings, release_notes, prompt_template)
-        logger.info(
-            f"Release notes analysis: {chunk_info['total_tokens']} tokens, "
-            f"needs chunking: {chunk_info['needs_chunking']}"
-        )
-
-        if (
-            not chunk_info["needs_chunking"]
-            or self.settings.api.llm_provider == "local"
-            or self.settings.api.llm_model == "mistral"
-        ):
-            # Small payload - process normally
-            logger.info("Processing release notes as single payload")
+        return self.map_reduce("project", project_data)
+        all_summaries = []
+        for issue_type, value in project_data.items():
             try:
-                result = self.chains.summary_chain.invoke(
-                    {"release-notes": release_notes}
-                )
+                if issue_type not in self.valid_issue_types:
+                    logger.warning(
+                        f"Skipping issue type: {issue_type} because it is not in the valid issue types"
+                    )
+                    continue
+
+                if not value:
+                    logger.warning(f"Skipping empty value for issue type: {issue_type}")
+                    continue
+
+                issue_summary = self.map_reduce(issue_type, value)
+                if issue_summary:
+                    logger.info(f"Generated summary for issue type {issue_type}")
+                    logger.debug(f"Summary content: {issue_summary}")
+                    all_summaries.append(f"\n{issue_summary}\n")
+                else:
+                    logger.warning(
+                        f"Empty summary generated for issue type: {issue_type}"
+                    )
+
             except Exception as e:
-                logger.error(f"[!][ERROR] Failed to process release notes: {e}")
-                if "429" in str(e):
-                    logger.error(f"[!][ERROR] Rate Limit exceeded: {e}")
-                raise
-        else:
-            # Large payload - use chunking
-            logger.info(f"Chunking release notes into {chunk_info['num_chunks']} parts")
-            chunks = chunk_text_for_llm(self.settings, release_notes, prompt_template)
+                logger.error(f"Failed to summarize issue type {issue_type}: {e}")
 
-            summaries = []
-            current_provider = self.settings.api.llm_provider
+        if not all_summaries:
+            logger.warning("No valid summaries generated for any issue type")
+            return "No valid content found to summarize."
 
-            for i, chunk in enumerate(chunks, 1):
-                logger.info(
-                    f"Processing chunk {i}/{len(chunks)} "
-                    f"({get_chunk_info(self.settings, chunk)['total_tokens']} tokens)"
+        return "\n".join(all_summaries)
+
+    def _summarize(self, key: str, value: Any) -> str:
+        """
+        Summarize the data using the map-reduce pattern.
+
+        Args:
+            key: The key/identifier for this data chunk
+            value: The data to summarize
+
+        Returns:
+            Summarized string
+
+        Raises:
+            ValueError: If key or value is invalid
+            RuntimeError: If API limit exceeded
+        """
+        if not key:
+            raise ValueError("Key cannot be empty")
+
+        if value is None:
+            raise ValueError("Value cannot be None")
+
+        if not isinstance(value, str):
+            value = json_to_markdown(json.dumps(value))
+
+        return self.chains.summary_chain.invoke({"key": key, "value": value})
+
+    def map_reduce(self, key: str, value: Any) -> str:
+        """
+        Summarize the data using the map-reduce pattern.
+
+        This method handles large data chunks by:
+        1. Converting the data to text format
+        2. Using MapReduceChainManager to split and process chunks
+        3. Returning the reduced combined summary
+
+        Args:
+            key: The key/identifier for this data chunk
+            value: The data to summarize (can be dict, list, or string)
+
+        Returns:
+            A summarized string combining all processed chunks
+
+        Raises:
+            ValueError: If key or value is invalid
+            RuntimeError: If processing fails or API limit exceeded
+        """
+        if not key:
+            raise ValueError("Key cannot be empty")
+
+        if value is None:
+            raise ValueError("Value cannot be None")
+
+        try:
+            if not isinstance(value, str):
+                value = json_to_markdown(
+                    json.dumps(value), jira_server=self.settings.api.jira_server
                 )
 
-                # Add rate limiting for Gemini API to avoid quota exhaustion
-                if current_provider == "gemini" and i > 1:
-                    logger.info(
-                        "Rate limiting: waiting 2 seconds between Gemini requests..."
-                    )
-                    time.sleep(2)
+            result = self.map_reducer.process_text(key, value)
 
-                try:
-                    chunk_summary = self.chains.summary_chain.invoke(
-                        {"release-notes": chunk}
-                    )
-                    summaries.append(chunk_summary)
+            if not isinstance(result, dict) or "final_summary" not in result:
+                raise RuntimeError("Invalid response from map_reduce_manager")
 
-                    if self.settings.processing.debug:
-                        # Save individual chunk summaries for debugging
-                        chunk_file = (
-                            self.settings.file_paths.data_dir / f"chunk_summary_{i}.txt"
-                        )
-                        with open(chunk_file, "w") as f:
-                            f.write(chunk_summary)
+            return result["final_summary"]
 
-                except Exception as e:
-                    logger.error(f"[!][ERROR] Failed to process chunk {i}: {e}")
-                    if "429" in str(e):
-                        logger.error(f"[!][ERROR] Rate Limit exceeded: {e}")
-                        break
-                    # Continue with other chunks rather than failing completely
-                    summaries.append(
-                        f"[!][ERROR] error processing chunk {i}: {str(e)}]"
-                    )
+        except Exception as e:
+            logger.error(f"Failed to process chunk {key}: {e}")
+            raise RuntimeError(f"Failed to process chunk: {str(e)}")
 
-            # Combine all chunk summaries
-            result = combine_chunked_summaries(summaries)
-            logger.info(f"Combined {len(summaries)} chunk summaries into final result")
 
-        # Save final summary
-        with open(self.settings.file_paths.summary_file_path, "w") as summary:
-            summary.write(result)
+if __name__ == "__main__":
+    # Set up logging before any operations
+    setup_logging()
 
-    def update_summary_with_release_version(
-        self, summary_file_path, release_version_name
-    ):
-        """Update summary file with release version name."""
-        with open(summary_file_path, "r") as rf:
-            content = rf.read()
-        updated_content = f"Release Notes {release_version_name}\n{content}"
-        with open(summary_file_path, "w") as wf:
-            wf.write(updated_content)
-
-    def clean_summary(self, dest_summary):
-        """Remove mentions of Part <i>"""
-        pattern = re.compile(r"^## Part ([1-9][0-9]?|100)\s*$")
-        with open(dest_summary, "r") as f:
-            summary_lines = f.readlines()
-
-        new_lines = [line for line in summary_lines if not pattern.match(line.strip())]
-
-        with open(dest_summary, "w") as file:
-            file.writelines(new_lines)
+    settings = AppSettings()
+    summarizer = Summarizer(settings)
+    summary = summarizer.summarize()

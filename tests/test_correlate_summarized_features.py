@@ -67,12 +67,12 @@ class TestCorrelateTable(unittest.TestCase):
         copy_file(src_path=summarized_features_file, dest_dir=data_dir)
         copy_file(src_path=feature_gate_project_map_file, dest_dir=data_dir)
 
-        @patch("clients.local_llm_chain.create_local_llm", side_effect=create_mock_llm)
+        @patch("clients.local_llm_client.create_local_llm", side_effect=create_mock_llm)
         def run_pipeline(mock_create_llm):
             summarizer = Summarizer(settings)
             summarizer.summarize_feature_gates()
             correlator = Correlator(settings)
-            correlator.correlate_summarized_features(settings.file_paths)
+            correlator.correlate_summarized_features()
 
         run_pipeline()
 

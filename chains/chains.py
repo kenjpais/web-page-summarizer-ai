@@ -12,34 +12,24 @@ class Chains:
         # Load prompt template file names from configuration
         config_loader = ConfigLoader(self.settings)
 
-        # Summary chain: Generates detailed summaries of release data
-        # Input: Correlated JIRA/GitHub data, Output: summary
+        # Summary chain: Generates detailed summaries of a key and value
+        # Input: Key and value, Output: summary of key
         self.summary_chain: Runnable = (
             PromptTemplate.from_template(config_loader.get_summarize_prompt_template())
             | self.llm_client
         )
 
-        # Project summary chain: Creates high-level project overviews
-        # Input: Project-level data, Output: summary
-        self.project_summary_chain: Runnable = (
-            PromptTemplate.from_template(config_loader.get_project_summary_template())
-            | self.llm_client
-        )
-
-        # Feature gate summary chain: Creates high-level feature overviews
-        # Input: Feature data, Output: summary
-        self.feature_gate_summary_chain: Runnable = (
-            PromptTemplate.from_template(
-                config_loader.get_feature_gate_summarize_prompt_template()
-            )
-            | self.llm_client
-        )
-
-        # Single Feature gate summary chain: Creates high-level feature overviews for a single feature gate
+        # Single Feature gate summary chain: Creates high-level feature summary of a single feature gate
         # Input: Feature data, Output: summary
         self.single_feature_gate_summary_chain: Runnable = (
             PromptTemplate.from_template(
                 config_loader.get_single_feature_gate_summarize_prompt_template()
             )
+            | self.llm_client
+        )
+
+        self.map_chain: Runnable = self.summary_chain
+        self.reduce_chain: Runnable = (
+            PromptTemplate.from_template(config_loader.get_reduce_prompt_template())
             | self.llm_client
         )

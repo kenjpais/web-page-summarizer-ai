@@ -106,16 +106,6 @@ Generated summaries and data will be stored in the following locations:
 - Scraped data: `data/`
 - Summaries: `data/summaries/`
 
-## Running Tests
-
-```bash
-# Make the test script executable
-chmod +x run_scraper_tests.sh
-
-# Run the tests
-./run_scraper_tests.sh
-```
-
 ## Configuration
 
 - To disable summary generation, set `SUMMARIZE_ENABLED=False` in your environment.

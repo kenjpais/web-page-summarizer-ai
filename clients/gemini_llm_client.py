@@ -26,7 +26,7 @@ class GeminiLLMClient(Runnable):
         self,
         input: Union[str, Dict[str, Any]],
         config: Optional[Dict[str, Any]] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> str:
         self.prompt = input
         result = self.llm.invoke(input, config=config, **kwargs)
@@ -51,7 +51,7 @@ def _create_gemini_llm(api_settings: APISettings):
     )
 
 
-class LazyGeminiLLM:
+class LazyGeminiLLM(Runnable):
     """Lazy wrapper for Gemini LLM that only initializes when first accessed."""
 
     def __init__(self, api_settings: APISettings):
@@ -63,8 +63,13 @@ class LazyGeminiLLM:
             self._client = _create_gemini_llm(self.api_settings)
         return self._client
 
-    def invoke(self, *args, **kwargs):
-        return self._get_client().invoke(*args, **kwargs)
+    def invoke(
+        self,
+        input: Union[str, Dict[str, Any]],
+        config: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> str:
+        return self._get_client().invoke(input, config=config, **kwargs)
 
     def __getattr__(self, name):
         # Delegate all other attributes to the actual client

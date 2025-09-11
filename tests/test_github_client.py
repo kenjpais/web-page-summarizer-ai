@@ -6,6 +6,12 @@ settings = get_settings()
 
 
 class TestGithubGraphQLClientIntegration(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Check if GitHub token is available
+        if not settings.api.github_token:
+            raise unittest.SkipTest("GitHub token not set in settings")
+
     def setUp(self):
         self.client = GithubGraphQLClient(
             github_graphql_api_url=settings.api.github_graphql_api_url,

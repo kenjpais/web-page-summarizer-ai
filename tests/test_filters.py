@@ -32,7 +32,7 @@ class TestFilters(unittest.TestCase):
     def test_df_filter_enabled_feature_gates_remote(self):
         """Test filtering enabled feature gates from remote URL"""
         # Use remote URL
-        remote_url = "https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-stable/release/4.19.0-okd-scos.0"
+        remote_url = "https://amd64.origin.releases.ci.openshift.org/releasestream/4-scos-next/release/4.20.0-okd-scos.ec.13"
         remote_scraper = HtmlScraper(remote_url, settings)
 
         try:
@@ -59,21 +59,18 @@ class TestFilters(unittest.TestCase):
 
             result = filter_enabled_feature_gates(dfs)
 
-            # Expected feature gates that should be enabled in 4.19.0
+            # Expected feature gates that should be enabled in 4.20.0-okd-scos.ec.13
             expected_gates = [
-                "CSIDriverSharedResource",
-                "VSphereControlPlaneMachineSet",
-                "VSphereStaticIPs",
-                "GatewayAPI",
-                "AdditionalRoutingCapabilities",
-                "ConsolePluginContentSecurityPolicy",
-                "MetricsCollectionProfiles",
-                "OnClusterBuild",
-                "OpenShiftPodSecurityAdmission",
-                "RouteExternalCertificate",
-                "ServiceAccountTokenNodeBinding",
-                "CPMSMachineNamePrefix",
-                "GatewayAPIController",
+                "ChunkSizeMiB",  # Unconditionally Enabled
+                "HardwareSpeed",  # Unconditionally Enabled
+                "InsightsRuntimeExtractor",  # Unconditionally Enabled
+                "OnClusterBuild",  # Unconditionally Enabled
+                "HighlyAvailableArbiter",  # Enabled
+                "SigstoreImageVerification",  # Enabled
+                "StoragePerformantSecurityPolicy",  # Enabled
+                "UpgradeStatus",  # Enabled
+                "VSphereMultiDisk",  # Enabled
+                "ImageVolume",  # Enabled (New)
             ]
 
             # Verify that expected feature gates are present

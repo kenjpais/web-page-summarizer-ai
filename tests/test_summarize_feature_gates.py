@@ -28,7 +28,7 @@ summarized_features_file = data_dir / "summarized_features.json"
 
 class TestSummarizeFeatureGates(unittest.TestCase):
     @classmethod
-    @patch("clients.local_llm_chain.create_local_llm", side_effect=create_mock_llm)
+    @patch("clients.local_llm_client.create_local_llm", side_effect=create_mock_llm)
     def setUpClass(cls, mock_create_llm):
         url = (
             "https://amd64.origin.releases.ci.openshift.org/releasestream/"

@@ -43,10 +43,37 @@ class MockLLM(Runnable):
                     return self.responses.get(feature_gate_name, "No summary available")
                 return "No summary available"
             elif "release-notes" in input:
-                return "Mock release notes summary"
+                return """# Release Summary
+
+## Project Overview
+Mock release notes summary with proper formatting.
+
+## Key Changes
+- Change 1
+- Change 2
+
+## Impact Analysis
+No major impacts identified."""
             elif "correlated_info" in input:
-                return "Mock correlated info summary"
-        return "Mock response"
+                return """# Release Summary
+
+## Project Status
+Mock correlated info summary with proper formatting.
+
+## Features
+- Feature 1
+- Feature 2
+
+## Dependencies
+No major dependencies."""
+        return """# Release Summary
+
+## General Information
+Mock response with proper formatting.
+
+## Details
+- Detail 1
+- Detail 2"""
 
 
 class MockLLMClient(Runnable):

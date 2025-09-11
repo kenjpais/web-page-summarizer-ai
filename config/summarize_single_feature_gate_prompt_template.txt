@@ -1,4 +1,4 @@
-You are generating a technical writer.
+You are an expert technical writer.
 
 Summarize the feature below with clear and accurate technical detail.
 
