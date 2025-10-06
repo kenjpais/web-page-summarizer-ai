@@ -1,0 +1,18 @@
+bug:
+  - '.*bug.*'
+enhancement:
+  - '.*feature.*'
+  - '.*enhancement.*'
+question:
+  - '.*how.*'
+  - '.*what.*'
+  - '.*help.*'
+documentation:
+  - '.*doc.*'
+  - '.*readme.*'
+dependencies:
+  - '.*dependency.*'
+  - '.*package.*'
+security:
+  - '.*security.*'
+  - '.*vulnerability.*'
