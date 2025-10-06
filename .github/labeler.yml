@@ -1,17 +1,22 @@
-# Add 'bug' label to any issue containing the word 'bug'
-bug: '(bug|error|broken|crash|problem)'
+bug:
+  - "\\bbug\\b"
 
-# Add 'enhancement' label to any issue containing these words
-enhancement: '(feature|enhancement|improvement|request)'
+enhancement:
+  - "\\bfeature\\b"
+  - "\\benhancement\\b"
 
-# Add 'question' label to any issue containing these words
-question: '(how|what|when|where|why|help)'
+question:
+  - "\\bquestion\\b"
+  - "\\bhelp\\b"
 
-# Add 'documentation' label to any issue containing these words
-documentation: '(doc|documentation|typo|example|readme)'
+documentation:
+  - "\\bdocs?\\b"
+  - "\\breadme\\b"
 
-# Add 'dependencies' label to any issue containing these words
-dependencies: '(dependency|package|version|update|upgrade)'
+dependencies:
+  - "\\bdependenc(y|ies)\\b"
+  - "\\bpackage\\b"
 
-# Add 'security' label to any issue containing these words
-security: '(security|vulnerability|exploit|attack|cve)'
+security:
+  - "\\bsecurity\\b"
+  - "\\bvulnerability\\b"
