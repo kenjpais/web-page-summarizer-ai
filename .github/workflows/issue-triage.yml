@@ -9,15 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       issues: write
-      contents: read
     steps:
-      - uses: actions/checkout@v4
-
       - name: Issue Labeler
         uses: github/issue-labeler@v3.3
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
           configuration-path: .github/labeler.yml
           enable-versioned-regex: 1
-          sync-labels: true
           include-title: 1
