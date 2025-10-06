@@ -1,12 +1,18 @@
 bug:
-  - '\b(bug|error|broken|crash|problem)\b'
+  - '.*bug.*'
 enhancement:
-  - '\b(feature|enhancement|improvement|request)\b'
+  - '.*feature.*'
+  - '.*enhancement.*'
 question:
-  - '\b(how|what|when|where|why|help|question)\b'
+  - '.*how.*'
+  - '.*what.*'
+  - '.*help.*'
 documentation:
-  - '\b(doc|documentation|typo|example|readme)\b'
+  - '.*doc.*'
+  - '.*readme.*'
 dependencies:
-  - '\b(dependency|dependencies|package|version|update|upgrade)\b'
+  - '.*dependency.*'
+  - '.*package.*'
 security:
-  - '\b(security|vulnerability|exploit|attack|cve)\b'
+  - '.*security.*'
+  - '.*vulnerability.*'
