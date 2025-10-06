@@ -1,43 +1,17 @@
-bug:
-  - "\\bbug\\b"
-  - "\\berror\\b"
-  - "not working"
-  - "\\bbroken\\b"
-  - "\\bcrash\\b"
-  - "\\bproblem\\b"
+# Add 'bug' label to any issue containing the word 'bug'
+bug: '(bug|error|broken|crash|problem)'
 
-enhancement:
-  - "\\bfeature\\b"
-  - "\\benhancement\\b"
-  - "\\bimprovement\\b"
-  - "\\brequest\\b"
-  - "\\badd\\b"
+# Add 'enhancement' label to any issue containing these words
+enhancement: '(feature|enhancement|improvement|request)'
 
-question:
-  - "\\bhow\\b"
-  - "\\bwhat\\b"
-  - "\\bwhen\\b"
-  - "\\bwhere\\b"
-  - "\\bwhy\\b"
-  - "\\bquestion\\b"
-  - "\\bhelp\\b"
+# Add 'question' label to any issue containing these words
+question: '(how|what|when|where|why|help)'
 
-documentation:
-  - "\\bdoc\\b"
-  - "\\btypo\\b"
-  - "\\bexample\\b"
-  - "\\breadme\\b"
+# Add 'documentation' label to any issue containing these words
+documentation: '(doc|documentation|typo|example|readme)'
 
-dependencies:
-  - "\\bdependency\\b"
-  - "\\bpackage\\b"
-  - "\\bversion\\b"
-  - "\\bupdate\\b"
-  - "\\bupgrade\\b"
+# Add 'dependencies' label to any issue containing these words
+dependencies: '(dependency|package|version|update|upgrade)'
 
-security:
-  - "\\bsecurity\\b"
-  - "\\bvulnerability\\b"
-  - "\\bexploit\\b"
-  - "\\battack\\b"
-  - "\\bcve\\b"
+# Add 'security' label to any issue containing these words
+security: '(security|vulnerability|exploit|attack|cve)'
