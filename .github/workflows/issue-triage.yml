@@ -1,7 +1,11 @@
 name: "Issue Labeler"
 on:
   issues:
-    types: [opened, edited]
+    types: 
+      - opened
+      - reopened
+      - edited
+      - closed
 
 permissions:
   issues: write
