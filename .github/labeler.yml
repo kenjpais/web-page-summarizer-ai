@@ -1,18 +1,18 @@
 bug:
-  - '.*bug.*'
+  - '(?i).*bug.*'
 enhancement:
-  - '.*feature.*'
-  - '.*enhancement.*'
+  - '(?i).*feature.*'
+  - '(?i).*enhancement.*'
 question:
-  - '.*how.*'
-  - '.*what.*'
-  - '.*help.*'
+  - '(?i).*how.*'
+  - '(?i).*what.*'
+  - '(?i).*help.*'
 documentation:
-  - '.*doc.*'
-  - '.*readme.*'
+  - '(?i).*doc.*'
+  - '(?i).*readme.*'
 dependencies:
-  - '.*dependency.*'
-  - '.*package.*'
+  - '(?i).*dependency.*'
+  - '(?i).*package.*'
 security:
-  - '.*security.*'
-  - '.*vulnerability.*'
+  - '(?i).*security.*'
+  - '(?i).*vulnerability.*'
