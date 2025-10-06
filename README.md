@@ -12,6 +12,7 @@ A Python-based web scraper and summarization tool designed to extract, filter, a
 - **Secure Environment Management**: Credentials and configuration managed via `.env`.
 - **Test Coverage**: Includes unit tests for core logic and controllers.
 - **CI/CD Integration**: GitHub Actions used for continuous integration and scheduled execution.
+- **AI-Powered Issue Triage**: Automatic issue labeling and assessment using AI to streamline issue management.
 
 ---
 
@@ -111,3 +112,24 @@ Generated summaries and data will be stored in the following locations:
 - To disable summary generation, set `SUMMARIZE_ENABLED=False` in your environment.
 - For LLM configuration, refer to `LLM_SETUP.md`.
 - Additional configuration options can be found in the `config/` directory.
+
+## Issue Management
+
+The repository uses AI-powered issue triage to automatically categorize and label new issues:
+
+### Issue Labels
+
+- `bug`: Bug reports and software issues
+- `enhancement`: Feature requests and improvements
+- `question`: General questions and help requests
+- `documentation`: Documentation-related issues
+- `dependencies`: Package and dependency-related issues
+- `security`: Security-related concerns
+
+When a new issue is created:
+1. AI automatically analyzes the issue content
+2. Appropriate labels are applied based on the analysis
+3. A comment is added with the AI assessment
+4. Maintainers are notified for review
+
+The AI assessment helps prioritize and route issues to the appropriate team members more efficiently.

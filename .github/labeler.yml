@@ -1,0 +1,44 @@
+# Issue type labels
+bug:
+  - '(?i).*bug.*'
+  - '(?i).*error.*'
+  - '(?i).*not working.*'
+  - '(?i).*broken.*'
+  - '(?i).*crash.*'
+  - '(?i).*problem.*'
+
+enhancement:
+  - '(?i).*feature.*'
+  - '(?i).*enhancement.*'
+  - '(?i).*improvement.*'
+  - '(?i).*request.*'
+  - '(?i).*add.*'
+
+question:
+  - '(?i).*how.*'
+  - '(?i).*what.*'
+  - '(?i).*when.*'
+  - '(?i).*where.*'
+  - '(?i).*why.*'
+  - '(?i).*question.*'
+  - '(?i).*help.*'
+
+documentation:
+  - '(?i).*doc.*'
+  - '(?i).*typo.*'
+  - '(?i).*example.*'
+  - '(?i).*readme.*'
+
+dependencies:
+  - '(?i).*dependency.*'
+  - '(?i).*package.*'
+  - '(?i).*version.*'
+  - '(?i).*update.*'
+  - '(?i).*upgrade.*'
+
+security:
+  - '(?i).*security.*'
+  - '(?i).*vulnerability.*'
+  - '(?i).*exploit.*'
+  - '(?i).*attack.*'
+  - '(?i).*cve.*'
