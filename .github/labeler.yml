@@ -1,22 +1,17 @@
 bug:
-  - "\\bbug\\b"
+  - '(?i)\b(bug|error|broken|crash|problem)\b'
 
 enhancement:
-  - "\\bfeature\\b"
-  - "\\benhancement\\b"
+  - '(?i)\b(feature|enhancement|improvement|request)\b'
 
 question:
-  - "\\bquestion\\b"
-  - "\\bhelp\\b"
+  - '(?i)\b(how|what|when|where|why|help|question)\b'
 
 documentation:
-  - "\\bdocs?\\b"
-  - "\\breadme\\b"
+  - '(?i)\b(doc|documentation|typo|example|readme)\b'
 
 dependencies:
-  - "\\bdependenc(y|ies)\\b"
-  - "\\bpackage\\b"
+  - '(?i)\b(dependency|dependencies|package|version|update|upgrade)\b'
 
 security:
-  - "\\bsecurity\\b"
-  - "\\bvulnerability\\b"
+  - '(?i)\b(security|vulnerability|exploit|attack|cve)\b'
