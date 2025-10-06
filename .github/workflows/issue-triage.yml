@@ -2,7 +2,7 @@ name: AI Issue Triage
 
 on:
   issues:
-    types: [opened, reopened]
+    types: [opened, reopened, edited]
 
 jobs:
   triage:
@@ -18,6 +18,6 @@ jobs:
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
           configuration-path: .github/labeler.yml
-          enable-versioned-regex: 0
+          enable-versioned-regex: 1
           sync-labels: true
           include-title: 1

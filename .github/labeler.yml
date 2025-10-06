@@ -1,44 +1,43 @@
-# Issue type labels
 bug:
-  - 'bug'
-  - 'error'
-  - 'not working'
-  - 'broken'
-  - 'crash'
-  - 'problem'
+  - "\\bbug\\b"
+  - "\\berror\\b"
+  - "not working"
+  - "\\bbroken\\b"
+  - "\\bcrash\\b"
+  - "\\bproblem\\b"
 
 enhancement:
-  - 'feature'
-  - 'enhancement'
-  - 'improvement'
-  - 'request'
-  - 'add'
+  - "\\bfeature\\b"
+  - "\\benhancement\\b"
+  - "\\bimprovement\\b"
+  - "\\brequest\\b"
+  - "\\badd\\b"
 
 question:
-  - 'how'
-  - 'what'
-  - 'when'
-  - 'where'
-  - 'why'
-  - 'question'
-  - 'help'
+  - "\\bhow\\b"
+  - "\\bwhat\\b"
+  - "\\bwhen\\b"
+  - "\\bwhere\\b"
+  - "\\bwhy\\b"
+  - "\\bquestion\\b"
+  - "\\bhelp\\b"
 
 documentation:
-  - 'doc'
-  - 'typo'
-  - 'example'
-  - 'readme'
+  - "\\bdoc\\b"
+  - "\\btypo\\b"
+  - "\\bexample\\b"
+  - "\\breadme\\b"
 
 dependencies:
-  - 'dependency'
-  - 'package'
-  - 'version'
-  - 'update'
-  - 'upgrade'
+  - "\\bdependency\\b"
+  - "\\bpackage\\b"
+  - "\\bversion\\b"
+  - "\\bupdate\\b"
+  - "\\bupgrade\\b"
 
 security:
-  - 'security'
-  - 'vulnerability'
-  - 'exploit'
-  - 'attack'
-  - 'cve'
+  - "\\bsecurity\\b"
+  - "\\bvulnerability\\b"
+  - "\\bexploit\\b"
+  - "\\battack\\b"
+  - "\\bcve\\b"
