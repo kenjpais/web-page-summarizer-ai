@@ -1,17 +1,12 @@
 bug:
-  - '(?i)\b(bug|error|broken|crash|problem)\b'
-
+  - '\b(bug|error|broken|crash|problem)\b'
 enhancement:
-  - '(?i)\b(feature|enhancement|improvement|request)\b'
-
+  - '\b(feature|enhancement|improvement|request)\b'
 question:
-  - '(?i)\b(how|what|when|where|why|help|question)\b'
-
+  - '\b(how|what|when|where|why|help|question)\b'
 documentation:
-  - '(?i)\b(doc|documentation|typo|example|readme)\b'
-
+  - '\b(doc|documentation|typo|example|readme)\b'
 dependencies:
-  - '(?i)\b(dependency|dependencies|package|version|update|upgrade)\b'
-
+  - '\b(dependency|dependencies|package|version|update|upgrade)\b'
 security:
-  - '(?i)\b(security|vulnerability|exploit|attack|cve)\b'
+  - '\b(security|vulnerability|exploit|attack|cve)\b'
