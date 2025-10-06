@@ -1,19 +1,19 @@
-name: AI Issue Triage
-
+name: Label issues
 on:
   issues:
-    types: [opened, reopened, edited]
+    types:
+      - reopened
+      - opened
 
 jobs:
-  triage:
+  label_issues:
     runs-on: ubuntu-latest
     permissions:
       issues: write
     steps:
-      - name: Issue Labeler
-        uses: github/issue-labeler@v3.3
+      - uses: github/issue-labeler@v3.3
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
           configuration-path: .github/labeler.yml
-          enable-versioned-regex: 1
-          include-title: 1
+          enable-versioned-regex: true
+          include-title: true
