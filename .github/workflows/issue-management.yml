@@ -43,7 +43,7 @@ jobs:
               "missing_info": [],
               "recommendation": "string"
             }
-          model: openai/gpt-4-1106-preview
+          model: github/gpt-35-turbo
 
       - name: Apply Initial Labels
         uses: actions/github-script@v7
@@ -110,28 +110,32 @@ jobs:
 
       - name: Run AI Assessment
         id: ai-assessment
-        uses: github/ai-assessment-comment-labeler@main
+        uses: actions/ai-inference@v1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          issue_number: ${{ github.event.issue.number }}
-          issue_body: ${{ github.event.issue.body }}
-          repo_name: ${{ github.event.repository.name }}
-          owner: ${{ github.repository_owner }}
-          ai_review_label: 'request ai review'
-          prompts_directory: '.github/prompts'
-          labels_to_prompts_mapping: 'bug,bug-review.prompt.yml|enhancement,feature-review.prompt.yml'
-          no_comment_regex_pattern: '<!--.*no.*comment.*-->'
-          no_comment_regex_flags: 'i'
+          model: github/gpt-35-turbo
+          prompt: |
+            Review this GitHub issue for technical assessment:
+            
+            Title: ${{ github.event.issue.title }}
+            Body: ${{ github.event.issue.body }}
+            
+            Provide a detailed technical assessment of:
+            1. Issue complexity and scope
+            2. Potential impact and risks
+            3. Implementation suggestions
+            4. Required expertise level
+            
+            Format your response in markdown with clear sections.
 
       - name: Process Results
         if: success()
         uses: actions/github-script@v7
-        env:
-          ASSESSMENT_OUTPUT: ${{ steps.ai-assessment.outputs.ai_assessments }}
         with:
           script: |
-            const assessments = JSON.parse(process.env.ASSESSMENT_OUTPUT);
-            for (const assessment of assessments) {
-              await core.summary.addRaw(`**Prompt File:** ${assessment.prompt}\n**Label:** ${assessment.assessmentLabel}\n**AI Response:**\n\`\`\`\n${assessment.response}\n\`\`\`\n\n`);
-            }
-            await core.summary.write();
+            const response = '${{ steps.ai-assessment.outputs.response }}';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: response
+            });
