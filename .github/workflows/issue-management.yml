@@ -50,28 +50,52 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const response = JSON.parse('${{ steps.quality.outputs.response }}');
-            const number = ${{ github.event.issue.number || github.event.pull_request.number }};
-            
-            const labels = [
-              `kind/${response.type}`,
-              `status/${response.status}`,
-              `priority/${response.priority}`
-            ];
-            
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: number,
-              labels: labels
-            });
-            
-            if (response.status === 'needs-info') {
-              await github.rest.issues.createComment({
+            try {
+              const response = JSON.parse('${{ steps.quality.outputs.response }}');
+              const number = ${{ github.event.issue.number || github.event.pull_request.number }};
+              
+              const labels = [];
+              
+              // Add type label if valid
+              if (response.type && ['bug', 'feature', 'security', 'documentation', 'question'].includes(response.type)) {
+                labels.push(`kind/${response.type}`);
+              }
+              
+              // Add status label if valid
+              if (response.status && ['complete', 'needs-info', 'invalid'].includes(response.status)) {
+                labels.push(`status/${response.status}`);
+              }
+              
+              // Add priority label if valid
+              if (response.priority && ['high', 'medium', 'low'].includes(response.priority)) {
+                labels.push(`priority/${response.priority}`);
+              }
+              
+              if (labels.length > 0) {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: number,
+                  labels: labels
+                });
+              }
+              
+              if (response.status === 'needs-info' && response.missing_info && response.missing_info.length > 0) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: number,
+                  body: `Thank you for your submission! To help us better address this, please provide:\n\n${response.missing_info.map(i => `- ${i}`).join('\n')}\n\n${response.recommendation || ''}`
+                });
+              }
+            } catch (error) {
+              console.error('Error processing AI response:', error);
+              // Add a fallback label
+              await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: number,
-                body: `Thank you for your submission! To help us better address this, please provide:\n\n${response.missing_info.map(i => `- ${i}`).join('\n')}\n\n${response.recommendation}`
+                labels: ['status/needs-triage']
               });
             }
 
