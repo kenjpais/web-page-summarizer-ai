@@ -1,22 +1,48 @@
-name: "Issue Labeler"
+name: "AI Issue Assessment"
 on:
   issues:
-    types: 
-      - opened
-      - reopened
-      - edited
-      - closed
+    types: [opened, reopened, edited, labeled]
 
 permissions:
   issues: write
+  models: read
+  contents: read
 
 jobs:
-  triage:
+  ai-assessment:
+    if: github.event.label.name == 'request ai review'
     runs-on: ubuntu-latest
     steps:
-      - uses: github/issue-labeler@v3.3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run AI assessment
+        id: ai-assessment
+        uses: github/ai-assessment-comment-labeler@main
         with:
-          repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          configuration-path: .github/labeler.yml
-          sync-labels: true
-          enable-versioned-regex: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue_number: ${{ github.event.issue.number }}
+          issue_body: ${{ github.event.issue.body }}
+          repo_name: ${{ github.event.repository.name }}
+          owner: ${{ github.repository_owner }}
+          ai_review_label: 'request ai review'
+          prompts_directory: '.github/prompts'
+          labels_to_prompts_mapping: 'bug,bug-review.prompt.yml|enhancement,feature-review.prompt.yml'
+          no_comment_regex_pattern: '<!--.*no.*comment.*-->'
+          no_comment_regex_flags: 'i'
+
+      - name: Process Results
+        if: success()
+        uses: actions/github-script@v7
+        env:
+          ASSESSMENT_OUTPUT: ${{ steps.ai-assessment.outputs.ai_assessments }}
+        with:
+          script: |
+            const assessments = JSON.parse(process.env.ASSESSMENT_OUTPUT);
+            for (const assessment of assessments) {
+              console.log(`Prompt File: ${assessment.prompt}`);
+              console.log(`Label: ${assessment.assessmentLabel}`);
+              console.log(`AI Response: ${assessment.response}`);
+              await core.summary.addRaw(`**Prompt File:** ${assessment.prompt}\n**Label:** ${assessment.assessmentLabel}\n**AI Response:**\n\`\`\`\n${assessment.response}\n\`\`\`\n\n`);
+            }
+            await core.summary.write();

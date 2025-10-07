@@ -1,0 +1,142 @@
+name: "Issue Management"
+
+on:
+  issues:
+    types: [opened, reopened, edited, labeled]
+  pull_request:
+    types: [opened, reopened, edited]
+
+permissions:
+  issues: write
+  pull-requests: write
+  models: read
+  contents: read
+
+jobs:
+  initial-triage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Quality Check
+        id: quality
+        uses: actions/ai-inference@v1
+        with:
+          prompt: |
+            Analyze this GitHub ${{ github.event_name == 'issues' && 'issue' || 'pull request' }}:
+            
+            Title: ${{ github.event.issue.title || github.event.pull_request.title }}
+            Body: ${{ github.event.issue.body || github.event.pull_request.body }}
+            
+            Determine:
+            1. Issue type (bug, feature, security, etc.)
+            2. Completeness of information
+            3. Quality and clarity
+            4. Priority level
+            
+            Respond with a JSON object:
+            {
+              "type": "bug|feature|security|documentation|question",
+              "status": "complete|needs-info|invalid",
+              "priority": "high|medium|low",
+              "missing_info": [],
+              "recommendation": "string"
+            }
+          model: openai/gpt-4o-mini
+          temperature: 0.1
+
+      - name: Apply Initial Labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const response = JSON.parse('${{ steps.quality.outputs.response }}');
+            const number = ${{ github.event.issue.number || github.event.pull_request.number }};
+            
+            const labels = [
+              `kind/${response.type}`,
+              `status/${response.status}`,
+              `priority/${response.priority}`
+            ];
+            
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: number,
+              labels: labels
+            });
+            
+            if (response.status === 'needs-info') {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: number,
+                body: `Thank you for your submission! To help us better address this, please provide:\n\n${response.missing_info.map(i => `- ${i}`).join('\n')}\n\n${response.recommendation}`
+              });
+            }
+
+  welcome-new-contributor:
+    if: github.event.action == 'opened' && github.event.sender.type == 'User'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate Welcome Message
+        id: welcome
+        uses: actions/ai-inference@v1
+        with:
+          prompt: |
+            Generate a welcoming message for a new contributor who just ${{ github.event_name == 'issues' && 'opened an issue' || 'submitted a pull request' }}.
+            Include:
+            1. Thank them for their contribution
+            2. Explain our review process
+            3. Point to documentation
+            4. Offer assistance
+            Keep it friendly and encouraging!
+          model: openai/gpt-4o-mini
+          temperature: 0.7
+
+      - name: Post Welcome Comment
+        if: steps.welcome.outputs.response != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ github.event.issue.number || github.event.pull_request.number }},
+              body: `${{ steps.welcome.outputs.response }}`
+            });
+
+  ai-assessment:
+    if: github.event.label.name == 'request ai review'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run AI Assessment
+        id: ai-assessment
+        uses: github/ai-assessment-comment-labeler@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue_number: ${{ github.event.issue.number }}
+          issue_body: ${{ github.event.issue.body }}
+          repo_name: ${{ github.event.repository.name }}
+          owner: ${{ github.repository_owner }}
+          ai_review_label: 'request ai review'
+          prompts_directory: '.github/prompts'
+          labels_to_prompts_mapping: 'bug,bug-review.prompt.yml|enhancement,feature-review.prompt.yml'
+          no_comment_regex_pattern: '<!--.*no.*comment.*-->'
+          no_comment_regex_flags: 'i'
+
+      - name: Process Results
+        if: success()
+        uses: actions/github-script@v7
+        env:
+          ASSESSMENT_OUTPUT: ${{ steps.ai-assessment.outputs.ai_assessments }}
+        with:
+          script: |
+            const assessments = JSON.parse(process.env.ASSESSMENT_OUTPUT);
+            for (const assessment of assessments) {
+              await core.summary.addRaw(`**Prompt File:** ${assessment.prompt}\n**Label:** ${assessment.assessmentLabel}\n**AI Response:**\n\`\`\`\n${assessment.response}\n\`\`\`\n\n`);
+            }
+            await core.summary.write();
