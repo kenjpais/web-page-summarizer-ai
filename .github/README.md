@@ -22,8 +22,7 @@ This directory contains GitHub-specific configuration files for the release-page
 ### Issue Management (`issue-management.yml`)
 Handles all issue-related automation:
 - Initial issue triage and classification
-- Quality checks
-- Welcome messages for new contributors
+- Quality checks and validation
 - AI-powered issue assessment
 - Label management
 
@@ -43,6 +42,3 @@ The repository uses the following label categories:
 - `kind/*`: Issue type (bug, feature, security, etc.)
 - `status/*`: Issue status (needs-info, ready, etc.)
 - `priority/*`: Issue priority (high, medium, low)
-
-## Contributing
-When contributing to this repository, please ensure you follow the templates and guidelines provided in the issue templates.

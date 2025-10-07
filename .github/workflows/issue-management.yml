@@ -50,61 +50,54 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const response = JSON.parse('${{ steps.quality.outputs.response }}');
-            const number = ${{ github.event.issue.number || github.event.pull_request.number }};
-            
-            const labels = [
-              `kind/${response.type}`,
-              `status/${response.status}`,
-              `priority/${response.priority}`
-            ];
-            
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: number,
-              labels: labels
-            });
-            
-            if (response.status === 'needs-info') {
-              await github.rest.issues.createComment({
+            try {
+              const response = JSON.parse('${{ steps.quality.outputs.response }}');
+              const number = ${{ github.event.issue.number || github.event.pull_request.number }};
+              
+              const labels = [];
+              
+              // Add type label if valid
+              if (response.type && ['bug', 'feature', 'security', 'documentation', 'question'].includes(response.type)) {
+                labels.push(`kind/${response.type}`);
+              }
+              
+              // Add status label if valid
+              if (response.status && ['complete', 'needs-info', 'invalid'].includes(response.status)) {
+                labels.push(`status/${response.status}`);
+              }
+              
+              // Add priority label if valid
+              if (response.priority && ['high', 'medium', 'low'].includes(response.priority)) {
+                labels.push(`priority/${response.priority}`);
+              }
+              
+              if (labels.length > 0) {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: number,
+                  labels: labels
+                });
+              }
+              
+              if (response.status === 'needs-info' && response.missing_info && response.missing_info.length > 0) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: number,
+                  body: `Please provide the following additional information:\n\n${response.missing_info.map(i => `- ${i}`).join('\n')}\n\n${response.recommendation || ''}`
+                });
+              }
+            } catch (error) {
+              console.error('Error processing AI response:', error);
+              // Add a fallback label
+              await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: number,
-                body: `Thank you for your submission! To help us better address this, please provide:\n\n${response.missing_info.map(i => `- ${i}`).join('\n')}\n\n${response.recommendation}`
+                labels: ['status/needs-triage']
               });
             }
-
-  welcome-new-contributor:
-    if: github.event.action == 'opened' && github.event.sender.type == 'User'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Generate Welcome Message
-        id: welcome
-        uses: actions/ai-inference@v1
-        with:
-          prompt: |
-            Generate a welcoming message for a new contributor who just ${{ github.event_name == 'issues' && 'opened an issue' || 'submitted a pull request' }}.
-            Include:
-            1. Thank them for their contribution
-            2. Explain our review process
-            3. Point to documentation
-            4. Offer assistance
-            Keep it friendly and encouraging!
-          model: openai/gpt-4o-mini
-          temperature: 0.7
-
-      - name: Post Welcome Comment
-        if: steps.welcome.outputs.response != ''
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: ${{ github.event.issue.number || github.event.pull_request.number }},
-              body: `${{ steps.welcome.outputs.response }}`
-            });
 
   ai-assessment:
     if: github.event.label.name == 'request ai review'
