@@ -58,6 +58,18 @@ jobs:
             echo "labels=None" >> $GITHUB_OUTPUT
           fi
 
+      - name: Prepare Slack Data
+        id: slack-data
+        run: |
+          # Safely escape JSON values
+          title=$(echo '${{ github.event.issue.title }}' | sed 's/"/\\"/g' | sed 's/\\/\\\\/g')
+          summary=$(echo '${{ steps.summarize-issue.outputs.response }}' | sed 's/"/\\"/g' | sed 's/\\/\\\\/g' | head -c 2000)
+          labels=$(echo '${{ steps.format-labels.outputs.labels }}' | sed 's/"/\\"/g')
+          
+          echo "title=$title" >> $GITHUB_OUTPUT
+          echo "summary=$summary" >> $GITHUB_OUTPUT
+          echo "labels=$labels" >> $GITHUB_OUTPUT
+
       - name: Push to Slack
         uses: 8398a7/action-slack@v3
         with:
@@ -69,9 +81,9 @@ jobs:
               "attachments": [
                 {
                   "color": "${{ steps.priority-color.outputs.color }}",
-                  "title": "Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}",
+                  "title": "Issue #${{ github.event.issue.number }}: ${{ steps.slack-data.outputs.title }}",
                   "title_link": "${{ github.event.issue.html_url }}",
-                  "text": "${{ steps.summarize-issue.outputs.response }}",
+                  "text": "${{ steps.slack-data.outputs.summary }}",
                   "fields": [
                     {
                       "title": "Repository",
@@ -85,7 +97,7 @@ jobs:
                     },
                     {
                       "title": "Labels",
-                      "value": "${{ steps.format-labels.outputs.labels }}",
+                      "value": "${{ steps.slack-data.outputs.labels }}",
                       "short": false
                     }
                   ],
