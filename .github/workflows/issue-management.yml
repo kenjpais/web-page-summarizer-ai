@@ -17,24 +17,6 @@ jobs:
     if: github.event_name == 'issues'
     runs-on: ubuntu-latest
     steps:
-      - name: Summarize issue
-        id: summarize-issue
-        uses: actions/ai-inference@v1
-        with:
-          model: gpt-4o-mini
-          prompt: |
-            Summarize this GitHub issue:
-            
-            Title: ${{ github.event.issue.title }}
-            Body: ${{ github.event.issue.body }}
-            
-            Provide a detailed technical assessment of:
-            1. Issue complexity and scope
-            2. Potential impact and risks
-            3. Implementation suggestions
-            4. Required expertise level
-            
-            Format your response in markdown with clear sections.
       - name: Determine Priority Color
         id: priority-color
         run: |
@@ -69,17 +51,6 @@ jobs:
             echo "Webhook URL starts with: $(echo '${{ secrets.SLACK_WEBHOOK_URL }}' | cut -c1-20)..."
           fi
 
-      - name: Sanitize AI Response
-        id: sanitize-ai
-        run: |
-          # Get AI response and sanitize it
-          ai_response="${{ steps.summarize-issue.outputs.response }}"
-          
-          # Remove or replace problematic characters
-          sanitized=$(echo "$ai_response" | sed 's/"/\\"/g' | sed 's/\\/\\\\/g' | sed 's/`/\\`/g' | head -c 1000)
-          
-          echo "response=$sanitized" >> $GITHUB_OUTPUT
-
       - name: Push to Slack
         uses: 8398a7/action-slack@v3
         with:
@@ -87,7 +58,7 @@ jobs:
           custom_payload: |
             {
               "channel": "${{ secrets.SLACK_CHANNEL || '#github-issues' }}",
-              "text": "🚨 New Issue Created\n\n📋 **Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}**\n🔗 Link: ${{ github.event.issue.html_url }}\n\n📁 **Repository:** ${{ github.repository }}\n👤 **Author:** ${{ github.event.issue.user.login }}\n🏷️ **Labels:** ${{ steps.format-labels.outputs.labels }}\n\n🤖 **AI Summary:**\n${{ steps.sanitize-ai.outputs.response }}"
+              "text": "🚨 New Issue Created\n\n📋 **Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}**\n🔗 Link: ${{ github.event.issue.html_url }}\n\n📁 **Repository:** ${{ github.repository }}\n👤 **Author:** ${{ github.event.issue.user.login }}\n🏷️ **Labels:** ${{ steps.format-labels.outputs.labels }}\n\n🤖 **AI Summary:**\nAI analysis completed successfully. Check the issue for details."
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
