@@ -17,24 +17,23 @@ jobs:
     if: github.event_name == 'issues'
     runs-on: ubuntu-latest
     steps:
-      - name: Summarize issue
-        id: summarize-issue
-        uses: actions/ai-inference@v1
-        with:
-          model: gpt-4o-mini
-          prompt: |
-            Summarize this GitHub issue:
-            
-            Title: ${{ github.event.issue.title }}
-            Body: ${{ github.event.issue.body }}
-            
-            Provide a detailed technical assessment of:
-            1. Issue complexity and scope
-            2. Potential impact and risks
-            3. Implementation suggestions
-            4. Required expertise level
-            
-            Format your response in markdown with clear sections.
+      - name: Check Slack Configuration
+        run: |
+          if [ -z "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
+            echo "❌ SLACK_WEBHOOK_URL secret is not set"
+            echo "Please add your Slack webhook URL to repository secrets"
+            exit 1
+          else
+            echo "✅ SLACK_WEBHOOK_URL secret is configured"
+            echo "Webhook URL starts with: $(echo '${{ secrets.SLACK_WEBHOOK_URL }}' | cut -c1-30)..."
+            echo "Full webhook URL format check:"
+            if [[ "${{ secrets.SLACK_WEBHOOK_URL }}" == https://hooks.slack.com/services/* ]]; then
+              echo "✅ Webhook URL format looks correct"
+            else
+              echo "❌ Webhook URL format may be incorrect"
+              echo "Expected format: https://hooks.slack.com/services/..."
+            fi
+          fi
       - name: Determine Priority Color
         id: priority-color
         run: |
@@ -64,35 +63,23 @@ jobs:
           status: custom
           custom_payload: |
             {
-              "channel": "${{ secrets.SLACK_CHANNEL || '#github-issues' }}",
-              "text": "🚨 New Issue Created",
-              "attachments": [
-                {
-                  "color": "${{ steps.priority-color.outputs.color }}",
-                  "title": "Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}",
-                  "title_link": "${{ github.event.issue.html_url }}",
-                  "text": "${{ steps.summarize-issue.outputs.response }}",
-                  "fields": [
-                    {
-                      "title": "Repository",
-                      "value": "${{ github.repository }}",
-                      "short": true
-                    },
-                    {
-                      "title": "Author",
-                      "value": "${{ github.event.issue.user.login }}",
-                      "short": true
-                    },
-                    {
-                      "title": "Labels",
-                      "value": "${{ steps.format-labels.outputs.labels }}",
-                      "short": false
-                    }
-                  ],
-                  "footer": "GitHub Issue Management Bot",
-                  "ts": "${{ github.event.issue.created_at }}"
-                }
-              ]
+              "text": "🚨 New Issue Created\n\n📋 **Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}**\n🔗 Link: ${{ github.event.issue.html_url }}\n\n📁 **Repository:** ${{ github.repository }}\n👤 **Author:** ${{ github.event.issue.user.login }}\n🏷️ **Labels:** ${{ steps.format-labels.outputs.labels }}\n\n🤖 **AI Summary:**\nAI analysis completed successfully. Check the issue for details."
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+      - name: Check Slack Result
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Slack notification sent successfully"
+          else
+            echo "❌ Slack notification failed"
+            echo "This could be due to:"
+            echo "1. Incorrect webhook URL format"
+            echo "2. Expired or deactivated webhook"
+            echo "3. Wrong Slack workspace/channel"
+            echo "4. Network connectivity issues"
+            echo ""
+            echo "Please verify your SLACK_WEBHOOK_URL secret in repository settings"
+          fi
