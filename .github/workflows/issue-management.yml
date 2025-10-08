@@ -58,6 +58,28 @@ jobs:
             echo "labels=None" >> $GITHUB_OUTPUT
           fi
 
+      - name: Create Slack Message
+        id: slack-message
+        run: |
+          # Create a simple message without complex JSON
+          echo "🚨 New Issue Created" > message.txt
+          echo "" >> message.txt
+          echo "📋 **Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}**" >> message.txt
+          echo "🔗 Link: ${{ github.event.issue.html_url }}" >> message.txt
+          echo "" >> message.txt
+          echo "📁 **Repository:** ${{ github.repository }}" >> message.txt
+          echo "👤 **Author:** ${{ github.event.issue.user.login }}" >> message.txt
+          echo "🏷️ **Labels:** ${{ steps.format-labels.outputs.labels }}" >> message.txt
+          echo "" >> message.txt
+          echo "🤖 **AI Summary:**" >> message.txt
+          echo "${{ steps.summarize-issue.outputs.response }}" >> message.txt
+          
+          # Read the message content
+          message=$(cat message.txt)
+          echo "message<<EOF" >> $GITHUB_OUTPUT
+          echo "$message" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Push to Slack
         uses: 8398a7/action-slack@v3
         with:
@@ -65,35 +87,7 @@ jobs:
           custom_payload: |
             {
               "channel": "${{ secrets.SLACK_CHANNEL || '#github-issues' }}",
-              "text": "🚨 New Issue Created",
-              "attachments": [
-                {
-                  "color": "${{ steps.priority-color.outputs.color }}",
-                  "title": "Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}",
-                  "title_link": "${{ github.event.issue.html_url }}",
-                  "text": "AI Summary: ${{ steps.summarize-issue.outputs.response }}",
-                  "fields": [
-                    {
-                      "title": "Repository",
-                      "value": "${{ github.repository }}",
-                      "short": true
-                    },
-                    {
-                      "title": "Author",
-                      "value": "${{ github.event.issue.user.login }}",
-                      "short": true
-                    },
-                    {
-                      "title": "Labels",
-                      "value": "${{ steps.format-labels.outputs.labels }}",
-                      "short": false
-                    }
-                  ],
-                  "footer": "GitHub Issue Management Bot",
-                  "ts": "${{ github.event.issue.created_at }}"
-                }
-              ]
+              "text": "${{ steps.slack-message.outputs.message }}"
             }
-        continue-on-error: true
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
