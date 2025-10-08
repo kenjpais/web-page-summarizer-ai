@@ -14,7 +14,7 @@ Only provide the summary of the feature. Do not include peripheral information s
 Filter out internal or test-only changes that do not introduce user-facing functionality.
 Group related tickets and PRs where applicable.
 Include ALL significant content.
-
+Include JIRA ticket references (e.g., WRKLDS-1599) when mentioning specific features or changes.
 Use markdown as the output format.
 
 Below are the JIRA and GITHUB information for {key}:
