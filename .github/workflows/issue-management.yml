@@ -58,6 +58,17 @@ jobs:
             echo "labels=None" >> $GITHUB_OUTPUT
           fi
 
+      - name: Check Slack Configuration
+        run: |
+          if [ -z "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
+            echo "❌ SLACK_WEBHOOK_URL secret is not set"
+            echo "Please add your Slack webhook URL to repository secrets"
+            exit 1
+          else
+            echo "✅ SLACK_WEBHOOK_URL secret is configured"
+            echo "Webhook URL starts with: $(echo '${{ secrets.SLACK_WEBHOOK_URL }}' | cut -c1-20)..."
+          fi
+
       - name: Create Slack Message
         id: slack-message
         run: |
@@ -74,7 +85,7 @@ jobs:
           echo "🤖 **AI Summary:**" >> message.txt
           echo "${{ steps.summarize-issue.outputs.response }}" >> message.txt
           
-          # Read the message content
+          # Read the message content and escape it properly
           message=$(cat message.txt)
           echo "message<<EOF" >> $GITHUB_OUTPUT
           echo "$message" >> $GITHUB_OUTPUT
