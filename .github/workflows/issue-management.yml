@@ -77,15 +77,14 @@ jobs:
           fi
 
       - name: Push to Slack
-        uses: 8398a7/action-slack@v3
-        with:
-          status: custom
-          custom_payload: |
-            {
-              "text": "🚨 New Issue Created\n\n📋 **Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}**\n🔗 Link: ${{ github.event.issue.html_url }}\n\n📁 **Repository:** ${{ github.repository }}\n👤 **Author:** ${{ github.event.issue.user.login }}\n🏷️ **Labels:** ${{ steps.format-labels.outputs.labels }}\n\n🤖 **AI Summary:**\n${{ steps.summarize-issue.outputs.response }}"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          # Create the message content
+          message="🚨 New Issue Created\n\n📋 **Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}**\n🔗 Link: ${{ github.event.issue.html_url }}\n\n📁 **Repository:** ${{ github.repository }}\n👤 **Author:** ${{ github.event.issue.user.login }}\n🏷️ **Labels:** ${{ steps.format-labels.outputs.labels }}\n\n🤖 **AI Summary:**\n${{ steps.summarize-issue.outputs.response || 'AI analysis unavailable - check issue details manually' }}"
+
+          # Send to Slack using curl
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\"$message\"}" \
+            ${{ secrets.SLACK_WEBHOOK_URL }}
         continue-on-error: true
 
       - name: Check Slack Result
