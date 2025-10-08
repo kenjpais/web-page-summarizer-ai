@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   summarize-to-slack:
-    if: github.event_name == 'issues' && github.event.action == 'opened'
+    if: github.event_name == 'issues'
     runs-on: ubuntu-latest
     steps:
       - name: Summarize issue
