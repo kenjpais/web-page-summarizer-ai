@@ -19,7 +19,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Quality Check
+      - name: Duplicate Detection
+        id: duplicate-check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '${{ github.event.issue.title || github.event.pull_request.title }}';
+            const body = '${{ github.event.issue.body || github.event.pull_request.body }}';
+            const currentNumber = ${{ github.event.issue.number || github.event.pull_request.number }};
+            
+            // Search for similar issues
+            const searchQuery = `repo:${context.repo.owner}/${context.repo.repo} is:issue is:open "${title.split(' ').slice(0, 3).join(' ')}"`;
+            const searchResults = await github.rest.search.issuesAndPullRequests({
+              q: searchQuery,
+              sort: 'created',
+              order: 'desc'
+            });
+            
+            const similarIssues = searchResults.data.items.filter(issue => 
+              issue.number !== currentNumber && 
+              issue.title.toLowerCase().includes(title.toLowerCase().split(' ')[0])
+            );
+            
+            console.log(`Found ${similarIssues.length} potentially similar issues`);
+            
+            return JSON.stringify({
+              has_duplicates: similarIssues.length > 0,
+              similar_issues: similarIssues.map(issue => ({
+                number: issue.number,
+                title: issue.title,
+                url: issue.html_url,
+                created_at: issue.created_at
+              }))
+            });
+
+      - name: Quality Check & Classification
         id: quality
         uses: actions/ai-inference@v1
         with:
@@ -29,23 +63,34 @@ jobs:
             Title: ${{ github.event.issue.title || github.event.pull_request.title }}
             Body: ${{ github.event.issue.body || github.event.pull_request.body }}
             
+            Similar Issues Found: ${{ steps.duplicate-check.outputs.result }}
+            
             Determine:
-            1. Issue type (bug, feature, security, etc.)
-            2. Completeness of information
-            3. Quality and clarity
-            4. Priority level
+            1. Issue type (bug, feature, security, documentation, question, enhancement)
+            2. Completeness of information (complete, needs-info, invalid)
+            3. Quality and clarity (excellent, good, fair, poor)
+            4. Priority level (critical, high, medium, low)
+            5. Duplicate likelihood (high, medium, low, none)
+            6. Required expertise (beginner, intermediate, advanced, expert)
+            7. Estimated effort (1-2h, half-day, 1-2 days, 1 week, 2+ weeks)
             
             Respond with a JSON object:
             {
-              "type": "bug|feature|security|documentation|question",
+              "type": "bug|feature|security|documentation|question|enhancement",
               "status": "complete|needs-info|invalid",
-              "priority": "high|medium|low",
+              "priority": "critical|high|medium|low",
+              "quality": "excellent|good|fair|poor",
+              "duplicate_likelihood": "high|medium|low|none",
+              "expertise_required": "beginner|intermediate|advanced|expert",
+              "estimated_effort": "1-2h|half-day|1-2 days|1 week|2+ weeks",
               "missing_info": [],
-              "recommendation": "string"
+              "recommendation": "string",
+              "tags": ["tag1", "tag2"],
+              "assignee_suggestions": ["username1", "username2"]
             }
           model: github/gpt-35-turbo
 
-      - name: Apply Initial Labels
+      - name: Apply Enhanced Labels & Comments
         uses: actions/github-script@v7
         with:
           script: |
@@ -57,9 +102,10 @@ jobs:
               const number = ${{ github.event.issue.number || github.event.pull_request.number }};
               
               const labels = [];
+              let commentBody = '';
               
               // Add type label if valid
-              if (response.type && ['bug', 'feature', 'security', 'documentation', 'question'].includes(response.type)) {
+              if (response.type && ['bug', 'feature', 'security', 'documentation', 'question', 'enhancement'].includes(response.type)) {
                 labels.push(`kind/${response.type}`);
               }
               
@@ -69,10 +115,40 @@ jobs:
               }
               
               // Add priority label if valid
-              if (response.priority && ['high', 'medium', 'low'].includes(response.priority)) {
+              if (response.priority && ['critical', 'high', 'medium', 'low'].includes(response.priority)) {
                 labels.push(`priority/${response.priority}`);
               }
               
+              // Add quality label
+              if (response.quality && ['excellent', 'good', 'fair', 'poor'].includes(response.quality)) {
+                labels.push(`quality/${response.quality}`);
+              }
+              
+              // Add expertise label
+              if (response.expertise_required && ['beginner', 'intermediate', 'advanced', 'expert'].includes(response.expertise_required)) {
+                labels.push(`expertise/${response.expertise_required}`);
+              }
+              
+              // Add effort label
+              if (response.estimated_effort && ['1-2h', 'half-day', '1-2 days', '1 week', '2+ weeks'].includes(response.estimated_effort)) {
+                labels.push(`effort/${response.estimated_effort}`);
+              }
+              
+              // Add duplicate label if high likelihood
+              if (response.duplicate_likelihood === 'high') {
+                labels.push('duplicate/high-likelihood');
+              }
+              
+              // Add custom tags
+              if (response.tags && Array.isArray(response.tags)) {
+                response.tags.forEach(tag => {
+                  if (tag && typeof tag === 'string') {
+                    labels.push(`tag/${tag.toLowerCase().replace(/\s+/g, '-')}`);
+                  }
+                });
+              }
+              
+              // Apply labels
               if (labels.length > 0) {
                 await github.rest.issues.addLabels({
                   owner: context.repo.owner,
@@ -82,14 +158,59 @@ jobs:
                 });
               }
               
+              // Handle duplicate detection
+              const duplicateData = JSON.parse('${{ steps.duplicate-check.outputs.result }}');
+              if (duplicateData.has_duplicates && duplicateData.similar_issues.length > 0) {
+                commentBody += '## 🔍 Potential Duplicates Found\n\n';
+                duplicateData.similar_issues.forEach(issue => {
+                  commentBody += `- [#${issue.number}](${issue.url}) - ${issue.title}\n`;
+                });
+                commentBody += '\n';
+              }
+              
+              // Add AI assessment comment
+              commentBody += '## 🤖 AI Assessment\n\n';
+              commentBody += `**Type:** ${response.type || 'Unknown'}\n`;
+              commentBody += `**Priority:** ${response.priority || 'Unknown'}\n`;
+              commentBody += `**Quality:** ${response.quality || 'Unknown'}\n`;
+              commentBody += `**Expertise Required:** ${response.expertise_required || 'Unknown'}\n`;
+              commentBody += `**Estimated Effort:** ${response.estimated_effort || 'Unknown'}\n`;
+              commentBody += `**Duplicate Likelihood:** ${response.duplicate_likelihood || 'Unknown'}\n\n`;
+              
+              if (response.recommendation) {
+                commentBody += `**Recommendation:** ${response.recommendation}\n\n`;
+              }
+              
+              // Handle missing information
               if (response.status === 'needs-info' && response.missing_info && response.missing_info.length > 0) {
+                commentBody += '## 📝 Missing Information\n\n';
+                commentBody += 'Please provide the following additional information:\n\n';
+                response.missing_info.forEach(info => {
+                  commentBody += `- ${info}\n`;
+                });
+                commentBody += '\n';
+              }
+              
+              // Add assignee suggestions
+              if (response.assignee_suggestions && Array.isArray(response.assignee_suggestions) && response.assignee_suggestions.length > 0) {
+                commentBody += '## 👥 Suggested Assignees\n\n';
+                commentBody += 'Consider assigning to:\n\n';
+                response.assignee_suggestions.forEach(user => {
+                  commentBody += `- @${user}\n`;
+                });
+                commentBody += '\n';
+              }
+              
+              // Post comment if there's content
+              if (commentBody.trim()) {
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: number,
-                  body: `Please provide the following additional information:\n\n${response.missing_info.map(i => `- ${i}`).join('\n')}\n\n${response.recommendation || ''}`
+                  body: commentBody
                 });
               }
+              
             } catch (error) {
               console.error('Error processing AI response:', error);
               // Add a fallback label
@@ -139,3 +260,87 @@ jobs:
               issue_number: context.issue.number,
               body: response
             });
+  
+  summarize-to-slack:
+    if: github.event_name == 'issues' && github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Summarize issue
+        id: summarize-issue
+        uses: actions/ai-inference@v1
+        with:
+          model: github/gpt-35-turbo
+          prompt: |
+            Summarize this GitHub issue:
+            
+            Title: ${{ github.event.issue.title }}
+            Body: ${{ github.event.issue.body }}
+            
+            Provide a detailed technical assessment of:
+            1. Issue complexity and scope
+            2. Potential impact and risks
+            3. Implementation suggestions
+            4. Required expertise level
+            
+            Format your response in markdown with clear sections.
+      - name: Determine Priority Color
+        id: priority-color
+        run: |
+          if [[ "${{ github.event.issue.labels.*.name }}" == *"priority/critical"* ]]; then
+            echo "color=danger" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event.issue.labels.*.name }}" == *"priority/high"* ]]; then
+            echo "color=warning" >> $GITHUB_OUTPUT
+          else
+            echo "color=good" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Format Labels
+        id: format-labels
+        run: |
+          labels="${{ github.event.issue.labels.*.name }}"
+          if [ -n "$labels" ] && [ "$labels" != "null" ]; then
+            # Convert array format to comma-separated string
+            formatted_labels=$(echo "$labels" | tr -d '[]' | tr ',' '\n' | tr -d ' ' | grep -v '^$' | tr '\n' ',' | sed 's/,$//')
+            echo "labels=$formatted_labels" >> $GITHUB_OUTPUT
+          else
+            echo "labels=None" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Push to Slack
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              "channel": "${{ secrets.SLACK_CHANNEL || '#github-issues' }}",
+              "text": "🚨 New Issue Created",
+              "attachments": [
+                {
+                  "color": "${{ steps.priority-color.outputs.color }}",
+                  "title": "Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}",
+                  "title_link": "${{ github.event.issue.html_url }}",
+                  "text": "${{ steps.summarize-issue.outputs.response }}",
+                  "fields": [
+                    {
+                      "title": "Repository",
+                      "value": "${{ github.repository }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Author",
+                      "value": "${{ github.event.issue.user.login }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Labels",
+                      "value": "${{ steps.format-labels.outputs.labels }}",
+                      "short": false
+                    }
+                  ],
+                  "footer": "GitHub Issue Management Bot",
+                  "ts": "${{ github.event.issue.created_at }}"
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
