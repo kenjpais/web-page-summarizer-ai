@@ -36,19 +36,20 @@ jobs:
             Keep the response under 150 words and focus on actionable insights.
         continue-on-error: true
 
-      - name: Sanitize AI Response
-        id: sanitize-ai
+      - name: Prepare AI Response
+        id: prepare-ai
         run: |
-          # Get AI response and sanitize it for JSON
+          # Get AI response and prepare it for Slack
           ai_response="${{ steps.summarize-issue.outputs.response }}"
           
           # Check if AI step succeeded
           if [ -z "$ai_response" ] || [ "$ai_response" = "null" ]; then
             echo "response=AI analysis unavailable - check issue details manually" >> $GITHUB_OUTPUT
           else
-            # Remove or replace problematic characters and limit length
-            sanitized=$(echo "$ai_response" | sed 's/"/\\"/g' | sed 's/\\/\\\\/g' | sed 's/`/\\`/g' | head -c 500)
-            echo "response=$sanitized" >> $GITHUB_OUTPUT
+            # Use GitHub Actions multiline output format
+            echo "response<<EOF" >> $GITHUB_OUTPUT
+            echo "$ai_response" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           fi
 
       - name: Check Slack Configuration
@@ -97,7 +98,7 @@ jobs:
           status: custom
           custom_payload: |
             {
-              "text": "🚨 New Issue Created\n\n📋 **Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}**\n🔗 Link: ${{ github.event.issue.html_url }}\n\n📁 **Repository:** ${{ github.repository }}\n👤 **Author:** ${{ github.event.issue.user.login }}\n🏷️ **Labels:** ${{ steps.format-labels.outputs.labels }}\n\n🤖 **AI Summary:**\n${{ steps.sanitize-ai.outputs.response }}"
+              "text": "🚨 New Issue Created\n\n📋 **Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}**\n🔗 Link: ${{ github.event.issue.html_url }}\n\n📁 **Repository:** ${{ github.repository }}\n👤 **Author:** ${{ github.event.issue.user.login }}\n🏷️ **Labels:** ${{ steps.format-labels.outputs.labels }}\n\n🤖 **AI Summary:**\n${{ steps.prepare-ai.outputs.response }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
