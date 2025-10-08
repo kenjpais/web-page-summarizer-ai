@@ -21,7 +21,7 @@ jobs:
         id: summarize-issue
         uses: actions/ai-inference@v1
         with:
-          model: github/gpt-35-turbo
+          model: gpt-4o-mini
           prompt: |
             Summarize this GitHub issue:
             
