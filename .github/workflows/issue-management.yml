@@ -17,6 +17,40 @@ jobs:
     if: github.event_name == 'issues'
     runs-on: ubuntu-latest
     steps:
+      - name: Summarize Issue
+        id: summarize-issue
+        uses: actions/ai-inference@v1
+        with:
+          model: gpt-4o-mini
+          prompt: |
+            Analyze this GitHub issue and provide a concise summary:
+            
+            Title: ${{ github.event.issue.title }}
+            Body: ${{ github.event.issue.body }}
+            
+            Please provide:
+            1. A brief summary of the issue (2-3 sentences)
+            2. Key technical points or concerns
+            3. Suggested priority level (low/medium/high)
+            
+            Keep the response under 150 words and focus on actionable insights.
+        continue-on-error: true
+
+      - name: Sanitize AI Response
+        id: sanitize-ai
+        run: |
+          # Get AI response and sanitize it for JSON
+          ai_response="${{ steps.summarize-issue.outputs.response }}"
+          
+          # Check if AI step succeeded
+          if [ -z "$ai_response" ] || [ "$ai_response" = "null" ]; then
+            echo "response=AI analysis unavailable - check issue details manually" >> $GITHUB_OUTPUT
+          else
+            # Remove or replace problematic characters and limit length
+            sanitized=$(echo "$ai_response" | sed 's/"/\\"/g' | sed 's/\\/\\\\/g' | sed 's/`/\\`/g' | head -c 500)
+            echo "response=$sanitized" >> $GITHUB_OUTPUT
+          fi
+
       - name: Check Slack Configuration
         run: |
           if [ -z "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
@@ -63,7 +97,7 @@ jobs:
           status: custom
           custom_payload: |
             {
-              "text": "🚨 New Issue Created\n\n📋 **Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}**\n🔗 Link: ${{ github.event.issue.html_url }}\n\n📁 **Repository:** ${{ github.repository }}\n👤 **Author:** ${{ github.event.issue.user.login }}\n🏷️ **Labels:** ${{ steps.format-labels.outputs.labels }}\n\n🤖 **AI Summary:**\nAI analysis completed successfully. Check the issue for details."
+              "text": "🚨 New Issue Created\n\n📋 **Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}**\n🔗 Link: ${{ github.event.issue.html_url }}\n\n📁 **Repository:** ${{ github.repository }}\n👤 **Author:** ${{ github.event.issue.user.login }}\n🏷️ **Labels:** ${{ steps.format-labels.outputs.labels }}\n\n🤖 **AI Summary:**\n${{ steps.sanitize-ai.outputs.response }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
