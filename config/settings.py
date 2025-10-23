@@ -48,7 +48,7 @@ class APISettings(BaseSettings):
     llm_model: str = Field(default="mistral", alias="LLM_MODEL")
     # Google Gemini API
     google_api_key: str = Field(default="", alias="GOOGLE_API_KEY")
-    gemini_model: str = Field(default="gemini-1.5-pro", alias="GEMINI_MODEL")
+    gemini_model: str = Field(default="gemini-2.5-pro", alias="GEMINI_MODEL")
 
     # LLM Input Limits
     max_input_tokens_per_request: int = Field(
