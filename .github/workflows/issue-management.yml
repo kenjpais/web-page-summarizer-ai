@@ -13,6 +13,48 @@ permissions:
   contents: read
 
 jobs:
+  ai-triage:
+    if: github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'status/needs-triage')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: AI Issue Assessment
+        id: ai-assessment
+        uses: github/ai-assessment-comment-labeler@v1.0.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue_number: ${{ github.event.issue.number }}
+          issue_body: ${{ github.event.issue.body }}
+          repo_name: ${{ github.event.repository.name }}
+          owner: ${{ github.repository_owner }}
+          ai_review_label: 'status/needs-triage'
+          prompts_directory: './.github/prompts'
+          labels_to_prompts_mapping: 'kind/bug,bug-triage.prompt.yml|kind/enhancement,enhancement-triage.prompt.yml'
+          model: 'openai/gpt-4o-mini'
+          max_tokens: 300
+
+      - name: Post Assessment Summary
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          ASSESSMENT_OUTPUT: ${{ steps.ai-assessment.outputs.ai_assessments }}
+        with:
+          script: |
+            const assessments = JSON.parse(process.env.ASSESSMENT_OUTPUT || '[]');
+            if (assessments.length > 0) {
+              let summary = '## 🤖 AI Triage Assessment\n\n';
+              for (const assessment of assessments) {
+                summary += `### ${assessment.prompt}\n`;
+                summary += `**Label Applied:** \`${assessment.assessmentLabel}\`\n\n`;
+                summary += `**Assessment:**\n${assessment.response}\n\n`;
+                summary += '---\n\n';
+              }
+              core.summary.addRaw(summary);
+              await core.summary.write();
+            }
+
   summarize-to-slack:
     if: github.event_name == 'issues'
     runs-on: ubuntu-latest
